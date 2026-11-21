@@ -180,6 +180,15 @@ factory('record', 'DEV-092', 'codex', findings('cx-ok', 'codex', 'gpt', []));
 r = factory('transition', 'DEV-092', 'TESTING');
 check('4h. reviewer + codex без блокерів → TESTING', r.status === 0, r.stderr);
 
+console.log('\n[+] Керування бектлогом');
+factory('add', 'DEV-095', 'Стара назва');
+r = factory('retitle', 'DEV-095', 'Нова', 'назва');
+check('retitle змінює назву і пише історію', r.status === 0 && state().tasks['DEV-095'].title === 'Нова назва');
+r = factory('remove', 'DEV-095');
+check('remove видаляє задачу з BACKLOG', r.status === 0 && !state().tasks['DEV-095']);
+r = factory('remove', 'DEV-001');
+check('remove не видаляє задачу в роботі', r.status !== 0 && !!state().tasks['DEV-001']);
+
 console.log('\n[8] Відновлення зі стану');
 const s = state();
 check('8a. стан збережено на диску між процесами', s.tasks['DEV-001'].status === 'COMPLETED' && s.tasks['DEV-001'].history.length > 10);
