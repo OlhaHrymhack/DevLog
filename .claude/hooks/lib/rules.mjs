@@ -139,7 +139,9 @@ export function checkFactoryIntegrity(tool, input, root) {
   if (tool === 'Bash') {
     const cmd = input.command ?? '';
     const viaCli = /^\s*node\s+\.factory\/bin\/factory\.mjs\b/.test(cmd) && !/[;&|]/.test(cmd.replace(/\|\|?\s*true\s*$/, ''));
-    if (!viaCli && (FACTORY_RECORDS.some((p) => cmd.includes(p)) || /user-prompt\.mjs|writeApproval/.test(cmd))) {
+    // staging/читання git не змінює вміст записів: одна команда, без ланцюжків, перенаправлень, підстановок і --output
+    const gitStaging = /^\s*git\s+(add|diff|log|show|status|commit)\b/.test(cmd) && !/[;&|<>`]|\$\(|--output/.test(cmd);
+    if (!viaCli && !gitStaging &&(FACTORY_RECORDS.some((p) => cmd.includes(p)) || /user-prompt\.mjs|writeApproval/.test(cmd))) {
       return { decision: 'deny', reason: 'записи фабрики (state/evidence/approvals) змінюються лише через factory.mjs; для читання — factory status/report' };
     }
   }
