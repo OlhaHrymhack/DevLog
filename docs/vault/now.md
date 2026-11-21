@@ -20,7 +20,7 @@ tags: [now]
 - Чекає merge: #6 `docs/product-concept` (product.md + specs/DEV-001…013).
 
 ## Далі
-1. Користувачка вирішує питання зі specs/README («Рішення…») і DEV-005/007, мерджить #6.
+1. Питання зі specs вирішено (D-015). Користувачка мерджить #6.
 2. `/factory DEV-001` (каркас) від актуального `stage` → план → `APPROVE DEV-001`.
 3. Потім DEV-002 (UI Kit зі сторінкою `/ui-kit`).
 
