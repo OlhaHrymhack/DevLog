@@ -16,6 +16,7 @@ const HELP = `Команди:
   transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
   verify <ID> [--full]                   запустити typecheck/lint/unit (+e2e з --full), записати evidence
   record <ID> <review|security|qa> <file.json>          записати звіт агента
+  retitle <ID> <назва...> | remove <ID>  (remove — лише для BACKLOG)
   issue <ID> <текст> | next <ID> <текст> | pr <ID> <url>
   block <ID> <причина> | unblock <ID>
   gates [ID] [--stage worktree|pre-commit|pre-push]     перевірити gates (exit 1 якщо не пройдені)
@@ -209,6 +210,26 @@ const commands = {
     console.log(`${blocking.length ? '❌' : '✅'} ${kind}: ${report.findings.length} findings, блокувальних ${blocking.length}`);
     if (escalation) console.log(escalation);
     process.exit(blocking.length ? 1 : 0);
+  },
+
+  retitle([id, ...title]) {
+    if (!title.length) fail('потрібна нова назва');
+    withState((s) => {
+      const t = core.getTask(s, id);
+      core.pushHistory(t, { event: 'retitled', note: `${t.title} → ${title.join(' ')}` });
+      t.title = title.join(' ');
+    });
+    ok(`${id} перейменовано`);
+  },
+
+  remove([id]) {
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status !== 'BACKLOG') fail(`видаляти можна лише задачі в BACKLOG (${id}: ${t.status})`);
+      delete s.tasks[id];
+      if (s.currentTask === id) s.currentTask = null;
+    });
+    ok(`${id} видалено з бектлогу`);
   },
 
   issue([id, ...text]) { withState((s) => { core.getTask(s, id).issues.push(text.join(' ')); }); ok('записано'); },
