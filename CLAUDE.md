@@ -24,30 +24,30 @@
 - Логи: `pino`
 - Тести: Vitest
 
-## Структура
+## Структура (FSD на клієнті + DDD на сервері — повні правила в `.claude/rules/code-style.md`)
 ```
 src/
-  app/            # сторінки і route handlers — тонкий шар: parse → service → response
-  components/     # UI; без fetch і бізнес-логіки напряму, тільки через hooks
-  hooks/          # TanStack Query hooks (useTasks, useAgentRun…)
-  lib/
-    db/           # drizzle schema, client, міграції
-    tasks/        # schema.ts (Zod), repository.ts, service.ts
-    ai/           # client, runAgent (agent loop), tools/, agents/<name>/
-    logger.ts
+  app/        # Next.js routing — тонкі page/layout/route.ts: parse → service → response
+  views/      # FSD-сторінки
+  widgets/    # Board, TaskPanel, DayPlanPanel, AgentTrace
+  features/   # createTask, filterTasks, decomposeTask, statusUpdate, triageInbox
+  entities/   # task, note, agentRun — ui + model (Zod-схеми, типи)
+  shared/     # ui (shadcn), lib (загальні утиліти/хелпери), config, api
+  server/     # tasks/ (domain, repository, service), db/, agents/ (core: runAgent, tools; <name>/), logger
 ```
+Компоненти: function declaration, папка `TaskCard/` з `index.tsx`, `types.ts`, `styles.ts`.
 
 ## Правила коду
 - Вхідні дані валідуються Zod на кожній межі: HTTP body/query, tool input агента, фінальний output агента.
-- Доступ до БД — тільки через `lib/tasks/repository.ts`. Route handlers і tools агентів не пишуть SQL самі.
+- Доступ до БД — тільки через `server/tasks/repository.ts`. Route handlers і tools агентів не пишуть SQL самі.
 - Без `any`, без `as` для обходу типів. Типи виводяться зі схем (`z.infer`), не дублюються руками.
 - Помилки API — єдиний формат `{ error: { code, message, details? } }` з правильним HTTP-статусом.
-- Імена: файли `kebab-case`, компоненти `PascalCase`, функції/змінні `camelCase`, константи `SCREAMING_SNAKE_CASE`.
+- Імена: папки компонентів `PascalCase`, slices/модулі/функції `camelCase`, константи `SCREAMING_SNAKE_CASE` (таблиця — у `code-style.md`).
 - Не додавай залежність без потреби; якщо додаєш — скажи, навіщо.
 - Без закоментованого коду і `console.log` — тільки `logger`.
 
 ## Правила AI-агентів (in-product)
-- Агент = власний loop у `lib/ai/runAgent.ts`: виклик моделі → виконання tools → повтор, поки `stop_reason === "tool_use"`.
+- Агент = власний loop у `server/agents/core/runAgent.ts`: виклик моделі → виконання tools → повтор, поки `stop_reason === "tool_use"`.
 - Обов'язково: ліміт кроків, обробка `is_error` у tool_result, обробка `refusal` / `max_tokens`.
 - Кожен крок пишеться в `agent_steps`, кожен запуск — в `agent_runs` (це наш trace для UI і дебагу).
 - Фінальний результат — через tool `submit_result` зі strict-схемою, потім Zod-валідація + перевірка фактів (напр. що `taskId` існує).
