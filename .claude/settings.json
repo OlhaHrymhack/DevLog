@@ -43,6 +43,9 @@
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.mjs" }] }
     ],
+    "PermissionDenied": [
+      { "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/permission-denied.mjs" }] }
+    ],
     "Stop": [
       { "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop.mjs" }] }
     ]

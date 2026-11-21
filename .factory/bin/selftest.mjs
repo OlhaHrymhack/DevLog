@@ -199,6 +199,13 @@ check('10h. Read приватного ключа → deny', guard('Read', { file
 r = user('мій ключ sk-ant-api03-abcdefghijklmnop');
 check('10i. секрет у промпті маскується в prompt-log', !fs.readFileSync(path.join(tmp, '.claude/prompt-log.md'), 'utf8').includes('abcdefghijklmnop'));
 
+console.log('\n[+] Гілки і PR');
+check('коміт прямо в main → deny', guard('Bash', { command: 'git commit -m "x"' }) === 'deny');
+execFileSync('git', ['checkout', '-q', '-b', 'feat/DEV-001-test'], { cwd: tmp });
+check('коміт у фіча-гілці → allow', guard('Bash', { command: 'git commit -m "DEV-001: x"' }) === 'allow');
+check('gh pr create без --base / з --base main → deny', guard('Bash', { command: 'gh pr create --title x --body y' }) === 'deny' && guard('Bash', { command: 'gh pr create --base main --title x' }) === 'deny');
+check('gh pr create --base stage → allow', guard('Bash', { command: 'gh pr create --base stage --title "DEV-001: x" --body-file /tmp/b.md' }) === 'allow');
+
 console.log('\n[+] Деструктивні команди та документи');
 check('force push → deny', guard('Bash', { command: 'git push --force origin feat' }) === 'deny');
 check('push у main → deny', guard('Bash', { command: 'git push origin main' }) === 'deny');
@@ -215,6 +222,14 @@ check('зміна hooks фабрики → ask (потрібне підтвер�
 const pg = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.ts'), content: 'x' } }, ['qa']);
 const pgOk = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.test.ts'), content: 'x' } }, ['qa']);
 check('QA-агент не може змінювати прод-код, може — тести', pg.decision === 'deny' && pgOk.decision === 'allow');
+
+console.log('\n[+] Журнал спрацювань контролю');
+const glog = path.join(tmp, '.factory/guard-log.jsonl');
+const entries = fs.existsSync(glog) ? fs.readFileSync(glog, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : [];
+check('кожне блокування guard-ом записано в guard-log.jsonl', entries.filter((e) => e.decision === 'deny').length >= 20, `записів: ${entries.length}`);
+check('у guard-log немає незамаскованих секретів', !fs.readFileSync(glog, 'utf8').includes('abcdefghijklmnop'));
+hook('permission-denied.mjs', { hook_event_name: 'PermissionDenied', tool_name: 'Bash', tool_input: { command: 'brew install x' }, reason: 'classifier' });
+check('PermissionDenied записується', fs.readFileSync(glog, 'utf8').includes('"source":"permission-denied"'));
 
 // ---------- підсумок ----------
 fs.rmSync(tmp, { recursive: true, force: true });
