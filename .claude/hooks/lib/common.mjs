@@ -5,6 +5,18 @@ export function readInput() {
   try { return JSON.parse(fs.readFileSync(0, 'utf8') || '{}'); } catch { return {}; }
 }
 
+/**
+ * Журнал спрацювань контролю (.factory/guard-log.jsonl): блокування guard-ом, запити підтвердження,
+ * відмови в дозволах. Сировина для AGENT_LOG і ретро. Вміст маскується і обрізається.
+ */
+export function logControlEvent(root, event) {
+  try {
+    const line = JSON.stringify({ at: new Date().toISOString(), ...event }, (k, v) => (typeof v === 'string' ? maskSecrets(v).slice(0, 300) : v));
+    fs.mkdirSync(`${root}/.factory`, { recursive: true });
+    fs.appendFileSync(`${root}/.factory/guard-log.jsonl`, `${line}\n`);
+  } catch { /* журнал не повинен ламати guard */ }
+}
+
 /** PreToolUse: заборонити виклик з поясненням (бачить і модель, і користувач). */
 export function deny(reason) {
   process.stdout.write(JSON.stringify({

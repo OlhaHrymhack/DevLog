@@ -223,6 +223,14 @@ const pg = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path:
 const pgOk = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.test.ts'), content: 'x' } }, ['qa']);
 check('QA-агент не може змінювати прод-код, може — тести', pg.decision === 'deny' && pgOk.decision === 'allow');
 
+console.log('\n[+] Журнал спрацювань контролю');
+const glog = path.join(tmp, '.factory/guard-log.jsonl');
+const entries = fs.existsSync(glog) ? fs.readFileSync(glog, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : [];
+check('кожне блокування guard-ом записано в guard-log.jsonl', entries.filter((e) => e.decision === 'deny').length >= 20, `записів: ${entries.length}`);
+check('у guard-log немає незамаскованих секретів', !fs.readFileSync(glog, 'utf8').includes('abcdefghijklmnop'));
+hook('permission-denied.mjs', { hook_event_name: 'PermissionDenied', tool_name: 'Bash', tool_input: { command: 'brew install x' }, reason: 'classifier' });
+check('PermissionDenied записується', fs.readFileSync(glog, 'utf8').includes('"source":"permission-denied"'));
+
 // ---------- підсумок ----------
 fs.rmSync(tmp, { recursive: true, force: true });
 fs.rmSync(reports, { recursive: true, force: true });

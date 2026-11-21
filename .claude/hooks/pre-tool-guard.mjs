@@ -2,7 +2,7 @@
 // PreToolUse: єдиний guard фабрики (секрети, деструктивні команди, цілісність записів,
 // workflow gate, людські документи, модель Strong-агентів).
 import * as core from '../../.factory/bin/core.mjs';
-import { ask, deny, readInput } from './lib/common.mjs';
+import { ask, deny, logControlEvent, readInput } from './lib/common.mjs';
 import * as rules from './lib/rules.mjs';
 
 const input = readInput();
@@ -23,6 +23,10 @@ const checks = [
 for (const check of checks) {
   let res;
   try { res = check(tool, args, root); } catch (e) { deny(`guard помилка (${check.name}): ${e.message}`); }
+  if (res?.decision) {
+    const summary = args.command ?? args.file_path ?? args.notebook_path ?? args.pattern ?? args.subagent_type ?? '';
+    logControlEvent(root, { source: 'factory-guard', decision: res.decision, rule: check.name, tool, target: String(summary), reason: res.reason, agent: input.agent_type ?? 'main' });
+  }
   if (res?.decision === 'deny') deny(res.reason);
   if (res?.decision === 'ask') ask(res.reason);
 }
