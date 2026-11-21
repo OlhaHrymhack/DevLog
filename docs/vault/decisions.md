@@ -70,3 +70,9 @@
 - Рішення: клієнт — Feature-Sliced Design (`views → widgets → features → entities → shared`, public API через `index.ts`); сервер — DDD-модулі в `src/server/`; загальні утиліти — `src/shared/lib/`. Компоненти — function declaration з іменованим експортом, папка в PascalCase (`TaskCard/index.tsx`, `types.ts`, `styles.ts` зі стилями через `cva`). shadcn-компоненти в `shared/ui` — виняток. Правила — `.claude/rules/code-style.md`, enforcement ESLint-ом у DEV-001.
 - Причина: вимога користувачки (DDD, KISS, FSD, окремі файли типів і стилів); FSD задумана для UI, тому сервер (агенти, репозиторій) — окремим DDD-шаром. Шар `pages` FSD перейменовано у `views` через конфлікт із Next.js.
 - Наслідок: розділ «Структура» в CLAUDE.md замінено; `lib/` → `server/` і `shared/lib/`.
+
+## D-014 Дизайн-система з Claude Design і адаптація до архітектури
+- Дата: 2026-11-21
+- Рішення: джерело правди для UI — `docs/design/` (DESIGN.md, tokens.css, prototype.html); агент D — «Радар застряглих». Відхилення від DESIGN.md: імена slices — camelCase (стайл-гайд, D-013); логіка агентів і детерміновані правила — на сервері (`src/server/agents`), клієнт лише викликає `/api/agents/*`; серверний стан — TanStack Query; живі кроки агента — NDJSON-стрім, «Зупинити» — abort. UI Kit — окрема задача DEV-002 зі сторінкою `/ui-kit`. Понад ТЗ беремо: температуру задачі, пошук і гарячі клавіші, «Серйозний режим», «Зупинити».
+- Причина: API-ключ і цикл агента не можуть жити на клієнті; fallback має виконуватись там, де валідація. Бектлог переписано з 14 на 13 задач.
+- Ризик: обсяг понад бюджет ТЗ — порядок вирізання зафіксовано в `.factory/tasks.md`.

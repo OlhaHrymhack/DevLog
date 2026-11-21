@@ -180,6 +180,13 @@ factory('record', 'DEV-092', 'codex', findings('cx-ok', 'codex', 'gpt', []));
 r = factory('transition', 'DEV-092', 'TESTING');
 check('4h. reviewer + codex без блокерів → TESTING', r.status === 0, r.stderr);
 
+console.log('\n[+] Git staging записів фабрики');
+check('git add state → allow', guard('Bash', { command: 'git add .factory/workflow-state.json' }) === 'allow');
+check('git diff state → allow', guard('Bash', { command: 'git diff .factory/workflow-state.json' }) === 'allow');
+check('git add state && запис → deny', guard('Bash', { command: 'git add .factory/workflow-state.json && echo {} > .factory/workflow-state.json' }) === 'deny');
+check('git diff --output у state → deny', guard('Bash', { command: 'git diff --output=.factory/workflow-state.json' }) === 'deny');
+check('git checkout state → deny', guard('Bash', { command: 'git checkout -- .factory/workflow-state.json' }) === 'deny');
+
 console.log('\n[+] Керування бектлогом');
 factory('add', 'DEV-095', 'Стара назва');
 r = factory('retitle', 'DEV-095', 'Нова', 'назва');

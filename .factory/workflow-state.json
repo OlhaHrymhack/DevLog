@@ -4,7 +4,7 @@
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
-      "title": "Ініціалізація Next.js і tooling",
+      "title": "Каркас і tooling",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -20,14 +20,19 @@
         {
           "at": "2026-11-21T17:47:23.367Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.355Z",
+          "event": "retitled",
+          "note": "Ініціалізація Next.js і tooling → Каркас і tooling"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.366Z",
-      "updatedAt": "2026-11-21T17:47:23.367Z"
+      "updatedAt": "2026-11-21T19:54:44.361Z"
     },
     "DEV-002": {
       "id": "DEV-002",
-      "title": "Шар даних SQLite Drizzle",
+      "title": "UI Kit",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -43,14 +48,19 @@
         {
           "at": "2026-11-21T17:47:23.447Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.435Z",
+          "event": "retitled",
+          "note": "Шар даних SQLite Drizzle → UI Kit"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.446Z",
-      "updatedAt": "2026-11-21T17:47:23.447Z"
+      "updatedAt": "2026-11-21T19:54:44.436Z"
     },
     "DEV-003": {
       "id": "DEV-003",
-      "title": "REST API задач",
+      "title": "Шар даних",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -66,14 +76,19 @@
         {
           "at": "2026-11-21T17:47:23.513Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.499Z",
+          "event": "retitled",
+          "note": "REST API задач → Шар даних"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.513Z",
-      "updatedAt": "2026-11-21T17:47:23.513Z"
+      "updatedAt": "2026-11-21T19:54:44.499Z"
     },
     "DEV-004": {
       "id": "DEV-004",
-      "title": "Seed-дані",
+      "title": "API задач",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -89,14 +104,19 @@
         {
           "at": "2026-11-21T17:47:23.578Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.564Z",
+          "event": "retitled",
+          "note": "Seed-дані → API задач"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.578Z",
-      "updatedAt": "2026-11-21T17:47:23.578Z"
+      "updatedAt": "2026-11-21T19:54:44.565Z"
     },
     "DEV-005": {
       "id": "DEV-005",
-      "title": "UI список задач",
+      "title": "Список задач",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -112,14 +132,19 @@
         {
           "at": "2026-11-21T17:47:23.642Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.630Z",
+          "event": "retitled",
+          "note": "UI список задач → Список задач"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.642Z",
-      "updatedAt": "2026-11-21T17:47:23.642Z"
+      "updatedAt": "2026-11-21T19:54:44.631Z"
     },
     "DEV-006": {
       "id": "DEV-006",
-      "title": "UI CRUD і сторінка задачі",
+      "title": "Створення редагування видалення",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -135,14 +160,19 @@
         {
           "at": "2026-11-21T17:47:23.705Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.695Z",
+          "event": "retitled",
+          "note": "UI CRUD і сторінка задачі → Створення редагування видалення"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.704Z",
-      "updatedAt": "2026-11-21T17:47:23.705Z"
+      "updatedAt": "2026-11-21T19:54:44.696Z"
     },
     "DEV-007": {
       "id": "DEV-007",
-      "title": "AI-ядро agent loop",
+      "title": "Деталі задачі",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -158,14 +188,19 @@
         {
           "at": "2026-11-21T17:47:23.770Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.764Z",
+          "event": "retitled",
+          "note": "AI-ядро agent loop → Деталі задачі"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.769Z",
-      "updatedAt": "2026-11-21T17:47:23.770Z"
+      "updatedAt": "2026-11-21T19:54:44.765Z"
     },
     "DEV-008": {
       "id": "DEV-008",
-      "title": "Агент A пріоритизація",
+      "title": "Ядро агентів",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -181,14 +216,19 @@
         {
           "at": "2026-11-21T17:47:23.835Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.829Z",
+          "event": "retitled",
+          "note": "Агент A пріоритизація → Ядро агентів"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.835Z",
-      "updatedAt": "2026-11-21T17:47:23.835Z"
+      "updatedAt": "2026-11-21T19:54:44.830Z"
     },
     "DEV-009": {
       "id": "DEV-009",
-      "title": "Агент B декомпозиція",
+      "title": "Агент A План на день",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -204,14 +244,19 @@
         {
           "at": "2026-11-21T17:47:23.898Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.892Z",
+          "event": "retitled",
+          "note": "Агент B декомпозиція → Агент A План на день"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.898Z",
-      "updatedAt": "2026-11-21T17:47:23.898Z"
+      "updatedAt": "2026-11-21T19:54:44.892Z"
     },
     "DEV-010": {
       "id": "DEV-010",
-      "title": "Агент C статус-апдейт",
+      "title": "Агент B Декомпозиція",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -227,14 +272,19 @@
         {
           "at": "2026-11-21T17:47:23.961Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:44.958Z",
+          "event": "retitled",
+          "note": "Агент C статус-апдейт → Агент B Декомпозиція"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.961Z",
-      "updatedAt": "2026-11-21T17:47:23.961Z"
+      "updatedAt": "2026-11-21T19:54:44.958Z"
     },
     "DEV-011": {
       "id": "DEV-011",
-      "title": "Агент D власна ідея",
+      "title": "Агент C Статус-апдейт",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -250,14 +300,19 @@
         {
           "at": "2026-11-21T17:47:24.026Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:45.025Z",
+          "event": "retitled",
+          "note": "Агент D власна ідея → Агент C Статус-апдейт"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.026Z",
-      "updatedAt": "2026-11-21T17:47:24.026Z"
+      "updatedAt": "2026-11-21T19:54:45.026Z"
     },
     "DEV-012": {
       "id": "DEV-012",
-      "title": "UI trace агента",
+      "title": "Агент D Радар застряглих",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -273,14 +328,19 @@
         {
           "at": "2026-11-21T17:47:24.091Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:45.089Z",
+          "event": "retitled",
+          "note": "UI trace агента → Агент D Радар застряглих"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.090Z",
-      "updatedAt": "2026-11-21T17:47:24.091Z"
+      "updatedAt": "2026-11-21T19:54:45.089Z"
     },
     "DEV-013": {
       "id": "DEV-013",
-      "title": "README і env.example",
+      "title": "README і перевірка з нуля",
       "status": "BACKLOG",
       "tier": null,
       "model": null,
@@ -296,33 +356,15 @@
         {
           "at": "2026-11-21T17:47:24.156Z",
           "event": "created"
+        },
+        {
+          "at": "2026-11-21T19:54:45.152Z",
+          "event": "retitled",
+          "note": "README і env.example → README і перевірка з нуля"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.155Z",
-      "updatedAt": "2026-11-21T17:47:24.156Z"
-    },
-    "DEV-014": {
-      "id": "DEV-014",
-      "title": "Перевірка з нуля і Loom",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
-      "blockers": [],
-      "nextAction": "start",
-      "pr": null,
-      "history": [
-        {
-          "at": "2026-11-21T17:47:24.219Z",
-          "event": "created"
-        }
-      ],
-      "createdAt": "2026-11-21T17:47:24.218Z",
-      "updatedAt": "2026-11-21T17:47:24.219Z"
+      "updatedAt": "2026-11-21T19:54:45.152Z"
     }
   }
 }

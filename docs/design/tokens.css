@@ -1,0 +1,50 @@
+/* DevLog design tokens — dark (default) + light.
+   Use as CSS variables; Tailwind maps them in tailwind.config (see DESIGN.md §2.6). */
+:root{
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --text-xs:12px; --text-sm:13px; --text-base:14px; --text-md:16px; --text-lg:18px;
+  --text-xl:22px; --text-2xl:28px; --text-3xl:40px;
+
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px;
+  --space-6:24px; --space-8:32px; --space-10:40px;
+
+  --radius-sm:8px; --radius-md:12px; --radius-lg:14px; --radius-xl:20px; --radius-2xl:24px; --radius-full:999px;
+
+  --ease-out:cubic-bezier(.2,.8,.2,1); --dur-fast:150ms; --dur-base:240ms; --dur-slow:420ms;
+}
+
+:root,[data-theme="dark"],.dark{
+  --bg:#000000; --surface:#111111; --surface-sunken:#0A0A0A; --surface-raised:#1A1A1A;
+  --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20);
+  --text:#F1F1F1; --text-strong:#FFFFFF; --text-muted:#ABAFB5; --text-dim:#8A8E94;
+  --primary:#FFFFFF; --primary-fg:#000000; --primary-hover:#E6E6E6;
+  --ai:#C4B5FD; --ai-bg:rgba(196,181,253,.10); --ai-border:rgba(196,181,253,.35);
+  --status-todo-bg:rgba(255,255,255,.08); --status-todo-fg:#D4D4D8;
+  --status-progress-bg:rgba(96,165,250,.16); --status-progress-fg:#93C5FD; --status-progress-dot:#60A5FA;
+  --status-done-bg:rgba(74,222,128,.13); --status-done-fg:#86EFAC;
+  --priority-high:#FDBA74; --priority-medium:#FCD34D; --priority-low:#ABAFB5;
+  --danger:#F87171; --danger-fg:#000000; --danger-bg:rgba(248,113,113,.10); --danger-border:rgba(248,113,113,.35); --danger-text:#FECACA;
+  --warning-bg:rgba(252,211,77,.08); --warning-border:rgba(252,211,77,.30); --warning-text:#FDE68A;
+  --success:#86EFAC; --heat:#FB923C;
+  --focus:#C4B5FD; --overlay:rgba(0,0,0,.66); --shadow-lg:0 30px 80px rgba(0,0,0,.6);
+  --skeleton:#1E1E1E; --skeleton-shine:#2A2A2A;
+}
+
+[data-theme="light"],.light{
+  --bg:#F7F7F8; --surface:#FFFFFF; --surface-sunken:#FAFAFA; --surface-raised:#F0F0F2;
+  --border:#E4E4E7; --border-strong:#D4D4D8;
+  --text:#18181B; --text-strong:#000000; --text-muted:#52525B; --text-dim:#6B6B73;
+  --primary:#000000; --primary-fg:#FFFFFF; --primary-hover:#27272A;
+  --ai:#6D28D9; --ai-bg:#F5F3FF; --ai-border:#DDD6FE;
+  --status-todo-bg:#F4F4F5; --status-todo-fg:#3F3F46;
+  --status-progress-bg:#DBEAFE; --status-progress-fg:#1E40AF; --status-progress-dot:#2563EB;
+  --status-done-bg:#DCFCE7; --status-done-fg:#166534;
+  --priority-high:#C2410C; --priority-medium:#A16207; --priority-low:#52525B;
+  --danger:#DC2626; --danger-fg:#FFFFFF; --danger-bg:#FEF2F2; --danger-border:#FECACA; --danger-text:#991B1B;
+  --warning-bg:#FFFBEB; --warning-border:#FDE68A; --warning-text:#854D0E;
+  --success:#15803D; --heat:#EA580C;
+  --focus:#6D28D9; --overlay:rgba(24,24,27,.45); --shadow-lg:0 24px 60px rgba(0,0,0,.18);
+  --skeleton:#EDEDEF; --skeleton-shine:#F6F6F7;
+}
