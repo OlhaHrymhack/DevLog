@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "currentTask": null,
+  "tasks": {
+    "DEV-001": {
+      "id": "DEV-001",
+      "title": "Ініціалізація Next.js і tooling",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.367Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.366Z",
+      "updatedAt": "2026-11-21T17:47:23.367Z"
+    },
+    "DEV-002": {
+      "id": "DEV-002",
+      "title": "Шар даних SQLite Drizzle",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.447Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.446Z",
+      "updatedAt": "2026-11-21T17:47:23.447Z"
+    },
+    "DEV-003": {
+      "id": "DEV-003",
+      "title": "REST API задач",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.513Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.513Z",
+      "updatedAt": "2026-11-21T17:47:23.513Z"
+    },
+    "DEV-004": {
+      "id": "DEV-004",
+      "title": "Seed-дані",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.578Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.578Z",
+      "updatedAt": "2026-11-21T17:47:23.578Z"
+    },
+    "DEV-005": {
+      "id": "DEV-005",
+      "title": "UI список задач",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.642Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.642Z",
+      "updatedAt": "2026-11-21T17:47:23.642Z"
+    },
+    "DEV-006": {
+      "id": "DEV-006",
+      "title": "UI CRUD і сторінка задачі",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.705Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.704Z",
+      "updatedAt": "2026-11-21T17:47:23.705Z"
+    },
+    "DEV-007": {
+      "id": "DEV-007",
+      "title": "AI-ядро agent loop",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.770Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.769Z",
+      "updatedAt": "2026-11-21T17:47:23.770Z"
+    },
+    "DEV-008": {
+      "id": "DEV-008",
+      "title": "Агент A пріоритизація",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.835Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.835Z",
+      "updatedAt": "2026-11-21T17:47:23.835Z"
+    },
+    "DEV-009": {
+      "id": "DEV-009",
+      "title": "Агент B декомпозиція",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.898Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.898Z",
+      "updatedAt": "2026-11-21T17:47:23.898Z"
+    },
+    "DEV-010": {
+      "id": "DEV-010",
+      "title": "Агент C статус-апдейт",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:23.961Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:23.961Z",
+      "updatedAt": "2026-11-21T17:47:23.961Z"
+    },
+    "DEV-011": {
+      "id": "DEV-011",
+      "title": "Агент D власна ідея",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:24.026Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:24.026Z",
+      "updatedAt": "2026-11-21T17:47:24.026Z"
+    },
+    "DEV-012": {
+      "id": "DEV-012",
+      "title": "UI trace агента",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:24.091Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:24.090Z",
+      "updatedAt": "2026-11-21T17:47:24.091Z"
+    },
+    "DEV-013": {
+      "id": "DEV-013",
+      "title": "README і env.example",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:24.156Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:24.155Z",
+      "updatedAt": "2026-11-21T17:47:24.156Z"
+    },
+    "DEV-014": {
+      "id": "DEV-014",
+      "title": "Перевірка з нуля і Loom",
+      "status": "BACKLOG",
+      "tier": null,
+      "model": null,
+      "scores": null,
+      "securityRequired": false,
+      "agent": null,
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "start",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-21T17:47:24.219Z",
+          "event": "created"
+        }
+      ],
+      "createdAt": "2026-11-21T17:47:24.218Z",
+      "updatedAt": "2026-11-21T17:47:24.219Z"
+    }
+  }
+}

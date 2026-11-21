@@ -1,0 +1,21 @@
+# секрети
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# фабрика: локальні файли
+.claude/prompt-log.md
+.claude/settings.local.json
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+coverage/
+test-results/
+playwright-report/
+data/*.db*
+.DS_Store

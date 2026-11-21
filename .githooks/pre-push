@@ -1,0 +1,3 @@
+#!/bin/sh
+# Factory Gate 6: push коду лише з фінальним approval користувача для HEAD.
+exec node "$(git rev-parse --show-toplevel)/.factory/bin/factory.mjs" gates --stage pre-push

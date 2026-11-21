@@ -1,0 +1,3 @@
+#!/bin/sh
+# Factory Gate: коміт коду застосунку лише з зеленими gates для staged стану.
+exec node "$(git rev-parse --show-toplevel)/.factory/bin/factory.mjs" gates --stage pre-commit

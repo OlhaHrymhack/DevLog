@@ -1,0 +1,300 @@
+#!/usr/bin/env node
+// CLI фабрики. Єдиний спосіб змінювати .factory/workflow-state.json і evidence.
+// Використання: node .factory/bin/factory.mjs <command> [...]
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as core from './core.mjs';
+
+const HELP = `Команди:
+  init                                   створити state, якщо його немає
+  add <ID> <назва...>                    додати задачу в BACKLOG
+  start <ID>                             BACKLOG → DISCOVERY, зробити поточною
+  classify <ID> modules=0..2 architecture=.. criticality=.. security=.. integrations=.. migrations=.. state=.. uncertainty=..
+                                         оцінити складність (потрібен task-plans/<ID>.md), обрати tier/модель
+  transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
+  verify <ID> [--full]                   запустити typecheck/lint/unit (+e2e з --full), записати evidence
+  record <ID> <review|security|qa> <file.json>          записати звіт агента
+  issue <ID> <текст> | next <ID> <текст> | pr <ID> <url>
+  block <ID> <причина> | unblock <ID>
+  gates [ID] [--stage worktree|pre-commit|pre-push]     перевірити gates (exit 1 якщо не пройдені)
+  status [ID] | report [ID] | tree [--stage index]
+  selftest                               автоматичні сценарії перевірки фабрики`;
+
+const root = core.projectRoot();
+const [cmd, ...rest] = process.argv.slice(2);
+
+function flags(args) {
+  const pos = []; const opt = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      const k = args[i].slice(2);
+      if (args[i + 1] !== undefined && !args[i + 1].startsWith('--')) opt[k] = args[++i]; else opt[k] = true;
+    } else pos.push(args[i]);
+  }
+  return { pos, opt };
+}
+
+function fail(msg, code = 1) { console.error(`✖ ${msg}`); process.exit(code); }
+function ok(msg) { console.log(`✔ ${msg}`); }
+
+function withState(fn) {
+  const state = core.loadState(root);
+  const result = fn(state);
+  core.saveState(root, state);
+  return result;
+}
+
+function newTask(id, title) {
+  return {
+    id, title, status: 'BACKLOG', tier: null, model: null, scores: null, securityRequired: false,
+    agent: null, attempts: {}, issues: [], blockers: [], nextAction: 'start', pr: null,
+    history: [], createdAt: core.now(), updatedAt: core.now(),
+  };
+}
+
+function gateLine(g) {
+  const icon = g.ok ? '✅' : g.pending ? '⏳' : '❌';
+  return `- ${icon} ${g.gate}: ${g.detail}`;
+}
+
+const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify', review: 'Gate 3 Review', security: 'Gate 4 Security', tests: 'Gate 5 Tests', qa: 'QA', final: 'Gate 6 Final approval' };
+
+function report(state, id, cfg) {
+  const t = core.getTask(state, id);
+  const tree = core.treeHash(root);
+  const gates = core.evaluateGates(root, cfg, t, tree, ['approval', 'verify', 'review', 'security', 'tests', 'qa', 'final']);
+  const needsHuman = t.status === 'AWAITING_APPROVAL' || t.status === 'AWAITING_FINAL_APPROVAL' || t.status === 'BLOCKED';
+  const lines = [
+    `**${t.id} — ${t.title}**`,
+    `Етап: ${t.status} · Агент: ${t.agent ?? '—'} · Модель: ${t.model ?? '—'} (tier: ${t.tier ?? 'не оцінено'})`,
+    ...gates.map((g) => gateLine({ ...g, gate: GATE_TITLES[g.gate] })),
+  ];
+  if (t.issues.length) lines.push(`Проблеми: ${t.issues.join('; ')}`);
+  if (t.blockers.length) lines.push(`Блокери: ${t.blockers.join('; ')}`);
+  lines.push(`Наступна дія: ${t.nextAction ?? '—'}`);
+  lines.push(`Потрібне твоє підтвердження: ${needsHuman ? 'так' : 'ні'}`);
+  if (t.pr) lines.push(`PR: ${t.pr}`);
+  lines.push(`Стан коду (tree): ${tree.slice(0, 10)}`);
+  return lines.join('\n');
+}
+
+function runCommand(name, command) {
+  if (!command) return { name, status: 'not_configured', exitCode: null, output: '' };
+  const started = Date.now();
+  const r = spawnSync(command, { cwd: root, shell: true, encoding: 'utf8', env: { ...process.env, CI: '1' } });
+  const output = `${r.stdout ?? ''}${r.stderr ?? ''}`.split('\n').slice(-40).join('\n');
+  return { name, command, status: r.status === 0 ? 'passed' : 'failed', exitCode: r.status, durationMs: Date.now() - started, output };
+}
+
+const commands = {
+  init() {
+    if (fs.existsSync(core.paths(root).state)) return ok('state уже існує');
+    core.saveState(root, core.loadState(root));
+    ok('створено .factory/workflow-state.json');
+  },
+
+  add([id, ...title]) {
+    const cfg = core.loadConfig(root);
+    if (!id || !new RegExp(cfg.taskIdPattern).test(id)) fail(`ID має відповідати ${cfg.taskIdPattern}`);
+    if (!title.length) fail('потрібна назва задачі');
+    withState((s) => {
+      if (s.tasks[id]) fail(`${id} уже існує`);
+      s.tasks[id] = newTask(id, title.join(' '));
+      core.pushHistory(s.tasks[id], { event: 'created' });
+    });
+    ok(`${id} додано в BACKLOG`);
+  },
+
+  start([id]) {
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status !== 'BACKLOG') fail(`${id} уже в статусі ${t.status}`);
+      t.status = 'DISCOVERY'; t.agent = 'researcher'; t.model = 'haiku';
+      t.nextAction = 'researcher збирає контекст → task-plans/' + id + '.md';
+      core.pushHistory(t, { event: 'transition', from: 'BACKLOG', to: 'DISCOVERY' });
+      s.currentTask = id;
+    });
+    ok(`${id} → DISCOVERY (поточна задача)`);
+  },
+
+  classify([id, ...pairs]) {
+    const scores = Object.fromEntries(pairs.map((p) => { const [k, v] = p.split('='); return [k, Number(v)]; }));
+    const c = core.classify(scores);
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status !== 'PLANNING') fail(`класифікація можлива лише в PLANNING (зараз ${t.status})`);
+      if (!fs.existsSync(core.planFile(root, id))) fail(`немає плану .factory/task-plans/${id}.md`);
+      Object.assign(t, { scores, tier: c.tier, model: core.TIER_MODEL[c.tier], securityRequired: c.securityRequired });
+      t.nextAction = c.requiresApproval ? `transition ${id} AWAITING_APPROVAL і показати план користувачу` : `transition ${id} IMPLEMENTING`;
+      core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
+    });
+    console.log(JSON.stringify({ id, ...c, developerModel: core.TIER_MODEL[c.tier] }, null, 2));
+  },
+
+  transition([id, to], opt) {
+    if (!core.STATUSES.includes(to)) fail(`невідомий статус ${to}`);
+    const cfg = core.loadConfig(root);
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status === 'BLOCKED') fail('задача BLOCKED — спершу unblock');
+      if (!core.TRANSITIONS[t.status].includes(to)) fail(`перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`);
+      if (to === 'IMPLEMENTING' && !t.tier) fail('спершу classify');
+      if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && t.tier !== 'fast') fail('задача не Fast → спершу AWAITING_APPROVAL');
+      if (t.status === 'TESTING' && to === 'AWAITING_FINAL_APPROVAL' && t.tier !== 'fast') fail('пропустити QA можна лише Fast-задачі');
+      if (to === 'COMPLETED' && !t.pr) fail('немає PR reference (factory pr <ID> <url>)');
+      const required = core.REQUIRED_GATES[to] ?? [];
+      // Повернення назад (на доопрацювання) gates не вимагає.
+      const forward = core.STATUSES.indexOf(to) > core.STATUSES.indexOf(t.status);
+      if (forward && required.length) {
+        const tree = core.treeHash(root);
+        const failed = core.evaluateGates(root, cfg, t, tree, required).filter((g) => !g.ok);
+        if (failed.length) fail(`gates не пройдені для ${to}:\n${failed.map(gateLine).join('\n')}`);
+      }
+      core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
+      t.status = to;
+      if (opt.agent) t.agent = opt.agent;
+      s.currentTask = id;
+    });
+    ok(`${id} → ${to}`);
+  },
+
+  verify([id], opt) {
+    const cfg = core.loadConfig(root);
+    const kind = opt.full ? 'tests' : 'verify';
+    const names = opt.full ? ['typecheck', 'lint', 'test', 'e2e'] : ['typecheck', 'lint', 'test'];
+    const before = core.treeHash(root);
+    const results = names.map((n) => { console.log(`… ${n}`); return runCommand(n, cfg.commands[n]); });
+    const after = core.treeHash(root);
+    const failed = results.filter((r) => r.status !== 'passed').map((r) => `${r.name}(${r.status})`);
+    if (before !== after) failed.push('код змінився під час перевірки');
+    const file = core.writeEvidence(root, id, before, kind, { ok: failed.length === 0, failed, results });
+    let escalation = null;
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (failed.length) {
+        escalation = core.recordFailure(t, cfg, kind);
+        t.issues.push(`${kind} failed: ${failed.join(', ')}`);
+      }
+      core.pushHistory(t, { event: kind, ok: failed.length === 0, evidence: path.relative(root, file) });
+    });
+    results.forEach((r) => console.log(`${r.status === 'passed' ? '✅' : '❌'} ${r.name}: ${r.status}${r.exitCode !== null && r.exitCode !== undefined ? ` (exit ${r.exitCode})` : ''}`));
+    if (escalation) console.log(escalation);
+    console.log(`evidence: ${path.relative(root, file)}`);
+    process.exit(failed.length ? 1 : 0);
+  },
+
+  record([id, kind, file]) {
+    if (!['review', 'codex', 'security', 'qa'].includes(kind)) fail('kind: review | codex | security | qa');
+    if (!file || !fs.existsSync(file)) fail('потрібен шлях до JSON-звіту');
+    const cfg = core.loadConfig(root);
+    const report = core.readJson(file);
+    const errors = core.validateFindingsReport(report);
+    if (errors.length) fail(`звіт невалідний:\n- ${errors.join('\n- ')}`);
+    if (kind === 'codex' && report.agent !== 'codex') fail('звіт codex має мати agent: "codex"');
+    if (kind !== 'qa' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
+    const tree = core.treeHash(root);
+    const ev = core.writeEvidence(root, id, tree, kind, report);
+    const blocking = core.blockingFindings(report);
+    let escalation = null;
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (blocking.length) {
+        t.issues.push(`${kind}: ${blocking.length} блокувальних findings`);
+        if (kind === 'review') escalation = core.recordFailure(t, cfg, 'review');
+      }
+      core.pushHistory(t, { event: kind, findings: report.findings.length, blocking: blocking.length, evidence: path.relative(root, ev) });
+    });
+    console.log(`${blocking.length ? '❌' : '✅'} ${kind}: ${report.findings.length} findings, блокувальних ${blocking.length}`);
+    if (escalation) console.log(escalation);
+    process.exit(blocking.length ? 1 : 0);
+  },
+
+  issue([id, ...text]) { withState((s) => { core.getTask(s, id).issues.push(text.join(' ')); }); ok('записано'); },
+  next([id, ...text]) { withState((s) => { core.getTask(s, id).nextAction = text.join(' '); }); ok('записано'); },
+  pr([id, url]) { withState((s) => { const t = core.getTask(s, id); t.pr = url; core.pushHistory(t, { event: 'pr', note: url }); }); ok('PR записано'); },
+
+  block([id, ...reason]) {
+    withState((s) => {
+      const t = core.getTask(s, id);
+      t.blockedFrom = t.status; t.status = 'BLOCKED'; t.blockers.push(reason.join(' '));
+      core.pushHistory(t, { event: 'blocked', note: reason.join(' ') });
+    });
+    ok(`${id} → BLOCKED`);
+  },
+
+  unblock([id]) {
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status !== 'BLOCKED') fail('задача не BLOCKED');
+      t.status = t.blockedFrom ?? 'PLANNING'; t.blockers = [];
+      core.pushHistory(t, { event: 'unblocked', to: t.status });
+    });
+    ok(`${id} розблоковано`);
+  },
+
+  gates([id], opt) {
+    const cfg = core.loadConfig(root);
+    const state = core.loadState(root);
+    const stage = opt.stage ?? 'worktree';
+    if (stage === 'pre-commit' || stage === 'pre-push') {
+      const changed = stage === 'pre-commit'
+        ? core.git(root, ['diff', '--cached', '--name-only']).split('\n').filter(Boolean)
+        : pushedFiles();
+      const code = changed.filter((f) => core.matchesAny(f, cfg.codeGlobs));
+      if (!code.length) { ok(`${stage}: зміни не зачіпають код застосунку — gates не потрібні`); return; }
+    }
+    const taskId = id ?? state.currentTask;
+    if (!taskId) fail('немає поточної задачі: зміни коду мають іти через задачу (/factory)');
+    const t = core.getTask(state, taskId);
+    const tree = core.treeHash(root, stage === 'pre-commit' ? 'index' : stage === 'pre-push' ? 'HEAD' : 'worktree');
+    const list = stage === 'pre-commit' ? core.REQUIRED_GATES.AWAITING_FINAL_APPROVAL : core.REQUIRED_GATES.READY_FOR_PR;
+    const res = core.evaluateGates(root, cfg, t, tree, list);
+    console.log(`${taskId} · ${stage} · tree ${tree.slice(0, 10)}`);
+    res.forEach((g) => console.log(gateLine(g)));
+    if (res.some((g) => !g.ok)) fail(`${stage}: gates не пройдені`);
+    ok(`${stage}: усі gates пройдені`);
+  },
+
+  status([id]) {
+    const s = core.loadState(root);
+    if (id) return console.log(JSON.stringify(core.getTask(s, id), null, 2));
+    console.log(`Поточна задача: ${s.currentTask ?? '—'}`);
+    Object.values(s.tasks).forEach((t) => console.log(`${t.id}  ${t.status.padEnd(24)} ${(t.tier ?? '-').padEnd(9)} ${t.title}`));
+  },
+
+  report([id]) {
+    const s = core.loadState(root);
+    const taskId = id ?? s.currentTask;
+    if (!taskId) fail('немає поточної задачі');
+    console.log(report(s, taskId, core.loadConfig(root)));
+  },
+
+  tree(_, opt) { console.log(core.treeHash(root, opt.stage ?? 'worktree')); },
+
+  selftest() {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const r = spawnSync(process.execPath, [path.join(here, 'selftest.mjs')], { stdio: 'inherit' });
+    process.exit(r.status ?? 1);
+  },
+};
+
+function pushedFiles() {
+  const { integration, production } = core.loadConfig(root).branches;
+  for (const b of [integration, production]) {
+    try {
+      const base = core.git(root, ['rev-parse', '--verify', '-q', `origin/${b}`]).trim();
+      return core.git(root, ['diff', '--name-only', `${base}...HEAD`]).split('\n').filter(Boolean);
+    } catch { /* спробувати наступну базу */ }
+  }
+  return core.git(root, ['ls-tree', '-r', '--name-only', 'HEAD']).split('\n').filter(Boolean);
+}
+
+if (!cmd || cmd === 'help' || !commands[cmd]) { console.log(HELP); process.exit(cmd && cmd !== 'help' ? 1 : 0); }
+const { pos, opt } = flags(rest);
+try {
+  commands[cmd](pos, opt);
+} catch (e) {
+  fail(e.message);
+}

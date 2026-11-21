@@ -1,0 +1,33 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  factory-selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node .factory/bin/factory.mjs selftest
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for app
+        id: app
+        run: test -f package.json && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        if: steps.app.outputs.exists == 'true'
+        with: { node-version: 22, cache: npm }
+      - if: steps.app.outputs.exists == 'true'
+        run: npm ci
+      - if: steps.app.outputs.exists == 'true'
+        run: npm run typecheck && npm run lint && npm test
+      - if: steps.app.outputs.exists == 'true'
+        run: npx playwright install --with-deps chromium && npm run test:e2e
+        env:
+          AI_MOCK: "true"

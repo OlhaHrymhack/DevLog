@@ -1,0 +1,31 @@
+{
+  "$comment": "ПРОЄКТНА конфігурація фабрики. Усе інше в .factory/bin і .claude/ — універсальне.",
+  "project": "DevLog",
+  "taskIdPattern": "^DEV-\\d{3}$",
+  "codeGlobs": ["src/**", "app/**", "e2e/**", "package.json", "package-lock.json", "tsconfig.json", "next.config.*", "drizzle.config.*", "vitest.config.*", "playwright.config.*"],
+  "testGlobs": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "e2e/**"],
+  "commands": {
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "test": "npm test",
+    "e2e": "npm run test:e2e"
+  },
+  "humanOnly": {
+    "files": ["AGENT_LOG.md"],
+    "sections": [{ "file": "README.md", "heading": "Рішення і компроміси" }]
+  },
+  "appendOnly": ["docs/vault/decisions.md"],
+  "pinnedStrongAgents": ["reviewer", "security"],
+  "crossFamilyReview": {
+    "$comment": "Друге рев'ю моделлю іншої сім'ї (OpenAI Codex через gstack /codex). Потрібен codex login.",
+    "enabled": true,
+    "tiers": ["strong"]
+  },
+  "branches": {
+    "$comment": "Фіча-гілки → PR у integration. Merge integration → production робить лише користувач.",
+    "integration": "stage",
+    "production": "main",
+    "protected": ["main", "stage"]
+  },
+  "escalation": { "failuresBeforeTierUp": 2, "failuresOnStrongBeforeBlock": 3 }
+}
