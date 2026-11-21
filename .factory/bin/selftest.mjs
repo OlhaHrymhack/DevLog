@@ -199,6 +199,13 @@ check('10h. Read приватного ключа → deny', guard('Read', { file
 r = user('мій ключ sk-ant-api03-abcdefghijklmnop');
 check('10i. секрет у промпті маскується в prompt-log', !fs.readFileSync(path.join(tmp, '.claude/prompt-log.md'), 'utf8').includes('abcdefghijklmnop'));
 
+console.log('\n[+] Гілки і PR');
+check('коміт прямо в main → deny', guard('Bash', { command: 'git commit -m "x"' }) === 'deny');
+execFileSync('git', ['checkout', '-q', '-b', 'feat/DEV-001-test'], { cwd: tmp });
+check('коміт у фіча-гілці → allow', guard('Bash', { command: 'git commit -m "DEV-001: x"' }) === 'allow');
+check('gh pr create без --base / з --base main → deny', guard('Bash', { command: 'gh pr create --title x --body y' }) === 'deny' && guard('Bash', { command: 'gh pr create --base main --title x' }) === 'deny');
+check('gh pr create --base stage → allow', guard('Bash', { command: 'gh pr create --base stage --title "DEV-001: x" --body-file /tmp/b.md' }) === 'allow');
+
 console.log('\n[+] Деструктивні команди та документи');
 check('force push → deny', guard('Bash', { command: 'git push --force origin feat' }) === 'deny');
 check('push у main → deny', guard('Bash', { command: 'git push origin main' }) === 'deny');

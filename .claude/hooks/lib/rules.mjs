@@ -66,6 +66,11 @@ export function checkDestructive(tool, input, root) {
     if (g) {
       const [sub, ...a] = g;
       if (sub === 'push' && a.some((x) => x === '--force' || x === '-f' || x.startsWith('--force-with-lease') || x.startsWith('+'))) return { decision: 'deny', reason: 'force push заборонений' };
+      if (sub === 'commit') {
+        let current = '';
+        try { current = core.git(root, ['rev-parse', '--abbrev-ref', 'HEAD']).trim(); } catch { /* немає комітів */ }
+        if (branches.includes(current)) return { decision: 'deny', reason: `коміт прямо в ${current} заборонений — створи фіча-гілку від stage і відкрий PR` };
+      }
       const refspecs = a.filter((x) => !x.startsWith('-')).slice(1);
       if (sub === 'push' && !refspecs.length) {
         let current = '';
@@ -81,6 +86,13 @@ export function checkDestructive(tool, input, root) {
       if (sub === 'commit' && a.some((x) => x === '--no-verify' || /^-[a-zA-Z]*n[a-zA-Z]*$/.test(x))) return { decision: 'deny', reason: 'обхід перевірок (--no-verify) заборонений' };
       if (sub === 'config' && a.some((x) => x === 'core.hooksPath') && !(a.includes('.githooks'))) return { decision: 'deny', reason: 'зміна core.hooksPath заборонена' };
       if (sub === 'update-ref' || sub === 'filter-branch' || (sub === 'rebase' && a.includes('--root'))) return { decision: 'deny', reason: 'переписування історії заборонене' };
+    }
+    if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create') {
+      let integration = 'stage';
+      try { integration = core.loadConfig(root).branches?.integration ?? 'stage'; } catch { /* default */ }
+      const i = argv.findIndex((x) => x === '--base' || x === '-B');
+      const base = i >= 0 ? argv[i + 1] : (argv.find((x) => x.startsWith('--base='))?.slice(7) ?? null);
+      if (base !== integration) return { decision: 'deny', reason: `PR відкривається лише в ${integration}: додай --base ${integration}` };
     }
     if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'merge') return { decision: 'deny', reason: 'автоматичний merge заборонений — merge робить лише користувач' };
     if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((x) => /merge|protection/.test(x))) return { decision: 'ask', reason: 'gh api зачіпає merge/branch protection — потрібне підтвердження' };
