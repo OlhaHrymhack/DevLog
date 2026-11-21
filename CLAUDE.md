@@ -12,7 +12,7 @@
 - approval дає лише користувач текстом `APPROVE <ID>` / `APPROVE-FINAL <ID>`;
 - стан і evidence — лише через `node .factory/bin/factory.mjs`; результати не вигадуємо;
 - reviewer і security — окремі subagents на opus; merge PR — лише користувач.
-Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/decisions.md`.
+Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/product.md` (скоуп MVP і тест-кейси — джерело правди про продукт), `docs/vault/specs/` (детальні специфікації задач і порядок виконання — читати перед `/factory <ID>`), `docs/vault/decisions.md`.
 
 ## Стек
 - Next.js (App Router) + TypeScript `strict`, npm
