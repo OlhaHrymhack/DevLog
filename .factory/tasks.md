@@ -2,6 +2,7 @@
 
 > Людиночитний бектлог. **Джерело правди про статус — `node .factory/bin/factory.mjs status`** (`.factory/workflow-state.json`).
 > Одна задача = один PR через `/factory <ID>`. Tier визначає architect у PLANNING (8 критеріїв); тут — попередня оцінка. Повні AC — у плані задачі (`.factory/task-plans/<ID>.md`); тут — ключові.
+> Джерело правди про продукт, вимоги ТЗ і тест-кейси (TC-xx) — `docs/vault/product.md`; architect переносить відповідні TC в AC плану.
 > Джерело правди для UI — `docs/design/DESIGN.md` (+ `tokens.css`, референс поведінки й мікрокопі — `prototype.html`). Відхилення — нижче.
 
 ## Хто що робить (агенти фабрики)

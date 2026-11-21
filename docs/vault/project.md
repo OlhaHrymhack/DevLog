@@ -10,4 +10,5 @@ tags: [project]
 **Обмеження ТЗ:** Next.js; Node API (route handlers); будь-який LLM API (≥1 агент на реальному API); без авторизації і деплою; `npm install && npm run dev` має стартувати; `.env.example` без значень; 8–10 год.
 
 **Стек:** див. `CLAUDE.md`. **Процес розробки:** [[architecture/factory]].
+**Продукт, скоуп MVP, матриця вимог ТЗ і тест-кейси (джерело правди):** [[product]]
 **Рішення:** [[decisions]] · **Поточний стан:** [[now]]
