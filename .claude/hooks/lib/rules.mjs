@@ -50,6 +50,26 @@ export function checkSecrets(tool, input) {
 // ---------- деструктивні команди ----------
 const SAFE_RM = new Set(['node_modules', '.next', 'dist', 'out', 'coverage', 'playwright-report', 'test-results', '.turbo']);
 
+function realish(p) {
+  // realpath найближчого існуючого предка: /var → /private/var на macOS, неіснуючий хвіст лишається як є
+  let cur = p; const tail = [];
+  while (!fs.existsSync(cur) && path.dirname(cur) !== cur) { tail.unshift(path.basename(cur)); cur = path.dirname(cur); }
+  try { return path.join(fs.realpathSync(cur), ...tail); } catch { return p; }
+}
+
+function isInside(child, parent) {
+  const rel = path.relative(parent, child);
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+// tmp-ціль безпечна лише якщо вона строго всередині tmpdir і не всередині проєкту
+// (проєкт сам може лежати в tmp — напр. selftest на Linux, де tmpdir = /tmp)
+function isSafeTmpTarget(target, root) {
+  const abs = realish(path.resolve(root, target));
+  const projectRoot = realish(path.resolve(root));
+  return isInside(abs, realish(os.tmpdir())) && abs !== projectRoot && !isInside(abs, projectRoot);
+}
+
 function gitArgs(argv) { return argv[0] === 'git' ? argv.slice(1).filter((a) => !a.startsWith('-C')) : null; }
 
 function protectedBranches(root) {
@@ -98,7 +118,7 @@ export function checkDestructive(tool, input, root) {
     if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((x) => /merge|protection/.test(x))) return { decision: 'ask', reason: 'gh api зачіпає merge/branch protection — потрібне підтвердження' };
     if (argv[0] === 'rm' && argv.some((x) => /^-\w*[rR]/.test(x))) {
       const targets = argv.slice(1).filter((x) => !x.startsWith('-'));
-      const safe = targets.length && targets.every((t) => SAFE_RM.has(t.replace(/\/$/, '')) || path.resolve(t).startsWith(os.tmpdir()));
+      const safe = targets.length && targets.every((t) => SAFE_RM.has(t.replace(/\/$/, '')) || isSafeTmpTarget(t, root));
       if (!safe) return { decision: 'deny', reason: `рекурсивне видалення дозволене лише для ${[...SAFE_RM].join(', ')} або tmp` };
     }
   }
