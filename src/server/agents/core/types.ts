@@ -61,8 +61,8 @@ export type AgentDefinition<Input extends z.ZodType, Result extends z.ZodType> =
   tools: readonly AgentTool[];
   /** Схема `submit_result`; сумісна зі strict-режимом tools: усі поля required, замість optional — `nullable`. */
   resultSchema: Result;
-  /** Перевірка фактів (напр. що `taskId` існує). Порожній масив — порушень немає. */
-  factCheck: (result: z.infer<Result>, ctx: AgentContext) => string[];
+  /** Перевірка фактів (напр. що `taskId` існує); `input` — вхід запуску (напр. наявне уточнення). Порожній масив — порушень немає. */
+  factCheck: (result: z.infer<Result>, ctx: AgentContext, input: z.infer<Input>) => string[];
   /** Детерміноване правило без AI; проходить ті самі перевірки. */
   fallback: (input: z.infer<Input>, ctx: AgentContext) => z.infer<Result>;
   /** Сценарій demo-режиму. */
@@ -73,5 +73,7 @@ export type AgentDefinition<Input extends z.ZodType, Result extends z.ZodType> =
   stepLabels: readonly [string, string, ...string[]];
   /** `clarify`, якщо результат — уточнювальне питання. За замовчуванням `result`. */
   classify?: (result: z.infer<Result>) => "result" | "clarify";
+  /** Індекс останнього кроку, виконаного до `clarify`: наступні кроки (генерація, перевірка) лишаються `pending`. */
+  clarifyAfterStep?: number;
   taskId?: (input: z.infer<Input>) => string | null;
 };
