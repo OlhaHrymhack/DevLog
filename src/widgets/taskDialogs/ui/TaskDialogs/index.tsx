@@ -9,12 +9,12 @@ import type { TaskDialogsProps } from "./types";
 
 const focusTaskList = () => document.getElementById("main");
 
-export const TaskDialogs = ({ dialog, serious, onClose, onCreated }: TaskDialogsProps) => {
+export const TaskDialogs = ({ dialog, serious, onClose, onCreated, onDeleted }: TaskDialogsProps) => {
   const create = useCreateTask();
   const update = useUpdateTask();
 
   if (dialog.kind === "delete") {
-    return <DeleteTaskDialog task={dialog.task} serious={serious} onClose={onClose} fallbackFocus={focusTaskList} />;
+    return <DeleteTaskDialog task={dialog.task} serious={serious} onClose={onClose} onDeleted={onDeleted} fallbackFocus={focusTaskList} />;
   }
 
   if (dialog.kind === "edit") {
@@ -31,7 +31,7 @@ export const TaskDialogs = ({ dialog, serious, onClose, onCreated }: TaskDialogs
   return <TaskForm onClose={onClose} fallbackFocus={focusTaskList} onSave={async (values) => {
     await create.mutateAsync(values);
     toast.success(serious ? "Задачу створено" : "✨ Задачу створено. Поки що вона 🥒 свіжа");
-    onCreated();
+    onCreated?.();
     onClose();
   }} />;
 };

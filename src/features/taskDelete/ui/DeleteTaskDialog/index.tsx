@@ -11,7 +11,7 @@ import { useDeleteTask } from "../../model/useDeleteTask";
 import { disabledStyles } from "./styles";
 import type { DeleteTaskDialogProps } from "./types";
 
-export const DeleteTaskDialog = ({ task, serious, onClose, fallbackFocus }: DeleteTaskDialogProps) => {
+export const DeleteTaskDialog = ({ task, serious, onClose, onDeleted = onClose, fallbackFocus }: DeleteTaskDialogProps) => {
   const confirm = useRef<HTMLButtonElement>(null);
   const submitting = useRef(false);
   const deletion = useDeleteTask();
@@ -28,7 +28,7 @@ export const DeleteTaskDialog = ({ task, serious, onClose, fallbackFocus }: Dele
     try {
       await deletion.mutateAsync(task.id);
       toast.success(serious ? "Задачу видалено" : "🪦 Видалено. Ніхто й не помітить");
-      onClose();
+      onDeleted();
     } catch {
       toast.error("Не вдалося видалити задачу. Спробуйте ще раз");
     } finally {

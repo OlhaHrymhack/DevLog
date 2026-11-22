@@ -1,0 +1,42 @@
+{
+  "taskId": "DEV-007",
+  "kind": "tests",
+  "tree": "98c350906df30c2c7be37a315c849b1bb2c1909c",
+  "at": "2026-11-22T16:03:20.349Z",
+  "ok": true,
+  "failed": [],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3453,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3448,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2736,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev007\n\n\n Test Files  33 passed (33)\n      Tests  145 passed (145)\n   Start at  18:02:47\n   Duration  2.34s (import 41%, environment 35%, tests 16%, transform 7%, worker 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 30414,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nRunning 81 tests using 5 workers\n··················°········°··°················°·····°°··············°··········\n·\n  7 skipped\n  74 passed (29.9s)\n::notice title=🎭 Playwright Run Summary::  7 skipped%0A  74 passed (29.9s)\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n"
+    }
+  ]
+}

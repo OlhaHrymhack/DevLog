@@ -55,5 +55,6 @@ export {
   type TaskPage, type TaskPageQuery, type TaskSummary,
 } from "./api/contracts";
 export { taskApi, taskQueryKeys } from "./api/taskApi";
+export { useTask } from "./api/useTask";
 export { useTaskPage } from "./api/useTaskPage";
 export { TASK_TABLE_COLUMNS } from "./ui/TaskRow/styles";
