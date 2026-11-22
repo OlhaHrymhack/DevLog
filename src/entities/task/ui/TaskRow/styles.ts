@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 export const TASK_TABLE_COLUMNS =
-  "lg:grid-cols-[minmax(0,1fr)_96px_80px_52px_68px_76px] xl:grid-cols-[minmax(0,1fr)_120px_108px_80px_96px_88px]";
+  "lg:grid-cols-[minmax(0,1fr)_104px_80px_52px_68px_76px] xl:grid-cols-[minmax(0,1fr)_120px_108px_80px_96px_88px]";
 
 // Фон — у варіанті alarm (взаємовиключні класи: два bg-* на одному елементі конфліктують за порядком CSS).
 // < 1024px — картка (areas: title/heat · meta · age/actions); ≥ 1024px — рядок таблиці з 6 колонками (прототип 139–164).

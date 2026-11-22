@@ -439,7 +439,7 @@
     "DEV-005": {
       "id": "DEV-005",
       "title": "Список задач",
-      "status": "COMPLETED",
+      "status": "READY_FOR_PR",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -465,7 +465,7 @@
         "tests failed: код змінився під час перевірки"
       ],
       "blockers": [],
-      "nextAction": "docs + metrics DEV-005",
+      "nextAction": "transition DEV-005 COMPLETED",
       "pr": "https://github.com/OlhaHrymhack/DevLog/pull/17",
       "history": [
         {
@@ -773,13 +773,64 @@
           "event": "transition",
           "from": "READY_FOR_PR",
           "to": "COMPLETED"
+        },
+        {
+          "at": "2026-11-22T14:35:34.299Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/c4fadee43fb6a023409e508433844c2b1fccd185/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:35:34.518Z",
+          "event": "transition",
+          "from": "COMPLETED",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "note": "Виправлення червоного CI: колонка статусу у вузькій десктопній таблиці",
+          "reviewTree": "c4fadee43f"
+        },
+        {
+          "at": "2026-11-22T14:36:20.910Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/c4fadee43fb6a023409e508433844c2b1fccd185/review.json"
+        },
+        {
+          "at": "2026-11-22T14:36:21.128Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T14:36:33.472Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/c4fadee43fb6a023409e508433844c2b1fccd185/qa.json"
+        },
+        {
+          "at": "2026-11-22T14:36:33.696Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T14:37:46.568Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR",
+          "note": "resume: погодження вже чинне"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.642Z",
-      "updatedAt": "2026-11-22T14:22:28.919Z",
+      "updatedAt": "2026-11-22T14:37:46.569Z",
       "lastFailure": null,
       "repeats": 1,
-      "reviewTree": "5a08853967781f2ed64d1160c9aaf9f5c30a37f3"
+      "reviewTree": "c4fadee43fb6a023409e508433844c2b1fccd185"
     },
     "DEV-006": {
       "id": "DEV-006",
