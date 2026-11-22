@@ -1,0 +1,74 @@
+{
+  "taskId": "DEV-008",
+  "kind": "review",
+  "tree": "8b503f4dd0c791aa36b0d49e7ff3d31c13327347",
+  "at": "2026-11-22T17:02:43.167Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Повторне рев'ю: нові механізми (MAX_TOOL_CALLS_PER_TURN, обрізання результатів, дедлайн через AbortSignal.any/timeout, стійкість до збою createRun/finishRun, assertStrictCompatible, describeToolError, скидання awaitingRetry, injected, isAgentRunDecided) реалізовані коректно й не ламають AC-1…11. Кожен tool_call отримує tool_result (крім завершальних виходів: прийнятий submit або fallback), stopped/дедлайн розрізняються порядком перевірок у catch (options.signal перед deadline), збої БД не кидаються з runAgent. tsc, eslint і vitest (193 тести) зелені; any/as/console.log/function-декларацій у коді застосунку немає. Блокерів (critical/high) немає. Лишились лише неблокувальні зауваження low/medium.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Повний вихід tool пишеться в trace без обмеження (обрізається лише повідомлення моделі)",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 243,
+      "detail": "limitToolContent застосовується до content для моделі, але в appendStep payload.output потрапляє необрізаний output (get_task повертає повний опис і нотатки без ліміту). Недовірені дані розміром у мегабайти роздують agent_steps у SQLite і відповідь API траси. Варто обрізати/узагальнити output у payload (наприклад, зберігати лише розмір і прев'ю) або застосувати той самий ліміт."
+    },
+    {
+      "severity": "low",
+      "title": "Ліміт MAX_TOOL_OUTPUT_BYTES не є жорсткою межею після JSON-екранування",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 73,
+      "detail": "preview різаний по байтах до JSON.stringify; керівні символи/лапки розростуться до ~6x, тож фактичний content може сягати ~190 КБ. Тест перевіряє лише < 2x на кирилиці. Краще різати після екранування або зменшити preview. Різання по байтах також може дати U+FFFD на межі символу (безпечно, але варто знати)."
+    },
+    {
+      "severity": "low",
+      "title": "ZodError з тіла tool (не з аргументів) видається моделі як «Невалідні аргументи» й не логується",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 86,
+      "detail": "describeToolError трактує будь-який ZodError як помилку вхідних аргументів, а гілка log.error пропускає його. Якщо репозиторій чи сам tool кине ZodError через дані БД, це буде приховано від логів і подано моделі як її помилку. Розрізняти парс аргументів (defineTool) і внутрішні помилки, наприклад окремим класом помилки аргументів."
+    },
+    {
+      "severity": "low",
+      "title": "Модельний id у NotFoundError повторюється без обмеження довжини",
+      "file": "src/server/agents/core/readTools.ts",
+      "line": 44,
+      "detail": "`Задачу ${id} не знайдено` потрапляє в tool_result і трасу; id контролюється моделлю (до розміру аргументів). Обрізати id (як safeName) або не вставляти його в повідомлення."
+    },
+    {
+      "severity": "low",
+      "title": "Виняток із def.fallback у catch-гілці дедлайну порушує обіцянку «ніколи не кидає»",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 343,
+      "detail": "fallback() у catch викликається поза try; якщо def.fallback/validateResult кине (помилка в коді агента DEV-009…012), runAgent відхилиться, а запис лишиться running (стрім закриє createNdjsonResponse подією error, але finishRun не буде). Обгорнути fallback у try/catch з переходом на finish error."
+    },
+    {
+      "severity": "low",
+      "title": "isSubmitRejection у fault injection залежить від порядку викликів",
+      "file": "src/server/agents/core/modelClient.ts",
+      "line": 43,
+      "detail": "Перевіряється лише останнє tool-повідомлення; якщо submit_result не останній виклик у відповіді, повтор не підміняється і fault injection у dev дасть інший результат. Лише dev-режим; перевіряти будь-яке tool-повідомлення останнього раунду."
+    },
+    {
+      "severity": "low",
+      "title": "assertStrictCompatible: хибні спрацьовування/прогалини denylist",
+      "file": "src/server/agents/core/tools.ts",
+      "line": 18,
+      "detail": "Рекурсія заходить у const/enum/default/definitions як у схеми (поле з іменем-ключовим словом усередині const дасть хибну помилку), а if/then/else, dependentRequired, minProperties не в denylist. Для нинішніх схем не проявляється; тести покривають allOf, propertyNames, tuple, корінь і імена-ключові слова, але не вкладені об'єкти без required чи nullable-гілки."
+    },
+    {
+      "severity": "low",
+      "title": "Таймаут клієнта OpenAI задано двічі й помилка таймауту дає error, а не fallback",
+      "file": "src/server/agents/core/openAIClient.ts",
+      "line": 70,
+      "detail": "MODEL_TIMEOUT_MS передається і в конструктор SDK, і в кожен виклик (дублювання). Таймаут одного виклику (60 с) завершує запуск подією error з AGENT_ERROR, а не резервним сценарієм, хоча дедлайн запуску дає fallback. Це може бути свідомим рішенням, але варто зафіксувати в документації або зіставити поведінку."
+    },
+    {
+      "severity": "low",
+      "title": "Частина hardening-тестів слабка",
+      "file": "src/server/agents/core/hardening.test.ts",
+      "line": 172,
+      "detail": "Тест awaitingRetry реально впаде при регресії (перевіряє крок з detail після відхилення), так само тести ліміту викликів, truncated, дедлайну/stopped, finishRun/createRun. Слабкі місця: тест обрізання імені перевіряє лише відсутність довгого рядка, а не наявність обрізаної форми; немає тестів на OpenAI timeout, на ZodError-аргументи в describeToolError і на сценарій, де submit-відхилення йде разом з read-викликом у тій самій відповіді."
+    }
+  ]
+}

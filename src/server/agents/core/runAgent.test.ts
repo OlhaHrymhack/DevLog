@@ -282,7 +282,7 @@ describe("runAgent: fault injection", () => {
 
 describe("runAgent: безпека", () => {
   it("DEV-008 AC-10: реєстр приймає лише read-only tools з allowlist", () => {
-    expect(READ_TOOLS.map((tool) => tool.name)).toEqual([...READ_TOOL_NAMES]);
+    expect([...READ_TOOL_NAMES]).toEqual([...READ_TOOLS.map((tool) => tool.name), "list_active_tasks"]);
     expect(READ_TOOL_NAMES.some((name) => /create|update|delete|set|add|write|remove/i.test(name))).toBe(false);
     const writer = defineTool({ name: "delete_task", label: "x", description: "x", inputSchema: z.object({ id: z.string() }), run: () => null });
     expect(() => createToolRegistry([writer])).toThrow(/allowlist/);
@@ -320,7 +320,7 @@ describe("runAgent: безпека", () => {
     expect(JSON.stringify(tasks.listTasks())).toBe(before);
     expect(outcome).toMatchObject({ status: "fallback", reason: FALLBACK_REASONS.invalidResult });
     expect(requests[0]?.system).toContain(DATA_POLICY);
-    expect(requests[0]?.tools.map((tool) => tool.name)).toEqual([...READ_TOOL_NAMES, SUBMIT_RESULT_TOOL]);
+    expect(requests[0]?.tools.map((tool) => tool.name)).toEqual([...READ_TOOLS.map((tool) => tool.name), SUBMIT_RESULT_TOOL]);
     const taskResult = toolMessages(requests[1]?.messages ?? [])[0];
     expect(JSON.parse(taskResult?.content ?? "{}")).toMatchObject({ data: { description: injection } });
 

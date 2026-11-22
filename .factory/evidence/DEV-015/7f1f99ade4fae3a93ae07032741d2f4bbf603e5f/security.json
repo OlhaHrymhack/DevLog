@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-015",
+  "kind": "security",
+  "tree": "7f1f99ade4fae3a93ae07032741d2f4bbf603e5f",
+  "at": "2026-11-22T17:46:57.758Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "DEV-015, статичне рев'ю вручну. /cso не запускався, Docker немає, без динамічних перевірок і платних запитів. npm audit --omit=dev: 0 вразливостей, нових runtime-залежностей немає. Добре: у production маршрут завжди 404, без AI_SMOKE=1 теж 404; ліміти Math.min(env, 4/400) реально доходять до max_completion_tokens і maxSteps; env поза діапазоном валить старт (fail closed) і не показує значень; AI_SMOKE у .env.example порожній; помилки моделі клієнту віддаються узагальнено, у логи йдуть лише name/status/code; CLI друкує лише метрики; smoke-агент має лише read-only tools, трасу пише в :memory:. Блокує одне: перевірка «лише localhost» фактично не працює. У Next 16.4.6 request.url складається з налаштованого hostname сервера (за замовчуванням 'localhost'), а не з заголовка Host. При цьому next dev за замовчуванням слухає всі інтерфейси. Тож будь-хто в LAN без браузера, а також DNS rebinding, проходить перевірку. Тести цього не помічають: вони самі передають абсолютний URL у new Request.",
+  "findings": [
+    {
+      "severity": "high",
+      "title": "Перевірка localhost через new URL(request.url).hostname не працює в реальному Next: LAN-клієнти і DNS rebinding можуть запускати платний smoke",
+      "file": "src/server/agents/smoke/smokeRoute.ts",
+      "line": 48,
+      "detail": "У node_modules/next/dist/server/lib/router-utils/resolve-routes.js:118 initURL = `${protocol}://${opts.hostname || 'localhost'}:${port}${req.url}` (trustHostHeader вимкнено). Тобто hostname у request.url завжди 'localhost', хоч би який Host прийшов, і умова LOCAL_HOSTNAMES ніколи не спрацьовує. За замовчуванням next dev викликає server.listen(port, undefined), тобто слухає всі інтерфейси (start-server.js:251). Сценарій 1: з тієї ж Wi-Fi виконують curl -X POST http://<lan-ip>:3000/api/dev/agent-smoke -H 'Content-Type: application/json' -d '{}'. Sec-Fetch-Site немає, тож запит проходить. Сценарій 2: DNS rebinding. Сторінка attacker.tld після rebinding на 127.0.0.1 отримує Sec-Fetch-Site: same-origin і Host: attacker.tld, і запит теж проходить. Обидва працюють, якщо в .env.local стоїть AI_SMOKE=1. Шкода: повторювані платні запити без обмеження кількості, бо busy лише серіалізує, а не обмежує частоту. Крім того, у NDJSON-потоці назовні йде data з taskId і summary, згенерованими моделлю з даних задач. Тести (smokeRoute.test.ts:55,72) підставляють абсолютний URL у new Request, тому цього не бачать. Виправлення: перевіряти сам заголовок Host (request.headers.get('host') без порту має бути в allowlist localhost/127.0.0.1/[::1]); це закриває DNS rebinding. Якщо Origin є, теж перевіряти його. Від підробленого Host із LAN це не захищає, тому додатково: (а) одноразовий секрет, який сервер генерує при старті і записує у файл під data/ (gitignored), а CLI читає й надсилає в заголовку; або (б) задокументувати запуск next dev -H 127.0.0.1 для smoke. Додати тест, що Host: evil.example при URL http://localhost повертає 403."
+    },
+    {
+      "severity": "low",
+      "title": "Гонка в перевірці busy: паралельні запити проходять до встановлення прапорця",
+      "file": "src/server/agents/smoke/smokeRoute.ts",
+      "line": 67,
+      "detail": "Між if (busy) (рядок 67) і busy = true (рядок 78) стоїть await readJson(request). Два одночасні POST обидва проходять перевірку і запускають два платні прогони. Кожен окремо обмежений 4×400, тож це подвоєння вартості, а не обхід ліміту. Виправлення: ставити busy = true одразу після перевірки (до await) і скидати в try/finally, якщо до createNdjsonResponse щось кинуло. Прапорець живе в межах модуля, тож після HMR чи в іншому воркері це не глобальний lock; варто згадати в доках."
+    },
+    {
+      "severity": "low",
+      "title": "Значення PORT підставляється в URL CLI без валідації",
+      "file": "src/server/agents/smoke/runSmokeCli.ts",
+      "line": 28,
+      "detail": "Рядок `http://localhost:${port}/api/dev/agent-smoke` при PORT='80@evil.example' дає URL з userinfo 'localhost:80' і хостом evil.example. CLI піде на чужий хост (тіло '{}', без секретів) і надрукує його відповідь. PORT контролює локальний користувач, тому ризик низький, але для інструмента з назвою «тільки localhost» це неочікувано. Виправлення: валідувати port через Zod (z.coerce.number().int().min(1).max(65535)) або будувати URL через new URL('http://localhost') з url.port = ... і перевіряти url.hostname."
+    },
+    {
+      "severity": "low",
+      "title": "Текст попередження CLI «4 виклики × 400 токенів» не враховує вхідні токени",
+      "file": "src/server/agents/smoke/runSmokeCli.ts",
+      "line": 20,
+      "detail": "Обмежено лише output. Вхід кожного виклику містить системний промпт, схеми tools і накопичені результати list_tasks/get_task: до 32 KB на tool output, до 5 tools на хід, контекст росте з кожним із 4 викликів. На великій БД вхід може скласти десятки тисяч токенів за прогін. Це не обхід ліміту, але користувач погоджується на неповну оцінку вартості. Варто уточнити текст попередження (output-ліміт + вхід залежить від кількості задач) або в smoke обмежити list_tasks, наприклад до перших N задач."
+    },
+    {
+      "severity": "low",
+      "title": "CLI друкує fallbackReason із відповіді сервера без санітизації",
+      "file": "src/server/agents/smoke/smokeSummary.ts",
+      "line": 20,
+      "detail": "AgentEventSchema перевіряє лише тип, а reason — довільний рядок із відповіді. Зі своїм сервером проблем немає; з чужим (див. PORT або підмінений процес на порту) можна вивести керувальні ANSI-послідовності в термінал. JSON.stringify екранує керувальні символи <0x20, зокрема ESC, як \\u001b, тому фактичний ризик мінімальний. Інформаційно: за бажання обмежити довжину або перевіряти reason проти FALLBACK_REASONS."
+    }
+  ]
+}

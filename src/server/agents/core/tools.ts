@@ -9,7 +9,7 @@ export const SUBMIT_RESULT_TOOL = "submit_result";
  * Allowlist інструментів агентів. Тут лише читання: tool із записом (create/update/delete)
  * у реєстр не потрапить — додавання нового імені вимагає свідомої правки й рев'ю.
  */
-export const READ_TOOL_NAMES = ["list_tasks", "get_task"] as const;
+export const READ_TOOL_NAMES = ["list_tasks", "get_task", "list_active_tasks"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

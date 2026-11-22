@@ -1,0 +1,45 @@
+{
+  "taskId": "DEV-009",
+  "kind": "tests",
+  "tree": "2408eee66c857f4336c763d027e404488bdc7049",
+  "at": "2026-11-22T19:10:18.432Z",
+  "ok": false,
+  "failed": [
+    "typecheck(failed)",
+    "test(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 1589,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\nsrc/server/agents/prioritize/focus.test.ts(54,42): error TS2345: Argument of type '{ title: string; description: string; priority: \"low\"; dueAt: string; }' is not assignable to parameter of type '{ title: string; description: string; status: \"done\" | \"todo\" | \"in-progress\"; priority: \"low\" | \"medium\" | \"high\"; dueAt?: string | undefined; }'.\n  Property 'status' is missing in type '{ title: string; description: string; priority: \"low\"; dueAt: string; }' but required in type '{ title: string; description: string; status: \"done\" | \"todo\" | \"in-progress\"; priority: \"low\" | \"medium\" | \"high\"; dueAt?: string | undefined; }'.\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3715,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 4720,
+      "output": "{\"level\":30,\"time\":1795374568387,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"b4efa44c-cb69-424d-82b9-cef0f17659bc\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568391,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"02de7391-7ed6-4d58-ad97-cc27c595fb4c\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568400,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"5bd816bb-9f16-482c-8a81-021e1471bcbb\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568411,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"0234256c-226f-4dce-be6a-cba42169723c\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568417,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"e8a219f9-30e5-45f0-a3a1-d0d27314576d\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":404,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568417,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"dbb0c8dd-ec56-40ea-a87b-47268a39530f\",\"method\":\"POST\",\"path\":\"/x\",\"status\":403,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568417,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"549f1ac1-6652-46bf-b144-feec9c88c464\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":415,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568417,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"5e059572-0a41-436a-8a90-9a2eb8782200\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":403,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568418,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"536c12bd-80a3-4433-a2a1-98716117d07a\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":2,\"msg\":\"Request completed\"}\n{\"level\":50,\"time\":1795374568419,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"6f71a10a-6969-4e21-8e01-b7cc3c944608\",\"path\":\"/api/dev/agent-smoke\",\"frames\":[\"    at createClient (/private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.test.ts:222:59)\",\"    at /private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.ts:99:44\",\"    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\",\"    at /private/tmp/devlog-dev008/src/server/http/handler.ts:28:16\",\"    at async Promise.all (index 5)\",\"    at /private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.test.ts:216:23\",\"    at async file:///private/tmp/devlog-dev008/node_modules/.pnpm/vitest@5.1.1_@types+node@22.20.5_jsdom@31.0.1_vite@8.3.8_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_/node_modules/vitest/dist/chunks/run.zBhXlcZQ.js:2864:20\"],\"msg\":\"Request failed\"}\n{\"level\":30,\"time\":1795374568419,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"6f71a10a-6969-4e21-8e01-b7cc3c944608\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":500,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568433,\"pid\":61726,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"1d907315-6cab-4fcb-863e-8544dbd2be3f\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568774,\"pid\":61731,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"e063dd04-30f6-4cfb-b342-e879e64f46fd\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":19,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568809,\"pid\":61731,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"a09b71e9-9213-456e-b253-604377b8c360\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":2,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374568835,\"pid\":61731,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"c8ed4bcb-17df-4fcb-8fd9-e8aba40ada6a\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n\n Test Files  1 failed | 48 passed (49)\n      Tests  1 failed | 298 passed (299)\n   Start at  21:09:25\n   Duration  4.32s (import 54%, environment 20%, tests 18%, transform 7%, worker 1%)\n\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  |node| src/server/agents/prioritize/focus.test.ts > фокус дня після плану агента > DEV-009 AC-4: термінова задача з низьким пріоритетом потрапляє в fallback першою\nSqliteError: NOT NULL constraint failed: tasks.status\n ❯ PreparedQuery.get node_modules/.pnpm/drizzle-orm@0.45.4_@types+better-sqlite3@9.6.0_better-sqlite3@13.2.0/node_modules/src/better-sqlite3/session.ts:159:26\n ❯ QueryPromise.get node_modules/.pnpm/drizzle-orm@0.45.4_@types+better-sqlite3@9.6.0_better-sqlite3@13.2.0/node_modules/src/sqlite-core/query-builders/insert.ts:406:26\n ❯ Object.createTask src/server/tasks/repository.ts:94:20\n     92|       ...input, id: createId(), createdAt: timestamp, updatedAt: times…\n     93|       dueAt: normalizeDueAt(input.dueAt ?? null),\n     94|     }).returning().get();\n       |                    ^\n     95|     return { ...row, subtasks: [], notes: [] };\n     96|   };\n ❯ src/server/agents/prioritize/focus.test.ts:54:31\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 48312,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nRunning 93 tests using 5 workers\n····················°·······°·········°·········°··········°°·············°·····\n·············\n  7 skipped\n  86 passed (47.8s)\n::notice title=🎭 Playwright Run Summary::  7 skipped%0A  86 passed (47.8s)\n[WebServer] .env not found. Continuing without it.\n"
+    }
+  ]
+}

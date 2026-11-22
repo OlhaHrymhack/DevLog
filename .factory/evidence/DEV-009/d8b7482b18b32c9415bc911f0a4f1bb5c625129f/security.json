@@ -1,0 +1,25 @@
+{
+  "taskId": "DEV-009",
+  "kind": "security",
+  "tree": "d8b7482b18b32c9415bc911f0a4f1bb5c625129f",
+  "at": "2026-11-22T19:13:42.532Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Повторне рев'ю DEV-009 (хеш d8b7482b18), лише статичний аналіз вручну. /cso не запускався, Docker немає, live- і платних запитів не було, .env* не читались, репозиторій не змінювався. npm audit --omit=dev: 0 вразливостей; package.json і lock не змінено. Що змінилось. (1) rulePlan.ts: сортування urgent-first — чиста функція над даними з БД. filter(isActive) і далі прибирає done-задачі, запису немає, why — константа. (2) prioritizeAgent.ts: checkDayPlan став суворішим. Тепер він рахує термінові задачі по всіх не-done задачах через ctx.tasks.listTasks() (read-only) і допускає «витіснення» термінової лише тоді, коли всі 3 items уже термінові. Обійти перевірку не вийде: ліміт DAY_PLAN_MAX_ITEMS береться зі схеми. buildMockPlan ставить термінові першими, теж без запису. Tools агента не змінились (list_active_tasks, get_task; обидва read-only). (3) DayPlanPanel: кнопка «Скинути» викликає лише локальний reset() стану запуску. Мережевих викликів і мутацій вона не робить. Фокус і далі змінюється тільки через FocusConfirmDialog → PUT /api/tasks/focus із серверною валідацією. XSS: title, why, joke і reason рендеряться як текст React, dangerouslySetInnerHTML немає. href=`/tasks/${id}` бере лише id, що є в реальному списку задач (resolvePlan + DayPlanSchema.safeParse). Нових критичних, високих і середніх ризиків немає. Знахідки з першого звіту (/tmp/dev009-security.json) не змінились, бо src/server/http/handler.ts і agentRoute.ts не чіпали. Це medium CSRF на POST /api/agents/prioritize і три low (вільний текст моделі, debug за NODE_ENV, allowlist лише за іменем). Нижче повторено лише medium, щоб він не загубився, і додано одне нове спостереження рівня info.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "(без змін з першого рев'ю) Cross-site POST на /api/agents/prioritize без перевірки Content-Type/Origin",
+      "file": "src/server/http/handler.ts",
+      "line": 6,
+      "detail": "readJson і далі викликає request.json() без перевірки Content-Type і Origin. Простий cross-site запит із text/plain може запустити live-прогін за кошт ключа. Дані задач він не змінює. У цій ітерації не виправлено, і нових змін тут немає. Рекомендація та сама: для мутаційних маршрутів вимагати application/json і/або Origin == Host."
+    },
+    {
+      "severity": "low",
+      "title": "Повідомлення checkDayPlan про термінові задачі не обмежене за довжиною",
+      "file": "src/server/agents/prioritize/prioritizeAgent.ts",
+      "line": 46,
+      "detail": "Нова перевірка рахує термінові задачі по повному listTasks(), без межі MAX_LISTED_TASKS = 50. У violation вона пише всі пропущені id через кому, і цей текст повертається моделі на повторну спробу. Id генерує сервер, тож ін'єкції немає. За великої кількості термінових задач лише зростає розмір підказки (токени). Ризик мінімальний для MVP. За бажання можна обрізати перелік, наприклад до перших 10 id і «та ще N»."
+    }
+  ]
+}

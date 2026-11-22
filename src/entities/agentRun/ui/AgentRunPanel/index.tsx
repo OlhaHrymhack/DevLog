@@ -12,7 +12,7 @@ import type { AgentRunPanelProps } from "./types";
 
 /** Спільна обв'язка запуску агента: прогрес, кроки, «Зупинити», fallback і підсумковий рядок. */
 export const AgentRunPanel = ({
-  title, icon, tagLabel, run, onStop, demo = false, collapsible, summary, idle, children,
+  title, icon, tagLabel, run, onStop, demo = false, collapsible, summary, fallbackTitle, fallbackMessage, idle, children,
 }: AgentRunPanelProps) => {
   const running = run.status === "running";
   const finished = run.status !== "idle" && !running;
@@ -37,8 +37,8 @@ export const AgentRunPanel = ({
         <>
           <AgentStepList steps={run.steps} />
           {run.status === "fallback" ? (
-            <AgentFallbackAlert title="Агент не зміг відповісти">
-              {run.fallbackReason}. Показуємо базове правило без AI.
+            <AgentFallbackAlert title={fallbackTitle ?? "Агент не зміг відповісти"}>
+              {fallbackMessage ?? `${run.fallbackReason}. Показуємо базове правило без AI.`}
             </AgentFallbackAlert>
           ) : null}
           {run.status === "error" ? (

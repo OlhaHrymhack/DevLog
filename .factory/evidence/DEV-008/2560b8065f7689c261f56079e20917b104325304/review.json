@@ -1,0 +1,117 @@
+{
+  "taskId": "DEV-008",
+  "kind": "review",
+  "tree": "2560b8065f7689c261f56079e20917b104325304",
+  "at": "2026-11-22T16:33:34.704Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "task": "DEV-008",
+  "codeHash": "2560b8065f",
+  "verdict": "pass",
+  "summary": "Цикл runAgent коректний: ліміт 8 викликів моделі включає повтор і нагадування, is_error для невідомого tool/невалідних аргументів/JSON/винятку, окремі причини refusal/max_tokens/end_turn (одне нагадування), один повтор submit_result -> fallback, fallback проходить ті самі перевірки, finishRun перед єдиною фінальною подією, abort відкидає пізні результати моделі й tools. Debug-поле відхиляється в production строгою схемою (400), клієнтський прапорець теж вимкнений у production. Тести поведінкові й падатимуть на зламаному коді. typecheck, lint і 72 тести DEV-008 зелені (запускав локально). Блокерів і major немає; є minor-ризики: live strict-схеми не перевірені smoke-ом, евристична прив'язка кроків до міток, default-модель без погодження, кілька крайових випадків трасування.",
+  "checksRun": [
+    "npm run typecheck — ok",
+    "npm run lint — ok",
+    "vitest: src/server/agents, src/entities/agentRun, readNdjson, logger, env — 10 файлів, 72 тести ok"
+  ],
+  "notChecked": [
+    "e2e Playwright (e2e/agentRun.spec.ts, e2e/tasksList.spec.ts) не запускав",
+    "next build не запускав",
+    "повний npm test не запускав",
+    "live-smoke з ключем OpenAI (AC-7 [M]) не виконано — ключа немає",
+    "документацію docs-етапу (CLAUDE.md, decisions.md, специфікації) не перевіряв — вона за планом іде пізніше"
+  ],
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Strict-схеми tools не перевірені проти обмежень OpenAI Structured Outputs",
+      "file": "src/server/agents/core/tools.ts",
+      "line": 36,
+      "detail": "z.toJSONSchema генерує minLength (z.string().min(1) у get_task і в схемах результатів). assertStrictCompatible перевіряє лише required/additionalProperties. Я не перевіряв, чи strict-режим OpenAI зараз приймає minLength та інші ключові слова. Якщо не приймає, кожен live-виклик поверне 400, і всі запуски закінчаться status=error. Офлайн-тести цього не ловлять. Треба провести AC-7 live-smoke до APPROVE-FINAL або додати allowlist підтримуваних ключових слів в assertStrictCompatible."
+    },
+    {
+      "severity": "low",
+      "title": "Default-модель gpt-4.1-mini обрав developer, у плані її немає",
+      "file": "src/shared/config/env.ts",
+      "line": 16,
+      "detail": "План задає лише змінну OPENAI_MODEL, без значення за замовчуванням. Технічно вибір підходить: Chat Completions, strict tools, max_completion_tokens. Але це продуктове й вартісне рішення, яке користувачка явно не погоджувала. Доступність моделі на дату запуску я не перевіряв. Треба підтвердити значення в користувачки й записати в decisions.md на docs-етапі. CLAUDE.md досі вказує claude-opus-5-5."
+    },
+    {
+      "severity": "low",
+      "title": "Кроки UI прив'язані до міток евристикою за кількістю ходів моделі, а не за змістом",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 269,
+      "detail": "workIndex зсувається на кожен хід моделі з tools, а при submit_result усі робочі кроки примусово стають done (рядки 242-244). Live-модель, яка тричі кличе list_tasks, позначить «Зважити» як виконаний. Модель, що одразу віддає submit_result, отримає всі робочі кроки done, хоча вони не виконувались. Демо через mockScript синхронізоване з мітками, тож AC-11 виконано, але для live прогрес може вводити в оману. Можна дати AgentDefinition опційний мапінг tool -> індекс кроку або задокументувати, що мітки умовні, у специфікаціях DEV-009…012."
+    },
+    {
+      "severity": "low",
+      "title": "awaitingRetry ніколи не скидається після повтору",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 168,
+      "detail": "Після першого відхилення submit_result прапорець лишається true до кінця запуску. Якщо модель після повтору знову читає tools, на початку циклу активним показується крок валідації (рядок 205), а деталь робочого кроку не оновлюється (рядок 269). На фінальний результат це не впливає, лише на прогрес. Скидати awaitingRetry=false, коли відповідь не містить submit_result."
+    },
+    {
+      "severity": "low",
+      "title": "Збій finishRun лишає запуск у статусі running і порушує контракт «ніколи не кидає»",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 133,
+      "detail": "Якщо runs.finishRun кидає (помилка SQLite), catch знову викликає finish, той знову кидає, і виняток виходить із runAgent. Стрім видасть error через .catch у stream.ts, але agent_runs назавжди лишиться running. Так само, якщо createRun (рядок 112) стоїть поза try. Обгорнути finishRun у try/catch з log.error і все одно надіслати фінальну подію, або виправити JSDoc."
+    },
+    {
+      "severity": "low",
+      "title": "Fault injection у live записує в трасу синтетичний «Виклик моделі» і витрачає бюджет",
+      "file": "src/server/agents/core/modelClient.ts",
+      "line": 59,
+      "detail": "Після відхилення обгортка повертає scriptedSubmit без звернення до провайдера. Проте runAgent рахує це як modelCalls+1 і пише step type=model, тож у live-трасі з'являється виклик моделі, якого не було. Для dev-інструмента це прийнятно, але варто позначити в payload (наприклад injected: true). Сама заборона в production працює: createAgentRequestSchema({allowDebug:false}) дає z.never(), тож навіть debug:{forceInvalidOutput:false} отримує 400. allowDebug читається під час запиту (agentRoute.ts:35), а тест зі stubEnv це перевіряє. Клієнтський getForceInvalidOutput у production завжди false."
+    },
+    {
+      "severity": "low",
+      "title": "Ім'я невідомого tool від моделі потрапляє в деталь кроку UI без обрізання",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 234,
+      "detail": "usedTools.add(registry.get(call.name)?.label ?? call.name): для невідомого tool у подію step.detail і в браузер іде сирий рядок, який контролює модель (або prompt injection у даних задачі), довільної довжини. React екранує текст, тож XSS немає, але так у UI витікає вміст, який генерує модель. У трасі БД ім'я вже обрізане до 64 символів (рядок 192). Для невідомих tools краще показувати фіксовану мітку («Невідомий інструмент»)."
+    },
+    {
+      "severity": "low",
+      "title": "Barrel entities/agentRun змішує клієнтський хук (sonner, 'use client') з контрактами, які імпортує сервер",
+      "file": "src/entities/agentRun/index.ts",
+      "line": 45,
+      "detail": "runAgent.ts, stream.ts і agentRoute.ts імпортують MAX_AGENT_STEPS, AgentEventSchema і createAgentRequestSchema з того самого index.ts, що реекспортує useAgentRun і UI. Зараз жоден route агента не зареєстрований, тому Next-збірка цього не торкається. У DEV-009 route підтягне клієнтський модуль у серверний граф. next build я не запускав. Варто перевірити збірку в DEV-009 або імпортувати серверні контракти з model/events."
+    },
+    {
+      "severity": "low",
+      "title": "Помилки провайдера логуються лише як errorName",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 283,
+      "detail": "Для OpenAI APIError (401/400/429) у лозі немає HTTP-статусу, тож у live важко зрозуміти причину AGENT_ERROR. Безпечно додати status і code помилки SDK: вони не містять ключа чи промпту."
+    },
+    {
+      "severity": "low",
+      "title": "Текст довільного винятку tool іде моделі й у трасу",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 66,
+      "detail": "describeToolError повертає error.message будь-якого Error, наприклад внутрішній текст SQLite. Для read-only tools ризик низький, але повідомлення AppError/NotFoundError краще передавати як є, а решту замінювати загальним текстом."
+    },
+    {
+      "severity": "low",
+      "title": "Інлайн Tailwind і дубль списку завершених статусів у AgentRunDemo",
+      "file": "src/views/uiKit/ui/AgentRunDemo/index.tsx",
+      "line": 7,
+      "detail": "Класи 'flex gap-2' і 'm-0 text-sm text-fg-muted' за code-style.md варто винести в styles.ts. DECIDED дублює список ['result','clarify','fallback'] з markApplied (useAgentRun.ts:80). Можна винести одну константу в model."
+    }
+  ],
+  "acCoverage": {
+    "AC-1": "ok — runAgent.test.ts:44,76; agentRoute.test.ts:63",
+    "AC-2": "ok — runAgent.test.ts:86,98 (ліміт включає нагадування й повтор)",
+    "AC-3": "ok — runAgent.test.ts:112 (невідомий tool, Zod, виняток, невалідний JSON)",
+    "AC-4": "ok — runAgent.test.ts:137,151,167,178",
+    "AC-5": "ok — runAgent.test.ts:191,201,209",
+    "AC-6": "ok unit/integration — runAgent.test.ts:216,243; agentRoute.test.ts:113; useAgentRun.test.tsx:67; e2e не запускав",
+    "AC-7": "офлайн ok — openAIClient.test.ts; live-smoke [M] не виконано",
+    "AC-8": "ok — agentRoute.test.ts:136,144,153; runAgent.test.ts:271; useAgentRun.test.tsx:133",
+    "AC-9": "ok — agentRoute.test.ts:63,80,102; readNdjson.test.ts; useAgentRun.test.tsx",
+    "AC-10": "ok — runAgent.test.ts:284,294,303; logger.test.ts:74",
+    "AC-11": "ok unit — AgentRunPanel.test.tsx; e2e не запускав"
+  },
+  "promptInjection": "У коментарях і даних коду інструкцій для рев'юера не знайшов. Рядок ін'єкції в runAgent.test.ts:304 — навмисна тестова фікстура."
+}

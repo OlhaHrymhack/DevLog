@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-008",
+  "kind": "security",
+  "tree": "8b503f4dd0c791aa36b0d49e7ff3d31c13327347",
+  "at": "2026-11-22T17:03:20.430Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Повторний security review DEV-008 (хеш 8b503f4dd0), лише статичний аналіз коду й запуск unit-тестів ядра (6 файлів, 53 тести зелені). gstack /cso не запускався, live-виклик OpenAI і e2e не проганялися. npm audit --omit=dev: 0 вразливостей (нова залежність openai ^7.62.0). Виправлення попереднього раунду працюють. MAX_TOOL_CALLS_PER_TURN=5 рахує і невідомі tools. submit_result ліміт не обходить: обробляється лише один за хід, решта отримують is_error, а після прийнятого результату цикл виходить. Отже за запуск максимум 8 кроків x 5 = 40 викликів. MAX_TOOL_OUTPUT_BYTES обрізає успішні результати. list_tasks повертає до 50 задач з описами до 500 символів. RUN_DEADLINE_MS через AbortSignal.timeout і AbortSignal.any передається і в client.create, і в abortable. MODEL_TIMEOUT_MS=60s, maxRetries=0. Гонку stop і дедлайну catch розв'язує коректно: спершу options.signal (stopped), далі deadline (fallback). createRun і finishRun обгорнуті. Імена tools обрізаються до 64 символів у трасі й логах. describeToolError узагальнює внутрішні винятки. assertStrictCompatible перевіряє схеми на старті модуля. Ключ і промпти: ключ береться лише з серверного env (env.ts і всі модулі ядра мають server-only), pino редагує apiKey, OPENAI_API_KEY і Authorization. У логи йдуть тільки name/status/code помилок і розміри в байтах, тексти промптів і даних задач не логуються. У браузер ідуть тільки події, step.detail там — label інструмента з реєстру. Prompt injection: є DATA_POLICY у системному промпті, tools лише читають (allowlist list_tasks/get_task), результат проходить Zod і factCheck, debug у production відхиляється (z.never). POST-маршрут агента в src/app/api ще не змонтовано, тож проблема cross-site POST і ліміту тіла в цьому diff не експлуатується. Critical, high і medium знахідок немає. Лишилися дрібні low. Не стосується безпеки, але для orchestrator: провайдер змінено з @anthropic-ai/sdk на openai, а CLAUDE.md і далі описує стек Anthropic. Також таймаут SDK (60s) класифікується як error, а не fallback. Не перевіряв: витоки AbortSignal.any у конкретній версії Node, реальну поведінку openai SDK з таймаутом і signal (лише на моках), UI-рендеринг панелі на XSS (тільки побіжно: dangerouslySetInnerHTML в agentRun немає).",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Повідомлення про помилку tool не обрізаються лімітом MAX_TOOL_OUTPUT_BYTES",
+      "file": "/private/tmp/devlog-dev008/src/server/agents/core/runAgent.ts",
+      "line": 82,
+      "detail": "toolMessage викликає limitToolContent лише для успішних результатів (isError=false). Помилки (Zod issues, violations з factCheck, тексти AppError) йдуть моделі й у agent_steps без обмеження розміру. Наприклад, get_task має inputSchema z.string().min(1) без max (readTools.ts:41), і NotFoundError повторює id від моделі (readTools.ts:44). Обсяг обмежує max_completion_tokens=2048 на хід, тому ризик низький. Рекомендація: застосувати limitToolContent і до помилок або додати .max() до id."
+    },
+    {
+      "severity": "low",
+      "title": "Збій fallback у гілці catch лишає запуск у статусі running",
+      "file": "/private/tmp/devlog-dev008/src/server/agents/core/runAgent.ts",
+      "line": 343,
+      "detail": "У catch виклик fallback(FALLBACK_REASONS.deadline) виконує def.fallback і validateResult/factCheck (рядок 192) вже поза try. Якщо вони кинуть виняток, runAgent кидає (всупереч JSDoc «ніколи не кидає»), finishRun не викликається, і agent_runs лишається running. Клієнт однаково отримає error від stream.ts:48-50. Рекомендація: обгорнути fallback у catch ще одним try, який веде до finish({status:'error'})."
+    },
+    {
+      "severity": "low",
+      "title": "agent_steps.payload зберігає повний необрізаний output tools",
+      "file": "/private/tmp/devlog-dev008/src/server/agents/core/runAgent.ts",
+      "line": 243,
+      "detail": "Моделі передається обрізаний зріз, а в трасу пишеться повний output (зокрема get_task з усіма нотатками й підзадачами). Це залишок попереднього раунду. Поки API читання траси немає, це питання розміру БД і приватності траси, а не витоку. Варто обрізати так само, як для моделі, коли трасу почнуть віддавати в UI."
+    },
+    {
+      "severity": "low",
+      "title": "Обрізаний preview після повторного JSON.stringify може бути вдвічі більшим за ліміт; Buffer.from копіює весь вміст",
+      "file": "/private/tmp/devlog-dev008/src/server/agents/core/runAgent.ts",
+      "line": 76,
+      "detail": "preview — це вже JSON-рядок, і повторна серіалізація екранує лапки й зворотні слеші. Тому фактичний розмір може досягати ~2x MAX_TOOL_OUTPUT_BYTES (тест hardening.test.ts:76 прямо це допускає). Buffer.from(content) копіює весь результат цілком, а його розмір обмежують лише дані в БД. Розрив UTF-8 на межі дає U+FFFD, це безпечно. DoS малоймовірний, бо джерело — власна БД, але ліміт неточний."
+    },
+    {
+      "severity": "low",
+      "title": "Дозвіл debug (fault injection) і далі залежить лише від NODE_ENV",
+      "file": "/private/tmp/devlog-dev008/src/server/agents/core/agentRoute.ts",
+      "line": 35,
+      "detail": "Залишок попереднього раунду, не змінювався. Якщо dev-сервер опублікувати назовні або запустити з NODE_ENV≠production, будь-хто через debug.forceInvalidOutput зможе змусити агента віддати fallback. Впливу на дані немає, бо агент лише читає, тому ризик низький. За бажання можна ввести окремий явний прапорець env."
+    },
+    {
+      "severity": "low",
+      "title": "Cross-site POST без перевірки Content-Type/Origin і без ліміту тіла (свідомо винесено)",
+      "file": "/private/tmp/devlog-dev008/src/server/http/handler.ts",
+      "line": 8,
+      "detail": "readJson викликає request.json() без перевірки Content-Type і без обмеження розміру. У цьому diff маршрут агента ще не змонтовано в src/app/api, тож експлуатації немає. Закрити до підключення маршрутів у DEV-009…012: кожен запуск у live коштує токенів, і запустити його можна простою HTML-формою з чужого сайту."
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-015",
+  "kind": "review",
+  "tree": "7f1f99ade4fae3a93ae07032741d2f4bbf603e5f",
+  "at": "2026-11-22T17:46:57.508Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "AC-1…8 загалом реалізовані, ліміти min(env,4)/min(env,400)/стеля 8 коректні, порядок guard-ів правильний, busy скидається в finally (і при скасуванні стріму), in-memory БД закривається, витоку ключа немає. Але блокування паралельного запуску має TOCTOU-гонку (busy встановлюється після await readJson), тож AC-4 SMOKE_BUSY не гарантується при реальній паралельності; тест перевіряє лише послідовний сценарій. Тести проходять (98), smoke:ai з 'no' не робить запиту.",
+  "findings": [
+    {
+      "severity": "high",
+      "title": "Гонка в SMOKE_BUSY: busy перевіряється до await, а встановлюється після",
+      "file": "src/server/agents/smoke/smokeRoute.ts",
+      "line": 65,
+      "detail": "Між перевіркою `if (busy)` і `busy = true` є `await readJson(request)` та синхронні кроки створення клієнта/БД. Два одночасні запити обидва проходять перевірку й запускають платні виклики (AC-4/AC-5 порушено, подвоєна вартість). Виправлення: виставляти busy=true синхронно одразу після перевірки (як у плані: блокування, потім тіло) і скидати в try/catch/finally на всіх ранніх виходах (помилка парсингу тіла, createClient, createDb, createAgentContext), а в стрімі — у .finally."
+    },
+    {
+      "severity": "medium",
+      "title": "Тест SMOKE_BUSY не ловить гонку",
+      "file": "src/server/agents/smoke/smokeRoute.test.ts",
+      "line": 106,
+      "detail": "Другий запит надсилається після того, як перший уже повернув Response (busy вже true), тому тест пройде й на зламаному коді. Додати тест із двома запитами через Promise.all (до await відповіді) і з тілом, що читається асинхронно; плюс тест, що busy скидається, коли createClient/парсинг тіла кидає виняток, і коли стрім скасовано клієнтом."
+    },
+    {
+      "severity": "low",
+      "title": "Можливий витік traceDb при винятку між createDb і запуском стріму",
+      "file": "src/server/agents/smoke/smokeRoute.ts",
+      "line": 72,
+      "detail": "traceDb відкривається до logger.info і createAgentRunRepository; якщо вони кинуть виняток, close() не викликається (.finally ще не підписано). Після виправлення busy обгорнути в try/catch із traceDb.close() або створювати traceDb безпосередньо перед createNdjsonResponse."
+    },
+    {
+      "severity": "low",
+      "title": "Слабка перевірка відсутності даних задач у AC-6",
+      "file": "src/server/agents/smoke/smokeRoute.test.ts",
+      "line": 168,
+      "detail": "TASK_TEXT_MARKER = \"Seeded\" — довільний підрядок сід-даних, а не реальний заголовок/опис задачі; тест пройде, навіть якщо в step-подіях буде повний текст задачі. Взяти реальний title задачі з БД і перевірити його відсутність у тілі відповіді та логах; також перевіряти логи в цьому тесті."
+    },
+    {
+      "severity": "low",
+      "title": "CLI cli.ts без жодного тесту точки входу",
+      "file": "src/server/agents/smoke/cli.ts",
+      "line": 1,
+      "detail": "Логіку покрито в runSmokeCli, а проводку (PORT, readline, exitCode) — ні; ручна перевірка 'echo no | npm run smoke:ai' працює. Прийнятно для dev-інструмента, але варто згадати в PR."
+    }
+  ]
+}
