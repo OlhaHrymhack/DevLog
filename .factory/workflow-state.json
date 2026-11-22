@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-011",
+  "currentTask": "DEV-012",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1801,7 +1801,7 @@
     "DEV-011": {
       "id": "DEV-011",
       "title": "Агент C Статус-апдейт",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -1825,8 +1825,8 @@
         "review: 2 блокувальних findings"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-011 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-011",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/28",
       "history": [
         {
           "at": "2026-11-21T17:47:24.026Z",
@@ -1964,10 +1964,21 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T21:49:36.654Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/28"
+        },
+        {
+          "at": "2026-11-22T21:49:36.895Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.026Z",
-      "updatedAt": "2026-11-22T21:49:18.003Z",
+      "updatedAt": "2026-11-22T21:49:36.896Z",
       "lastFailure": {
         "stage": "review",
         "signature": "a09ec5b8a48b",
@@ -1978,16 +1989,26 @@
     "DEV-012": {
       "id": "DEV-012",
       "title": "Агент D Радар застряглих",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-012 <url>",
       "pr": null,
       "history": [
         {
@@ -1998,10 +2019,98 @@
           "at": "2026-11-21T19:54:45.089Z",
           "event": "retitled",
           "note": "UI trace агента → Агент D Радар застряглих"
+        },
+        {
+          "at": "2026-11-22T21:55:56.810Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T21:55:57.086Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T21:56:21.896Z",
+          "event": "classified",
+          "note": "сума 8 → balanced"
+        },
+        {
+          "at": "2026-11-22T21:56:22.345Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T21:57:38.870Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T22:06:07.976Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-012/d83d1443e1a2742f31115bc657793f411d0bf38e/tests.json"
+        },
+        {
+          "at": "2026-11-22T22:06:27.991Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "d83d1443e1"
+        },
+        {
+          "at": "2026-11-22T22:10:34.494Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 12,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-012/d83d1443e1a2742f31115bc657793f411d0bf38e/review.json"
+        },
+        {
+          "at": "2026-11-22T22:10:34.787Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-012/d83d1443e1a2742f31115bc657793f411d0bf38e/security.json"
+        },
+        {
+          "at": "2026-11-22T22:10:35.078Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T22:14:50.737Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-012/d83d1443e1a2742f31115bc657793f411d0bf38e/qa.json"
+        },
+        {
+          "at": "2026-11-22T22:14:51.028Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T22:16:59.874Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.090Z",
-      "updatedAt": "2026-11-21T19:54:45.089Z"
+      "updatedAt": "2026-11-22T22:16:59.875Z",
+      "lastFailure": null,
+      "reviewTree": "d83d1443e1a2742f31115bc657793f411d0bf38e"
     },
     "DEV-013": {
       "id": "DEV-013",

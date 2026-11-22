@@ -13,6 +13,7 @@ const DETAILS_SPEC = /taskDetails\.spec\.ts/;
 const DAY_PLAN_SPEC = /dayPlan\.spec\.ts/;
 const DECOMPOSE_SPEC = /decompose\.spec\.ts/;
 const STATUS_UPDATE_SPEC = /statusUpdate\.spec\.ts/;
+const STUCK_RADAR_SPEC = /stuckRadar\.spec\.ts/;
 const SINGLE_VIEWPORT_SPECS = /(health|theme|tasksList)\.spec\.ts/;
 
 export default defineConfig({
@@ -39,18 +40,18 @@ export default defineConfig({
     {
       name: "mobile-375",
       dependencies: ["desktop-1280"],
-      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC, STUCK_RADAR_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
     },
     {
       name: "tablet-768",
       dependencies: ["desktop-1280"],
-      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC, STUCK_RADAR_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
     },
     {
       name: "desktop-1280",
-      testIgnore: [CRUD_SPEC, DETAILS_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
+      testIgnore: [CRUD_SPEC, DETAILS_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC, STUCK_RADAR_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
     {
@@ -61,9 +62,16 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
     {
+      // The radar reads seed tasks t1, t3 and t12 and changes nothing, so it runs before any suite that mutates tasks.
+      name: "stuck-radar",
+      dependencies: ["mobile-375", "tablet-768", "details-desktop-1280"],
+      testMatch: STUCK_RADAR_SPEC,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
+    {
       // Mutations run after suites that assert exact counts for the original seed.
       name: "crud",
-      dependencies: ["mobile-375", "tablet-768", "details-desktop-1280"],
+      dependencies: ["stuck-radar"],
       testMatch: CRUD_SPEC,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },

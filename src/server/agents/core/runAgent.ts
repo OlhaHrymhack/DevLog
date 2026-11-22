@@ -199,9 +199,10 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
   emit({ type: "run", runId: run.id, mode, steps: labels.map((label) => ({ label })) });
 
   try {
-    const registry = createToolRegistry(def.tools);
+    const defTools = typeof def.tools === "function" ? def.tools(input) : def.tools;
+    const registry = createToolRegistry(defTools);
     const tools: ToolSpec[] = [
-      ...def.tools.map(({ name, description, parameters }) => ({ name, description, parameters })),
+      ...defTools.map(({ name, description, parameters }) => ({ name, description, parameters })),
       {
         name: SUBMIT_RESULT_TOOL,
         description: "Фінальний результат агента. Виклич один раз, коли результат готовий.",
