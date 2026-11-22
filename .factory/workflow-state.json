@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-001",
+  "currentTask": "DEV-002",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -29,7 +29,7 @@
       ],
       "blockers": [],
       "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-001 <url>",
-      "pr": null,
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/9",
       "history": [
         {
           "at": "2026-11-21T17:47:23.367Z",
@@ -195,24 +195,39 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T09:36:54.324Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/9"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.366Z",
-      "updatedAt": "2026-11-22T09:36:37.627Z"
+      "updatedAt": "2026-11-22T09:36:54.324Z"
     },
     "DEV-002": {
       "id": "DEV-002",
       "title": "UI Kit",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 0,
+        "security": 0,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 0,
+        "uncertainty": 1,
+        "ui": 1
+      },
       "securityRequired": false,
-      "agent": null,
+      "agent": "qa",
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-002 <url>",
       "pr": null,
       "history": [
         {
@@ -223,10 +238,136 @@
           "at": "2026-11-21T19:54:44.435Z",
           "event": "retitled",
           "note": "Шар даних SQLite Drizzle → UI Kit"
+        },
+        {
+          "at": "2026-11-22T09:44:24.610Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T09:44:24.779Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T09:45:52.053Z",
+          "event": "classified",
+          "note": "сума 4 → balanced"
+        },
+        {
+          "at": "2026-11-22T09:45:52.293Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T09:46:13.726Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T09:57:01.760Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-002/f6c2fe2799b566cf9a6f4cd7079aa3b4d0b56d58/tests.json"
+        },
+        {
+          "at": "2026-11-22T09:57:12.746Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T09:59:04.216Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 7,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-002/f6c2fe2799b566cf9a6f4cd7079aa3b4d0b56d58/review.json"
+        },
+        {
+          "at": "2026-11-22T09:59:22.258Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T10:01:44.135Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-002/f6c2fe2799b566cf9a6f4cd7079aa3b4d0b56d58/qa.json"
+        },
+        {
+          "at": "2026-11-22T10:01:44.330Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T10:02:29.190Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T10:05:36.843Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-002/3aac4f3a3ee7a953f99eb390eb93454028110656/tests.json"
+        },
+        {
+          "at": "2026-11-22T10:05:37.047Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T10:06:19.265Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 5,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-002/3aac4f3a3ee7a953f99eb390eb93454028110656/review.json"
+        },
+        {
+          "at": "2026-11-22T10:07:33.852Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-002/3aac4f3a3ee7a953f99eb390eb93454028110656/qa.json"
+        },
+        {
+          "at": "2026-11-22T10:07:36.553Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T10:07:36.966Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T10:09:58.727Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.446Z",
-      "updatedAt": "2026-11-21T19:54:44.436Z"
+      "updatedAt": "2026-11-22T10:09:58.727Z",
+      "lastFailure": null
     },
     "DEV-003": {
       "id": "DEV-003",

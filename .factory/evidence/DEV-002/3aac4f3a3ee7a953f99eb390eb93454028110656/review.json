@@ -1,0 +1,41 @@
+{
+  "taskId": "DEV-002",
+  "kind": "review",
+  "tree": "3aac4f3a3ee7a953f99eb390eb93454028110656",
+  "at": "2026-11-22T10:06:19.190Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Повторне review DEV-002 (хеш 3aac4f3a3e): усі 4 виправлення Medium коректні, блокерів немає; нові e2e/unit-тести перевіряють поведінку.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Opener розмонтований або не HTMLElement: фокус губиться, Radix-fallback вимкнено",
+      "file": "src/shared/ui/ResponsiveDialog/index.tsx",
+      "line": 34
+    },
+    {
+      "severity": "low",
+      "title": "Перемонтування контенту при зміні viewport під час відкритого діалогу перезаписує opener",
+      "file": "src/shared/ui/ResponsiveDialog/index.tsx",
+      "line": 40
+    },
+    {
+      "severity": "low",
+      "title": "Тест фокусу не покриває розмонтований opener",
+      "file": "src/shared/ui/ui.test.tsx",
+      "line": 126
+    },
+    {
+      "severity": "low",
+      "title": "Alarm-рядок на десктопі без hover-підсвітки",
+      "file": "src/entities/task/ui/TaskRow/styles.ts",
+      "line": 15
+    },
+    {
+      "severity": "low",
+      "title": "Icon-кнопка на 768–1023px 40x44, а не квадрат",
+      "file": "src/entities/task/ui/TaskRow/index.tsx",
+      "line": 45
+    }
+  ]
+}

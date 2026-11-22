@@ -1,0 +1,31 @@
+{
+  "taskId": "DEV-002",
+  "kind": "qa",
+  "tree": "f6c2fe2799b566cf9a6f4cd7079aa3b4d0b56d58",
+  "at": "2026-11-22T10:01:44.065Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "QA DEV-002: vitest 78 зелені; ручна перевірка /ui-kit у 375/768/1280 в обох темах — без горизонтального скролу, AA-контраст без порушень, тема, reduced-motion, tooltip, клавіатура, діалог/sheet працюють. Блокерів немає.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Тап-таргети на мобільному (375) менші за 40px (DESIGN: 44px)",
+      "file": "src/shared/ui/Button/styles.ts"
+    },
+    {
+      "severity": "medium",
+      "title": "Tooltip HeatBadge не закривається після відведення миші",
+      "file": "src/entities/task/ui/HeatBadge/index.tsx"
+    },
+    {
+      "severity": "medium",
+      "title": "Після закриття діалогу фокус не повертається на кнопку-тригер",
+      "file": "src/shared/ui/ResponsiveDialog/index.tsx"
+    },
+    {
+      "severity": "low",
+      "title": "Тьмяні кроки фолбек-панелі: перевірити ефективний контраст з opacity",
+      "file": "src/entities/agentRun/ui/AgentPanel/index.tsx"
+    }
+  ]
+}

@@ -124,6 +124,8 @@ const eslintConfig = defineConfig([
     files: ["src/shared/ui/**/*.{ts,tsx}"],
     rules: {
       "func-style": "off",
+      // Згенерований shadcn містить `as` (напр. CSSProperties) — лишається в оригінальній формі.
+      "@typescript-eslint/consistent-type-assertions": "off",
     },
   },
 ]);
