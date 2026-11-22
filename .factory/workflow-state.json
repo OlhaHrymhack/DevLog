@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-015",
+  "currentTask": "DEV-009",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1400,16 +1400,32 @@
     "DEV-009": {
       "id": "DEV-009",
       "title": "Агент A План на день",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "sonnet": 3
+      },
+      "issues": [
+        "review: 2 блокувальних findings",
+        "tests failed: typecheck(failed), test(failed)",
+        "tests failed: test(failed)"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-009 <url>",
       "pr": null,
       "history": [
         {
@@ -1420,10 +1436,158 @@
           "at": "2026-11-21T19:54:44.892Z",
           "event": "retitled",
           "note": "Агент B декомпозиція → Агент A План на день"
+        },
+        {
+          "at": "2026-11-22T18:52:00.597Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T18:52:00.907Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T18:53:05.602Z",
+          "event": "classified",
+          "note": "сума 8 → balanced"
+        },
+        {
+          "at": "2026-11-22T18:53:09.106Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T18:54:09.952Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T19:01:46.396Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-009/61871150bc7fd6d7b65bf3d36213ff960b027d05/verify.json"
+        },
+        {
+          "at": "2026-11-22T19:03:17.866Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-009/72c7036733c9ba7922718132277260bbbd664c2c/tests.json"
+        },
+        {
+          "at": "2026-11-22T19:04:24.935Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-009/63e9f98654ac8bb121079ee4b42e1201735fe4e5/tests.json"
+        },
+        {
+          "at": "2026-11-22T19:04:25.214Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "63e9f98654"
+        },
+        {
+          "at": "2026-11-22T19:06:19.927Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-009/63e9f98654ac8bb121079ee4b42e1201735fe4e5/security.json"
+        },
+        {
+          "at": "2026-11-22T19:08:32.599Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 14,
+          "blocking": 2,
+          "evidence": ".factory/evidence/DEV-009/63e9f98654ac8bb121079ee4b42e1201735fe4e5/review.json"
+        },
+        {
+          "at": "2026-11-22T19:08:32.749Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T19:10:18.533Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-009/2408eee66c857f4336c763d027e404488bdc7049/tests.json"
+        },
+        {
+          "at": "2026-11-22T19:11:27.948Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-009/adb2f45a8342426c0626f02a9a9a6f74a891cec1/tests.json"
+        },
+        {
+          "at": "2026-11-22T19:12:40.981Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-009/d8b7482b18b32c9415bc911f0a4f1bb5c625129f/tests.json"
+        },
+        {
+          "at": "2026-11-22T19:12:43.543Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "d8b7482b18"
+        },
+        {
+          "at": "2026-11-22T19:13:42.653Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-009/d8b7482b18b32c9415bc911f0a4f1bb5c625129f/security.json"
+        },
+        {
+          "at": "2026-11-22T19:14:11.464Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 6,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-009/d8b7482b18b32c9415bc911f0a4f1bb5c625129f/review.json"
+        },
+        {
+          "at": "2026-11-22T19:14:11.761Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T19:18:33.604Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-009/d8b7482b18b32c9415bc911f0a4f1bb5c625129f/qa.json"
+        },
+        {
+          "at": "2026-11-22T19:18:33.884Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T19:35:55.674Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.898Z",
-      "updatedAt": "2026-11-21T19:54:44.892Z"
+      "updatedAt": "2026-11-22T19:35:55.675Z",
+      "lastFailure": null,
+      "reviewTree": "d8b7482b18b32c9415bc911f0a4f1bb5c625129f"
     },
     "DEV-010": {
       "id": "DEV-010",

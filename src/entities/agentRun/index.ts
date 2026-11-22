@@ -39,6 +39,13 @@ export type {
   AgentStepType,
 } from "./model/types";
 export {
+  DAY_PLAN_MAX_DEFERRED,
+  DAY_PLAN_MAX_ITEMS,
+  DayPlanInputSchema,
+  DayPlanSchema,
+} from "./model/dayPlan";
+export type { DayPlan, DayPlanInput } from "./model/dayPlan";
+export {
   applyAgentEvent, IDLE_AGENT_RUN,
   type AgentRunState, type AgentRunViewStatus,
 } from "./model/agentRunState";

@@ -1,0 +1,25 @@
+{
+  "taskId": "DEV-015",
+  "kind": "security",
+  "tree": "dbba4f61e2572de97d81bd8ee0c9f1e1eb3c861d",
+  "at": "2026-11-22T18:24:03.310Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Третій прохід DEV-015 (дерево dbba4f61e2), статичний аналіз вручну плюс точкові перевірки поведінки crypto і Headers у node. /cso не запускався, Docker немає, платних запитів не було. Попередні знахідки закрито. (1) Fail-open із порожнім токеном: expected перевіряється на /^[0-9a-f]{64}$/ у isValidSmokeToken і в ensureSmokeToken, тож порожній або пошкоджений файл ні з чим не збігається. (2) Гонка створення: спершу writeFileSync з wx, на EEXIST файл читається, решта помилок прокидається далі. (3) Права файлу: lstatSync відхиляє symlink і не звичайний файл, вимагається (mode & 0o077) === 0 і uid === getuid(). (4) .env.example документує -H 127.0.0.1 і ротацію через видалення файлу. Повідомлення помилок не містять токена. Помилки ensureSmokeToken у маршруті стають узагальненим 500 INTERNAL_ERROR: toErrorResponse не віддає message звичайних Error, а лог пише лише frames. CLI друкує лише текст помилки зі smokeToken.ts, токена там немає. Токен читається до fetch, але після підтвердження. Залишились лише low-знахідки.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Формат provided не перевіряється: заголовок із latin1-символами дає 500 замість 403",
+      "file": "src/server/agents/smoke/smokeToken.ts",
+      "line": 43,
+      "detail": "Супровідний опис каже, що формат перевіряється для expected і provided, але регулярний вираз застосовано лише до expected. Для provided звіряється лише provided.length, тобто довжина в UTF-16. Значення з 64 символів, яке містить, наприклад, 'é' (Headers.get повертає obs-text як latin1), має правильну string-довжину. Але Buffer.from(provided) дає 65 байт, і timingSafeEqual кидає ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH (перевірено в node). Наслідок: 500 INTERNAL_ERROR і error-лог зі stack frames замість 403. Обходу немає, і токен не витікає. Виправлення: додати TOKEN_FORMAT.test(provided) в умову ранньої відмови. Тест: 64 символи з не-ASCII → 403."
+    },
+    {
+      "severity": "low",
+      "title": "Між lstatSync і readFileSync є TOCTOU-вікно; на Windows перевірка прав фактично блокує роботу",
+      "file": "src/server/agents/smoke/smokeToken.ts",
+      "line": 35,
+      "detail": "assertPrivateFile перевіряє шлях, а readFileSync потім відкриває його знову. Між цими викликами файл можна замінити на symlink, і readFileSync піде за ним. Для цього потрібен запис у data/, тобто фактично права самого розробника, тож практичний ризик мінімальний. Надійніший варіант: openSync(path, O_RDONLY | O_NOFOLLOW), далі fstatSync(fd) для тих самих перевірок і читання через той самий fd. Інформаційно: на Windows process.getuid відсутній, тому перевірка власника пропускається, а mode зазвичай 0o666. Через це (mode & 0o077) !== 0 завжди кидає помилку і smoke не запуститься. Це питання зручності, не безпеки; варто задокументувати або обробити окремо. Ще один перехідний випадок: якщо читання потрапить між створенням файлу з wx і записом у нього, спрацює 'пошкоджений' (fail-closed), і повторний запит уже пройде."
+    }
+  ]
+}

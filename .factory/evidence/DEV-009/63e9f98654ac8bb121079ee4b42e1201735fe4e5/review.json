@@ -1,0 +1,109 @@
+{
+  "taskId": "DEV-009",
+  "kind": "review",
+  "tree": "63e9f98654ac8bb121079ee4b42e1201735fe4e5",
+  "at": "2026-11-22T19:08:32.468Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "DEV-009 загалом відповідає плану: формула scoreTask і числа seed (t2=78, t1=47,2, t7=46) правильні й перевірені, mock-цикл list_active_tasks → submit_result, factCheck (#42, done, дублікати, термінові, фактор), strict-сумісний DayPlan (joke nullable, limit nullable), панель зі станами, діалог фокусу (скасування не пише), перехід в idle, інвалідація ['tasks','list'], тост при помилці PUT, мобільна згортка з aria-expanded. Зміни AgentRunPanel зворотно сумісні, а тести DEV-008 не послаблено по суті. Vitest (151), typecheck і lint зелені. Блокер: ядро проганяє fallback через resultSchema+factCheck, але rulePlan не враховує дедлайни і на нулі активних задач дає items=[]. Через це резервний план не завжди проходить перевірку: при збої моделі користувач у реалістичних сценаріях бачить помилку FALLBACK_INVALID замість порядку за правилом, а тест закріплює items=[] як очікувану поведінку. Решта findings: прогалини в urgent-перевірці, крихкий FACTOR_PATTERN, list_active_tasks без сортування за вагою, глухий стан панелі, фіксований текст fallback для всіх причин, ризики E2E при повторі.",
+  "findings": [
+    {
+      "severity": "high",
+      "title": "Fallback rulePlan не гарантовано проходить factCheck: термінова задача поза top-3 за правилом → error замість fallback",
+      "file": "src/server/agents/prioritize/rulePlan.ts",
+      "line": 20,
+      "detail": "runAgent.fallback (core/runAgent.ts:192) валідує результат def.fallback через resultSchema+factCheck. Якщо не пройде, повертається status 'error' FALLBACK_INVALID. rulePlan сортує лише за пріоритетом, потім createdAt ↑, потім статусом, а checkDayPlan вимагає, щоб задачі з дедлайном < 48 год були в items. Приклад: у seed є 3+ старіші high-задачі, користувач створює нову high (або medium/low) задачу з дедлайном завтра. Тоді будь-який збій моделі (2× невалідна відповідь, refusal, max_tokens, ліміт кроків, дедлайн) дає 'Агент недоступний' без плану. Це порушує гарантію AC-4, а live-режим робить такий сценарій звичайним. Як виправити: rulePlan ставить термінові активні задачі першими (на seed порядок t2, t7, t1 збережеться, бо t2 і так перша) або fallback використовує окрему перевірку. Додати unit-тест: seed + нова high-задача з dueAt = now + 1 год, forceInvalidOutput → фінал 'fallback', а не 'error'."
+    },
+    {
+      "severity": "high",
+      "title": "rulePlan за відсутності активних задач повертає items=[], що порушує DayPlanSchema.min(1); тест закріплює цю поведінку",
+      "file": "src/server/agents/prioritize/focus.test.ts",
+      "line": 46,
+      "detail": "Тест має назву 'fallback-план проходить схему для будь-якої кількості активних задач', але сам перевіряє, що rulePlan(лише done).items == []. Такий план не проходить DayPlanSchema (items.min(1)), тож fallback стає FALLBACK_INVALID. UI ховає кнопку запуску, але API можна викликати напряму, а задачі можуть стати done між завантаженням списку і запуском. Як виправити: явно обробити порожній набір (окремий результат або схема з дозволеним порожнім fallback) і переписати тест так, щоб він перевіряв проходження validateResult через runAgent, а не лише форму масиву. Зараз назва тесту не відповідає тому, що він перевіряє."
+    },
+    {
+      "severity": "medium",
+      "title": "Mock-план може не пройти власний factCheck: термінова low/medium задача поза top-3 за вагою",
+      "file": "src/server/agents/prioritize/prioritizeAgent.ts",
+      "line": 51,
+      "detail": "buildMockPlan бере top-3 за scoreTask. Бонус +30 за дедлайн не гарантує потрапляння в top-3: low-задача з дедлайном зараз отримує 10+30=40, а старі high-задачі в роботі мають до 64. У demo-режимі такий набір даних дає дві невалідні спроби і fallback, який теж падає (див. попередній finding), тобто error. Як виправити: у mock (і бажано в rankActiveTasks для плану) спершу брати термінові задачі, потім решту за вагою."
+    },
+    {
+      "severity": "medium",
+      "title": "Перевірка термінових задач пропускає план, у якому менше 3 items",
+      "file": "src/server/agents/prioritize/prioritizeAgent.ts",
+      "line": 43,
+      "detail": "Умова `bumped.length > 0 && itemIds.some(id => !urgentIds.includes(id))` фіксує порушення лише тоді, коли в items є нетермінова задача. Приклад: термінових дві (u1, u2), модель повертає items=[u1]. Порушення немає, хоча місце для u2 є. Як виправити: порушення, якщо bumped не порожній і (items.length < DAY_PLAN_MAX_ITEMS або в items є нетермінова). Додати тест-кейс із двома терміновими задачами."
+    },
+    {
+      "severity": "medium",
+      "title": "FACTOR_PATTERN спрацьовує на підрядки звичайних слів",
+      "file": "src/server/agents/prioritize/explain.ts",
+      "line": 8,
+      "detail": "`дн(?:ів|і|ь|я)` знаходить збіг у 'сьогодні', 'однієї', 'додні'; `вік` — у 'чоловік', 'віконце'. Тому why на кшталт 'Зробіть це сьогодні, бо так треба' проходить перевірку фактора. Це головний захист від порожніх пояснень моделі в live. Як виправити: межі слова через \\b не працюють з кирилицею без флагу u і lookbehind. Краще `(?<![\\p{L}])(?:дн(?:ів|і|ь|я)|вік)` з флагом u або перевірка на число + 'дн'. Додати негативний тест із 'сьогодні'."
+    },
+    {
+      "severity": "medium",
+      "title": "list_active_tasks обрізає до 50 задач у вхідному порядку, а не за вагою",
+      "file": "src/server/agents/prioritize/listActiveTasksTool.ts",
+      "line": 18,
+      "detail": "`views.slice(0, limit ?? MAX_LISTED_TASKS)` бере перші N за порядком репозиторію, і модель не знає про обрізання (поля truncated, як у list_tasks, немає). Якщо активних задач понад 50, термінова задача може не потрапити у вибірку, а factCheck її вимагає, тож гарантовано маємо fallback (і через finding 1 — error). Як виправити: сортувати за score (термінові першими) перед slice і повертати truncated."
+    },
+    {
+      "severity": "medium",
+      "title": "Панель застрягає без дій, коли план після resolvePlan порожній або невалідний",
+      "file": "src/widgets/dayPlanPanel/ui/DayPlanPanel/index.tsx",
+      "line": 74,
+      "detail": "Дії «Застосувати / Перегенерувати / Відхилити» (result) і «Спробувати ще раз / Взяти цей порядок» (fallback) показуються лише при `plan && plan.items.length > 0`. Якщо всі задачі плану видалено після запуску або data не пройшла DayPlanSchema на клієнті, видно лише кроки і підсумок без жодної кнопки, і повернутися в idle неможливо. Як виправити: окрема гілка 'План застарів' з кнопками «Скласти план знову» і «Відхилити» плюс компонентний тест."
+    },
+    {
+      "severity": "medium",
+      "title": "Текст fallback «не пройшла перевірку двічі» показується для будь-якої причини fallback",
+      "file": "src/widgets/dayPlanPanel/ui/DayPlanPanel/index.tsx",
+      "line": 72,
+      "detail": "fallbackMessage жорстко заданий, а run.fallbackReason (refusal, max_tokens, ліміт кроків, дедлайн, без результату) приховано. У live при таймауті або refusal користувачка бачить неправдиве пояснення. Копі взято зі спеки для кейсу invalidResult, тому варто показувати цей текст лише для FALLBACK_REASONS.invalidResult, а для решти — загальний з run.fallbackReason. Те саме з підсумком «Агент не впорався»."
+    },
+    {
+      "severity": "medium",
+      "title": "E2E day-plan залежить від порядку тестів і стану БД, тож нестабільний при retry на CI",
+      "file": "e2e/dayPlan.spec.ts",
+      "line": 36,
+      "detail": "Тест AC-5 перевіряє `focusBadges toHaveCount(0)` після «Скасувати». Це правда лише тоді, коли фокус ще не закріплено. На CI retries=1: якщо тест упаде після «Закріпити» (або AC-4 виконається раніше), повтор впаде вже на цьому кроці, бо фокус лишився. Крім того, перший рядок 'Міграція auth' і 'дедлайн менш ніж за добу' залежать від того, що crud/details прибрали свої high-задачі з dueAt = now + 1 год. Якщо finally з request.delete не виконається, план зміниться. Як виправити: у beforeEach скидати фокус через PUT /api/tasks/focus {taskIds: []} (якщо контракт дозволяє) або перевіряти, що бейджі не змінились відносно стану до кліку, а не що їх 0."
+    },
+    {
+      "severity": "low",
+      "title": "Деталь кроку 4 для хибного кейсу не відповідає спеці",
+      "file": "src/server/agents/prioritize/prioritizeAgent.ts",
+      "line": 77,
+      "detail": "Спека вимагає для кроку 4 detail «Відповідь посилається на задачу #42, якої немає. Повтор теж невдалий.», а ядро ставить загальне «Відповідь не пройшла перевірку — повтор». E2E і unit перевіряють лише state=fail. Узгодити зі спекою або зафіксувати відхилення."
+    },
+    {
+      "severity": "low",
+      "title": "Неточний коментар і зайвий публічний експорт resolvePlan",
+      "file": "src/widgets/dayPlanPanel/lib/resolvePlan.ts",
+      "line": 13,
+      "detail": "Коментар каже, що в серйозному режимі пояснення не показуються, хоча приховується лише joke, а why видно. resolvePlan експортовано з barrel widgets/dayPlanPanel/index.ts, але поза слайсом він не використовується. Виправити коментар і прибрати експорт."
+    },
+    {
+      "severity": "low",
+      "title": "Запит списку задач безпосередньо в компоненті віджета",
+      "file": "src/widgets/dayPlanPanel/ui/DayPlanPanel/index.tsx",
+      "line": 23,
+      "detail": "code-style.md: запити й обчислення мають бути в model/ або lib/, а не в компоненті. useQuery(taskQueryKeys.list()) і розрахунок activeCount/pinned варто винести в хук (наприклад, model/useDayPlanTasks.ts) або використати наявний хук entities/task, якщо такий є."
+    },
+    {
+      "severity": "low",
+      "title": "Пояснення для простроченої задачі каже «дедлайн менш ніж за добу»",
+      "file": "src/server/agents/prioritize/explain.ts",
+      "line": 25,
+      "detail": "isUrgent охоплює прострочені задачі (dueInHours < 0), а explainTask для них пише «дедлайн менш ніж за добу». Для dueInHours < 0 краще «дедлайн прострочено»."
+    },
+    {
+      "severity": "low",
+      "title": "Немає тесту на помилку PUT /api/tasks/focus у діалозі",
+      "file": "src/widgets/dayPlanPanel/ui/DayPlanPanel/DayPlanPanel.test.tsx",
+      "line": 99,
+      "detail": "Обробка помилки (toast.error, діалог лишається відкритим, панель не переходить в idle) реалізована, але не покрита. Додати сценарій з відповіддю 500 на PUT. Також допоміжну функцію z2 у prioritizeAgent.test.ts варто перейменувати (наприклад, parseActiveTasksOutput)."
+    }
+  ]
+}

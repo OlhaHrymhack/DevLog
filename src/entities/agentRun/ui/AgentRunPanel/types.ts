@@ -12,6 +12,9 @@ export type AgentRunPanelProps = {
   demo?: boolean;
   collapsible?: boolean;
   summary?: string;
+  /** Власний заголовок і текст fallback-alert (за замовчуванням — загальні). */
+  fallbackTitle?: string;
+  fallbackMessage?: string;
   /** Вміст у стані `idle` (кнопка запуску). */
   idle?: ReactNode;
   /** Вміст після завершення: результат, дії «Застосувати» / «Відхилити». */
