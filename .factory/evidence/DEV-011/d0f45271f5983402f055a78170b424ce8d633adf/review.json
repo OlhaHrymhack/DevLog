@@ -1,0 +1,60 @@
+{
+  "taskId": "DEV-011",
+  "kind": "review",
+  "tree": "d0f45271f5983402f055a78170b424ce8d633adf",
+  "at": "2026-11-22T21:23:21.830Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "Повторне рев'ю DEV-011. Обидва high із першого звіту виправлено коректно. Fallback short за ручного тону (manager) завершується fallback, а не error (покрито тестом). Корпус посилань тепер включає назву, опис, підзадачі й нотатки. «#42» у назві більше не ламає mock і fallback, а «PR #31» при «PR #318» відхиляється. Medium-пункти теж закрито: REVIEW_NOTE з межами слова, емодзі з даних задачі для manager, clip по рядках, позначка недовірених даних у промпті, taskId.max(100), «Відхилити» у fallback. Регекс REFERENCE без ReDoS: [a-z0-9-] не містить крапки, тож розбір однозначний. Vitest (177 тестів у server/agents, widgets і features), typecheck і lint зелені. Нових critical/high немає. Пробами знайдено кілька нових medium. (1) Нейтралізація @channel/@here діє лише на текст нотатки. Назва й підзадачі з «@here» або «@channel» ламають mock і fallback short, тож результат — error. (2) Послаблення «short завжди допустимий» діє і для живої моделі: ручний тон користувача можна обійти. (3) Точне порівняння дає хибні відмови: «#318» при «PR #318», «example.com» при повному URL, email. (4) clip відкидає рядки з кінця. Через це губиться «Далі», а mentions лишаються на викинуті дані. Для коротких назв текст може стати коротшим за 20 символів. (5) E2E більше не перевіряє disabled «Скопіювати» під час друку, тож AC-7 [E] формально не покрито. Свідомо відкладені follow-up (detail у кроках, тост, повторний друк, missingTaskDraft) не перелічую повторно.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "@here/@channel у назві або підзадачі ламає і mock, і fallback, тож результат error",
+      "file": "src/server/agents/statusUpdate/buildUpdate.ts",
+      "line": 48,
+      "detail": "safe() застосовується лише до note.text (рядки 71, 78). Назву задачі (рядки 48, 56, 69, 76) і назви підзадач (titles(), рядки 45, 49, 59) вставлено як є, а checkStatusUpdate відхиляє будь-який @here/@channel/<!channel>/<@U…>. Проби показали порушення broadcast для: назви «@here хотфікс логіну» (short, тобто сам fallback), «Задача @channel?» (manager), підзадачі «Пінгнути @channel про реліз» (team і short). Fallback short містить назву і першу відкриту підзадачу, тому підсумок — FALLBACK_INVALID. Той самий клас бага, що й перший high (легітимні дані задачі ламають fallback). Виправлення: пропускати через safe() усі дані задачі, а не лише нотатку (назву в усіх тонах і titles()). Додати тест «назва/підзадача з @here → mock і fallback проходять factCheck»."
+    },
+    {
+      "severity": "medium",
+      "title": "«short завжди допустимий» знімає перевірку ручного тону і для живої моделі",
+      "file": "src/server/agents/statusUpdate/checkStatusUpdate.ts",
+      "line": 38,
+      "detail": "Умова `result.tone !== \"short\"` потрібна лише fallback, але factCheck не відрізняє fallback від відповіді моделі. У live-режимі модель, якій користувач явно задав manager/team/humor, може повернути tone short, і перевірка пройде. Тоді UI покаже інший тон, ніж обрав користувач (AC-3: ручний тон поважається). Виправлення: передавати у factCheck ознаку fallback (через ctx або окремий валідатор fallback у runAgent/AgentDefinition). Як варіант, дозволяти short лише тоді, коли текст збігається з buildUpdate(task, \"short\"). Додати тест «tone manager, результат моделі з tone short → порушення»."
+    },
+    {
+      "severity": "medium",
+      "title": "Точне порівняння посилань дає хибні відмови на природних формулюваннях",
+      "file": "src/server/agents/statusUpdate/checkStatusUpdate.ts",
+      "line": 34,
+      "detail": "Проби для нотатки «Фікс у PR #318, див. https://example.com/a». «фікс у #318» відхиляється («#318, якого немає в нотатках»), бо в корпусі лише «pr#318». «деталі на example.com» відхиляється, бо корпус дає лише повний URL. «olha@example.com» відхиляється, бо домен-альтернатива захоплює частину email. Зворотний випадок теж: «PR #318» відхиляється, коли в нотатці лише «#318». Для живої моделі це зайві повтори і fallback на коректних текстах. Виправлення: нормалізувати номери до «#n» (PR #318 → #318) з обох боків. Для URL додавати в known також host (і www-варіант), а email виключати з REFERENCE (негативний lookbehind `(?<![@\\w.])`). Окремо: whitelist TLD (com/org/net/io/dev/app/ua/ru) пропускає вигадані домени з .co, .ai, .me, .xyz (low)."
+    },
+    {
+      "severity": "medium",
+      "title": "clip відкидає рядки з кінця: губиться «Далі», mentions розходяться з текстом, можливий текст < 20 символів",
+      "file": "src/server/agents/statusUpdate/buildUpdate.ts",
+      "line": 21,
+      "detail": "Проба: задача з відкритою підзадачею і нотаткою ~900 символів дає team-текст лише «*Задача з довгою нотаткою*: апдейт». Короткий рядок «Далі: …» викинуто разом із довгою нотаткою, бо pop іде з кінця. При цьому mentions і далі містять id нотатки й підзадачі, яких у тексті немає (mentions мають бути тим, «на що спирається текст»). За назви з 3 символів («Баг») текст «*Баг*: апдейт» коротший за STATUS_UPDATE_TEXT.min=20, тож resultSchema відхиляє mock. Виправлення: обрізати саму нотатку (по межі слова або токена, напр. до 300 символів, без розрізання URL) замість викидання рядків. Або викидати найдовший рядок, а не останній, і рахувати mentions після clip. Додати тест «довга нотатка + відкрита підзадача → «Далі» лишається, mentions відповідають тексту»."
+    },
+    {
+      "severity": "medium",
+      "title": "AC-7 «під час друку «Скопіювати» disabled» більше нічим не перевірено",
+      "file": "e2e/statusUpdate.spec.ts",
+      "line": 85,
+      "detail": "Після прибирання гонки E2E перевіряє лише toBeEnabled, хоча назва тесту досі обіцяє «під час друку кнопка disabled». useTypewriter.test перевіряє тільки прапорець typing у хуку. Якщо видалити `disabled={typing}` у StatusUpdatePanel (рядок 60), жоден тест не впаде, а AC-7 позначено [E]. Виправлення: jsdom-тест панелі або SlackPreview із fake timers (результат є, typing → кнопка disabled, після advanceTimers → enabled). Як варіант, E2E із page.clock.install() і перевіркою disabled до clock.runFor(). І виправити назву тесту."
+    },
+    {
+      "severity": "low",
+      "title": "<mailto:…> з нотатки не нейтралізується, але заборонений у factCheck",
+      "file": "src/server/agents/statusUpdate/buildUpdate.ts",
+      "line": 13,
+      "detail": "BROADCAST у checkStatusUpdate містить `<mailto:`, а safe() обробляє лише `<!` і `<@`. Нотатка «Контакт <mailto:a@b.io|a@b.io>» ламає mock team і humor (проба: порушення broadcast). Fallback short нотатку не містить, тому він працює. Виправлення: тримати один спільний перелік службової розмітки для safe() і factCheck (напр. замінювати `<mailto:` на `mailto:`)."
+    },
+    {
+      "severity": "low",
+      "title": "Тест «fallback за ручного тону» покриває лише manager і на t1",
+      "file": "src/server/agents/statusUpdate/statusUpdateAgent.test.ts",
+      "line": 142,
+      "detail": "Плановий тест з першого рев'ю (forceInvalidOutput з tone team і humor) додано лише для manager. Перевіряється тільки type === fallback, без tone short і без відсутності PR #999. Варто параметризувати по team, manager, humor і додати кейс назви з @here (див. перший finding)."
+    }
+  ]
+}
