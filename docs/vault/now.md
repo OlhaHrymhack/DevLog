@@ -3,28 +3,33 @@ tags: [now]
 ---
 # Зараз (короткий зріз, ≤ 40 рядків, перезаписується)
 
-Оновлено: 2026-11-21.
+Оновлено: 2026-11-22.
 
 ## Стан
-- Фабрика готова: selftest 81/81, guard-log, PR-only workflow — [[architecture/factory]], [[decisions]] D-011, D-012.
-- Codex CLI підключено (ChatGPT, `gpt-6.2-sol`, D-009). gstack — лише skills із Master Prompt.
-- Стайл-гайд коду: `.claude/rules/code-style.md` — FSD на клієнті, DDD у `src/server/` (D-013).
-- Дизайн-система з Claude Design — `docs/design/` (DESIGN.md, tokens.css, prototype.html); адаптація — D-014.
-- **Продукт — [[product]]:** концепт, скоуп MVP, матриця вимог ТЗ R-01…21 → DEV, тест-кейси TC-01…75. Джерело правди про продукт.
-- Бектлог: 13 задач DEV-001…013 — `.factory/tasks.md`. Агент D — «Радар застряглих».
-- **Специфікації задач — [[specs/README]]:** по файлу на задачу (реалізація, контракти, мікрокопі з прототипу, AC з тестами), порядок виконання і протокол відновлення контексту.
-- Коду застосунку ще немає.
+- Код застосунку є: Next.js App Router + TS strict, Tailwind v4 + shadcn, Vitest, Playwright, стайл-гайд D-013 / D-023 — [[architecture/factory]].
+- **DEV-001 Каркас** — PR #9 (стан фабрики: READY_FOR_PR, запис переходу в COMPLETED відсутній — уточнити).
+- **DEV-002 UI Kit** — COMPLETED. Токени, shadcn-компоненти, `entities/task` і `entities/agentRun`, `themeToggle`, `/ui-kit` (404 у production) — [[features/ui-kit]].
+- **DEV-014 Конвенції коду** — COMPLETED, PR #12. Стрілкові `const`, shadcn у PascalCase-папках — D-023.
+- Метрики DEV-002: reworkCycles 1, failedVerify 0, blockingReviews 0, ~0.4 год до PR (`factory metrics DEV-002`).
 
 ## PR
-- Змерджено в `stage`: #1 (фабрика), #2 (стайл-гайд), #3 (`retitle`/`remove`), #4 (guard для записів фабрики), #5 (дизайн-система + бектлог).
-- Чекає merge: #6 `docs/product-concept` (product.md + specs/DEV-001…013).
+- Змерджено: #9 (DEV-001), #12 (DEV-014, разом з DEV-002 за словами користувачки), #13 (повторне рев'ю фабрики, D-024).
+- DEV-002 увійшов у змерджений PR #12 (разом з DEV-014); PR #11 лишається відкритим — його можна закрити без merge.
+
+## Рішення останнього часу
+- D-022: Tailwind v4 CSS-тема, власна `Button`, `sonner` без `next-themes` (DEV-002).
+- D-023: стрілкові `const`, shadcn-компоненти в `PascalCase/index.tsx` (DEV-014).
+- D-024: повторне рев'ю після ребейзу, `COMPLETED → REVIEWING` лише при зміні коду.
+- D-025: Inter 700 за специфікацією, тема інлайн-скриптом у `<head>`, тач-tooltip у контрольованому режимі (DEV-002).
 
 ## Далі
-1. Питання зі specs вирішено (D-015). Користувачка мерджить #6.
-2. `/factory DEV-001` (каркас) від актуального `stage` → план → `APPROVE DEV-001`.
-3. Потім DEV-002 (UI Kit зі сторінкою `/ui-kit`).
+1. `/factory DEV-003` «Шар даних» (BACKLOG) від актуального `stage` — спека [[specs/DEV-003]], план → `APPROVE DEV-003`.
+2. Потім DEV-004 «API задач» (спека [[specs/DEV-004]]).
 
 ## Відкрите
+- DEV-001: стан фабрики READY_FOR_PR, перехід у COMPLETED не записано. Звірити з GitHub і виправити стан через CLI.
+- Закрити застарілий PR #11 (рішення користувачки).
+- Ручна QA DEV-002: AA-контраст і звірка з прототипом (AC-7), tooltip на тач на 375. Автотестів на це немає.
+- `next build` потребує мережі для Google Fonts. CI має мати доступ.
 - Хибне спрацювання guard на слово «secrets» — рішення за користувачкою (`errors/2026-11-21-guard-false-positive-word-secrets.md`).
 - Текст ТЗ (PDF) лежить поза репо; субагенти бачать його через [[product]].
-- Live ще не перевірено: reviewer на opus, повний `/codex review`, проходження всіх gates (буде на DEV-001).
