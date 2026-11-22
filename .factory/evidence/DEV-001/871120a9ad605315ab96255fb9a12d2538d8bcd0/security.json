@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-001",
+  "kind": "security",
+  "tree": "871120a9ad605315ab96255fb9a12d2538d8bcd0",
+  "at": "2026-11-22T09:23:22.399Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Security review DEV-001: Critical/High немає. Env-помилки без значень, ключ лише на сервері (server-only), health віддає лише aiMode, .gitignore для .env*, npm audit 0.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Redact у logger не покриває x-api-key (заголовок Anthropic SDK)",
+      "file": "src/server/logger.ts",
+      "line": 4
+    },
+    {
+      "severity": "medium",
+      "title": "Wildcard-шляхи redact працюють лише на один рівень",
+      "file": "src/server/logger.ts",
+      "line": 6
+    },
+    {
+      "severity": "low",
+      "title": "logger.ts без власного import server-only",
+      "file": "src/server/logger.ts",
+      "line": 1
+    },
+    {
+      "severity": "low",
+      "title": "env.ts у shared/config доступному клієнтським шарам",
+      "file": "src/shared/config/env.ts",
+      "line": 1
+    },
+    {
+      "severity": "low",
+      "title": "Немає security headers / poweredByHeader",
+      "file": "next.config.ts",
+      "line": 3
+    },
+    {
+      "severity": "low",
+      "title": "/api/health розкриває aiMode (свідомий компроміс)",
+      "file": "src/app/api/health/route.ts",
+      "line": 7
+    },
+    {
+      "severity": "low",
+      "title": "prepare змінює core.hooksPath при npm install",
+      "file": "package.json",
+      "line": 16
+    }
+  ]
+}

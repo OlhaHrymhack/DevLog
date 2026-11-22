@@ -1,0 +1,16 @@
+{
+  "taskId": "DEV-001",
+  "kind": "qa",
+  "tree": "95fd391a8ed443b97f7ba193c5c22c5daebea597",
+  "at": "2026-11-22T09:36:18.120Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "QA DEV-001 на експорті staged-дерева (checkout-index) без .env: AC-1 пройдено (npm ci ок; / → 200; /api/health → {status:ok,aiMode:demo}; LOG_LEVEL=loud → помилка з назвою LOG_LEVEL без значення, fail-fast). AC-5 пройдено (build з маркером dl-marker-qa-4b8e1d: 0 збігів у .next/static і .next/server). Регресія: typecheck, lint чисті; vitest 5 файлів, 27 тестів passed. UI-сценаріїв немає.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "next dev автогенерує AGENTS.md (у .gitignore; можна вимкнути agentRules: false)",
+      "file": "next.config.ts"
+    }
+  ]
+}

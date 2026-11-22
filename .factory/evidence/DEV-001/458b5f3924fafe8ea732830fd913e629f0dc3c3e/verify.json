@@ -1,0 +1,37 @@
+{
+  "taskId": "DEV-001",
+  "kind": "verify",
+  "tree": "458b5f3924fafe8ea732830fd913e629f0dc3c3e",
+  "at": "2026-11-22T08:29:27.670Z",
+  "ok": false,
+  "failed": [
+    "typecheck(failed)",
+    "test(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 1099,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\nsrc/app/layout.tsx(9,50): error TS2304: Cannot find name 'LayoutProps'.\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1877,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 945,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /Users/olhahrymchak/Desktop/DevLog\n\nNo test files found, exiting with code 1\n\ninclude: **/*.{test,spec}.?(c|m)[jt]s?(x)\nexclude:  **/node_modules/**, **/.git/**\n\n"
+    }
+  ]
+}
