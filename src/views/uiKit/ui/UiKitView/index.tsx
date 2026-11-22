@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/Tabs";
 import { Textarea } from "@/shared/ui/Textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/ToggleGroup";
 import { SAMPLE_TASKS, UI_KIT_NOW } from "../../model/sampleTasks";
+import { AgentRunDemo } from "../AgentRunDemo";
 import { pageStyles, rowStyles, sectionTitleStyles, tableStyles } from "./styles";
 
 const STATUSES: readonly TaskStatus[] = ["todo", "in-progress", "done"];
@@ -154,6 +155,7 @@ export const UiKitView = () => {
             <AgentStepList steps={FAILED_STEPS} />
             <AgentFallbackAlert title="Агент не зміг відповісти">Показуємо базове правило без AI.</AgentFallbackAlert>
           </AgentPanel>
+          <AgentRunDemo />
         </div>
       </Section>
 

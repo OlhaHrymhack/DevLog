@@ -10,6 +10,7 @@ import { TaskFilter } from "@/features/taskFilter";
 import { TaskSearch } from "@/features/taskSearch";
 import { TaskSort } from "@/features/taskSort";
 import { useHealth } from "@/shared/api/health/useHealth";
+import { setForceInvalidOutput, useForceInvalidOutput } from "@/shared/lib/hooks/useForceInvalidOutput";
 import { useHotkeys } from "@/shared/lib/hooks/useHotkeys";
 import { Button } from "@/shared/ui/Button";
 import { Pagination } from "@/shared/ui/Pagination";
@@ -37,7 +38,7 @@ export const TasksListView = () => {
   const [devOpen, setDevOpen] = useState(false);
   const [screen, setScreen] = useState<ScreenOverride>("real");
   const [mode, setMode] = useState<ModeOverride>("auto");
-  const [invalidOutput, setInvalidOutput] = useState(false);
+  const invalidOutput = useForceInvalidOutput();
   const serious = useSerious();
   const [taskDialog, setTaskDialog] = useState<TaskDialog>();
   const onNewTask = () => setTaskDialog({ kind: "create" });
@@ -141,7 +142,7 @@ export const TasksListView = () => {
       <HeatLegendDialog open={legendOpen} onOpenChange={setLegendOpen} serious={serious} />
       <DevStatesPanel open={devOpen} onOpenChange={setDevOpen} screen={screen} onScreenChange={setScreen}
         mode={mode} onModeChange={setMode} serious={serious} onSeriousChange={setSerious}
-        invalidOutput={invalidOutput} onInvalidOutputChange={setInvalidOutput}
+        invalidOutput={invalidOutput} onInvalidOutputChange={setForceInvalidOutput}
       />
     </>
   );

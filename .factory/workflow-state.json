@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-006",
+  "currentTask": "DEV-008",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1000,16 +1000,33 @@
     "DEV-008": {
       "id": "DEV-008",
       "title": "Ядро агентів",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 2,
+        "criticality": 1,
+        "security": 2,
+        "integrations": 2,
+        "migrations": 0,
+        "state": 2,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "opus": 2,
+        "sonnet": 1
+      },
+      "issues": [
+        "verify failed: test(failed), код змінився під час перевірки",
+        "verify failed: код змінився під час перевірки",
+        "verify failed: typecheck(failed)"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-008 <url>",
       "pr": null,
       "history": [
         {
@@ -1020,10 +1037,201 @@
           "at": "2026-11-21T19:54:44.829Z",
           "event": "retitled",
           "note": "Агент A пріоритизація → Ядро агентів"
+        },
+        {
+          "at": "2026-11-22T15:15:47.161Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T15:15:47.365Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T15:22:02.706Z",
+          "event": "classified",
+          "note": "сума 12 → strong"
+        },
+        {
+          "at": "2026-11-22T15:22:03.079Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T15:22:34.807Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T15:26:07.919Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T15:26:08.232Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T16:08:48.315Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T16:13:15.762Z",
+          "event": "verify",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-008/3c34ecec07736c6321dbe59be71f62e5f647ff57/verify.json"
+        },
+        {
+          "at": "2026-11-22T16:24:54.810Z",
+          "event": "verify",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-008/0f438892eadbdb70bc6d9dedc65033f4b05ee4dc/verify.json"
+        },
+        {
+          "at": "2026-11-22T16:25:05.922Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-008/7714611200bb3454be83553fe6d44d9dbb812800/verify.json"
+        },
+        {
+          "at": "2026-11-22T16:25:21.424Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-008/2560b8065f7689c261f56079e20917b104325304/verify.json"
+        },
+        {
+          "at": "2026-11-22T16:26:58.326Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "2560b8065f"
+        },
+        {
+          "at": "2026-11-22T16:33:29.397Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 10,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/2560b8065f7689c261f56079e20917b104325304/security.json"
+        },
+        {
+          "at": "2026-11-22T16:33:34.799Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 11,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/2560b8065f7689c261f56079e20917b104325304/review.json"
+        },
+        {
+          "at": "2026-11-22T16:51:05.160Z",
+          "event": "codex-fallback",
+          "model": "opus",
+          "findings": 7,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/2560b8065f7689c261f56079e20917b104325304/codex-fallback.json"
+        },
+        {
+          "at": "2026-11-22T16:51:07.807Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T16:54:41.833Z",
+          "event": "tierOverride",
+          "note": "tier → balanced (бали лишаються: strong): рішення користувачки 2026-11-22: не вистачає токенів на opus-цикли; виконувати як balanced (головна сесія на sonnet)"
+        },
+        {
+          "at": "2026-11-22T17:00:18.312Z",
+          "event": "verify",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/verify.json"
+        },
+        {
+          "at": "2026-11-22T17:00:33.171Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/verify.json"
+        },
+        {
+          "at": "2026-11-22T17:00:40.542Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "8b503f4dd0"
+        },
+        {
+          "at": "2026-11-22T17:02:43.261Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 9,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/review.json"
+        },
+        {
+          "at": "2026-11-22T17:03:20.525Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 6,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/security.json"
+        },
+        {
+          "at": "2026-11-22T17:03:56.023Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/tests.json"
+        },
+        {
+          "at": "2026-11-22T17:03:59.366Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T17:05:50.385Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-008/8b503f4dd0c791aa36b0d49e7ff3d31c13327347/qa.json"
+        },
+        {
+          "at": "2026-11-22T17:05:50.620Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T17:13:38.330Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.835Z",
-      "updatedAt": "2026-11-21T19:54:44.830Z"
+      "updatedAt": "2026-11-22T17:13:38.331Z",
+      "lastFailure": null,
+      "tierOverride": {
+        "tier": "balanced",
+        "reason": "рішення користувачки 2026-11-22: не вистачає токенів на opus-цикли; виконувати як balanced (головна сесія на sonnet)",
+        "at": "2026-11-22T16:54:41.832Z"
+      },
+      "reviewTree": "8b503f4dd0c791aa36b0d49e7ff3d31c13327347"
     },
     "DEV-009": {
       "id": "DEV-009",

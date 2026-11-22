@@ -8,7 +8,7 @@ export const DemoModeBanner = ({ mode }: { mode?: Health["aiMode"] }) => (
       <WifiOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <p>
         <strong>Демо-режим AI.</strong>{" "}
-        Без ANTHROPIC_API_KEY агенти повертають детерміновані мок-відповіді. Додайте ключ і перезапустіть{" "}
+        Без OPENAI_API_KEY агенти повертають детерміновані мок-відповіді. Додайте ключ і перезапустіть{" "}
         <code className="font-mono">npm run dev</code>.
       </p>
     </div>

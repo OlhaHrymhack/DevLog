@@ -12,7 +12,19 @@ export {
   AgentStepStateSchema,
   AgentStepTypeSchema,
 } from "./model/schemas";
+export {
+  AGENT_FINAL_EVENT_TYPES,
+  AgentDebugSchema,
+  AgentErrorSchema,
+  AgentEventSchema,
+  createAgentRequestSchema,
+  MAX_AGENT_STEPS,
+} from "./model/events";
 export type {
+  AgentDebug,
+  AgentError,
+  AgentEvent,
+  AgentFinalEvent,
   AgentRun,
   AgentRunCreateInput,
   AgentRunFinishInput,
@@ -26,8 +38,17 @@ export type {
   AgentStepState,
   AgentStepType,
 } from "./model/types";
+export {
+  applyAgentEvent, IDLE_AGENT_RUN,
+  type AgentRunState, type AgentRunViewStatus,
+} from "./model/agentRunState";
+export { useAgentRun } from "./model/useAgentRun";
+export { agentRunPath, streamAgentRun } from "./api/agentRunApi";
+export { formatRunSummary } from "./lib/formatRunSummary";
+export { isAgentRunDecided } from "./lib/isAgentRunDecided";
 export { AgentFallbackAlert } from "./ui/AgentFallbackAlert";
 export { AgentPanel } from "./ui/AgentPanel";
 export { AgentProgress } from "./ui/AgentProgress";
+export { AgentRunPanel } from "./ui/AgentRunPanel";
 export { AgentStepList } from "./ui/AgentStepList";
 export { AgentTag } from "./ui/AgentTag";
