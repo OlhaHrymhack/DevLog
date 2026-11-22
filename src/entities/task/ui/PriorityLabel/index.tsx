@@ -10,7 +10,7 @@ const PRIORITY_ICONS: Record<TaskPriority, typeof Minus> = {
   low: ChevronDown,
 };
 
-export function PriorityLabel({ priority }: PriorityLabelProps) {
+export const PriorityLabel = ({ priority }: PriorityLabelProps) => {
   const Icon = PRIORITY_ICONS[priority];
   return (
     <span className={priorityLabelStyles({ priority })}>
@@ -18,4 +18,4 @@ export function PriorityLabel({ priority }: PriorityLabelProps) {
       {PRIORITY_LABELS[priority]}
     </span>
   );
-}
+};

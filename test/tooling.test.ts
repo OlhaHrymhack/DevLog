@@ -11,10 +11,10 @@ const packageJsonSchema = z.object({
   scripts: z.record(z.string(), z.string()),
 });
 
-function readScripts() {
+const readScripts = () => {
   const raw: unknown = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8"));
   return packageJsonSchema.parse(raw).scripts;
-}
+};
 
 describe("npm scripts", () => {
   it("DEV-001 AC-2: package.json містить скрипти dev/build/start/lint/typecheck/test/test:e2e/prepare", () => {

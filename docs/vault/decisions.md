@@ -132,6 +132,13 @@
 - Причина: специфікація DEV-002 і DESIGN §2.6 писались для Tailwind v3; shadcn CLI на alias `@/shared/lib/cn` генерує хибний імпорт.
 - Ризик: нові shadcn-компоненти, що імпортують `@/shared/ui/button`, треба правити так само (змінити імпорт і варіанти).
 
+## D-023 DEV-014: стрілкові const замість function declaration, shadcn у PascalCase-папках
+- Дата: 2026-11-22
+- Рішення: (1) Усі функції й компоненти коду застосунку (`src`, `test`, `e2e`, кореневі конфіги; не `.factory`, `.claude/hooks`, `docs`) — стрілкові `const` з іменованим експортом (`export const TaskCard = (props: TaskCardProps) => …`); ESLint `func-style: ["error","expression",{allowArrowFunctions:true}]`. Файли Next.js з `export default` — `const Page = …; export default Page;`. (2) Згенеровані shadcn-компоненти більше не виняток: `shared/ui/alert.tsx` → `shared/ui/Alert/index.tsx` (17 компонентів), імпорти `@/shared/ui/Alert`; файли з кількома частинами (`Dialog`, `Select`, `Tabs`…) лишаються одним `index.tsx` з кількома експортами. Після `shadcn add` компонент переносимо вручну. (3) Хуки називаються з `use` — окремого ESLint-правила не додаємо: `react-hooks/rules-of-hooks` з `eslint-config-next` уже забороняє виклик хуків у функціях без `use`/не-компонентах; `test/conventions.test.ts` перевіряє імена файлів у `shared/lib/hooks`. (4) Оверрайд `consistent-type-assertions: off` звужено до згенерованих shadcn-файлів; власні `Button`, `EmptyState`, `ResponsiveDialog` — без винятків. (5) Тести DEV-001 AC-6 на правило `func-style` оновлено: фікстура «const-стрілка → func-style» стала «function declaration → func-style»; решта фікстур конвертована, щоб кожна ловила лише своє правило.
+- Причина: вимога авторки (єдиний стиль функцій, усі компоненти за схемою `EmptyState/`).
+- Заміна: частково замінює D-013 (function declaration, виняток для shadcn) і D-022 п. 4 (оверрайд для всього `shared/ui`); решта D-013 і D-022 чинна.
+- Ризик: `shadcn add` створює плоскі lowercase-файли — забуте перенесення ловить `test/conventions.test.ts`. Гілка стекована на PR #11 (DEV-002): після його merge — ребейз на `stage`.
+
 ## D-024 Повторне рев'ю після завершення задачі: `COMPLETED → REVIEWING` після ребейзу
 - Дата: 2026-11-22
 - Доповнює: D-016, D-021.

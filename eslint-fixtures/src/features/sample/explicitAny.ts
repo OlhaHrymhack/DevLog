@@ -1,3 +1,3 @@
-export function parseSample(value: any) {
+export const parseSample = (value: any) => {
   return value;
-}
+};

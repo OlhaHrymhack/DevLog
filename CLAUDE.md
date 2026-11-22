@@ -35,7 +35,7 @@ src/
   shared/     # ui (shadcn), lib (загальні утиліти/хелпери), config, api
   server/     # tasks/ (domain, repository, service), db/, agents/ (core: runAgent, tools; <name>/), logger
 ```
-Компоненти: function declaration, папка `TaskCard/` з `index.tsx`, `types.ts`, `styles.ts`.
+Компоненти й функції — стрілкові `const` (`export const TaskCard = (props: TaskCardProps) => …`), не function declaration. Кожен компонент, включно з shadcn, — папка `TaskCard/` з `index.tsx` (+ `types.ts`, `styles.ts` за потреби). Хуки називаються з `use`. Правило стосується коду застосунку, не `.factory`/`.claude`.
 
 ## Правила коду
 - Вхідні дані валідуються Zod на кожній межі: HTTP body/query, tool input агента, фінальний output агента.

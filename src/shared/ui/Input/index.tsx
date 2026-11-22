@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/shared/lib/cn"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+const Input = ({ className, type, ...props }: React.ComponentProps<"input">) => {
   return (
     <input
       type={type}
@@ -15,6 +15,6 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       {...props}
     />
   )
-}
+};
 
 export { Input }

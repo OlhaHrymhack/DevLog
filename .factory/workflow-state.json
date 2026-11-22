@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-002",
+  "currentTask": "DEV-014",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -208,7 +208,7 @@
     "DEV-002": {
       "id": "DEV-002",
       "title": "UI Kit",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -227,8 +227,8 @@
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-002 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-002",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/11",
       "history": [
         {
           "at": "2026-11-21T17:47:23.447Z",
@@ -363,10 +363,21 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T10:10:26.256Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/11"
+        },
+        {
+          "at": "2026-11-22T10:10:26.334Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.446Z",
-      "updatedAt": "2026-11-22T10:09:58.727Z",
+      "updatedAt": "2026-11-22T10:10:26.335Z",
       "lastFailure": null
     },
     "DEV-003": {
@@ -676,6 +687,139 @@
       ],
       "createdAt": "2026-11-21T17:47:24.155Z",
       "updatedAt": "2026-11-21T19:54:45.152Z"
+    },
+    "DEV-014": {
+      "id": "DEV-014",
+      "title": "Конвенції коду: стрілкові функції, PascalCase-компоненти",
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 0,
+        "security": 0,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 0,
+        "uncertainty": 1,
+        "ui": 0
+      },
+      "securityRequired": false,
+      "agent": "reviewer",
+      "attempts": {
+        "sonnet": 1
+      },
+      "issues": [
+        "tests failed: e2e(failed)"
+      ],
+      "blockers": [],
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-014 <url>",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-22T10:17:28.607Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-22T10:17:28.784Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T10:17:28.928Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T10:17:54.942Z",
+          "event": "classified",
+          "note": "сума 4 → balanced"
+        },
+        {
+          "at": "2026-11-22T10:17:55.186Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T10:18:09.870Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T10:20:35.434Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-014/6da3d452f53b35c56227a18c1b79b81d4fbb7c54/tests.json"
+        },
+        {
+          "at": "2026-11-22T10:22:00.152Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-014/6da3d452f53b35c56227a18c1b79b81d4fbb7c54/tests.json"
+        },
+        {
+          "at": "2026-11-22T10:22:10.457Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T10:23:11.812Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-014/6da3d452f53b35c56227a18c1b79b81d4fbb7c54/review.json"
+        },
+        {
+          "at": "2026-11-22T10:23:22.486Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T10:23:57.525Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-014/2f49cbecd5fd74b23a75dac9efc94dcf4c86487d/tests.json"
+        },
+        {
+          "at": "2026-11-22T10:24:04.902Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T10:24:33.353Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-014/2f49cbecd5fd74b23a75dac9efc94dcf4c86487d/review.json"
+        },
+        {
+          "at": "2026-11-22T10:24:33.561Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T10:25:12.138Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
+        }
+      ],
+      "createdAt": "2026-11-22T10:17:28.607Z",
+      "updatedAt": "2026-11-22T10:25:12.139Z",
+      "lastFailure": null
     }
   }
 }

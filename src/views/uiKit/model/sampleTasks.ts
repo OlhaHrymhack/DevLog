@@ -6,9 +6,9 @@ const DAY = 24 * HOUR;
 /** Фіксований «зараз» каталогу — рендер детермінований (SSR і тести). */
 export const UI_KIT_NOW = Date.UTC(2026, 10, 21, 12, 0);
 
-function ago(days: number): string {
+const ago = (days: number): string => {
   return new Date(UI_KIT_NOW - days * DAY).toISOString();
-}
+};
 
 /** По одній задачі на кожен рівень температури. */
 export const SAMPLE_TASKS: readonly TaskRowData[] = [

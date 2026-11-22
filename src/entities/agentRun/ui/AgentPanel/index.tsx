@@ -7,7 +7,7 @@ import { AgentTag } from "../AgentTag";
 import { bodyStyles, headStyles, panelStyles, summaryStyles, tagStyles, titleStyles } from "./styles";
 import type { AgentPanelProps } from "./types";
 
-export function AgentPanel({ title, icon, tagLabel, demo = false, collapsible = false, running = false, summary, children }: AgentPanelProps) {
+export const AgentPanel = ({ title, icon, tagLabel, demo = false, collapsible = false, running = false, summary, children }: AgentPanelProps) => {
   const [open, setOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 1024px)", true);
   const isOpen = !collapsible || open;
@@ -40,4 +40,4 @@ export function AgentPanel({ title, icon, tagLabel, demo = false, collapsible = 
       <div className={bodyStyles}>{children}</div>
     </section>
   );
-}
+};

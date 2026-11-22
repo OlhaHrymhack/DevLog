@@ -14,23 +14,23 @@ beforeAll(() => {
   });
 });
 
-async function lintFixture(relativePath: string) {
+const lintFixture = async (relativePath: string) => {
   const filePath = path.join(FIXTURES, relativePath);
   const [result] = await eslint.lintFiles([filePath]);
   if (!result) {
     throw new Error(`ESLint returned no result for ${relativePath}`);
   }
   return result.messages;
-}
+};
 
-async function ruleIdsOf(relativePath: string) {
+const ruleIdsOf = async (relativePath: string) => {
   const messages = await lintFixture(relativePath);
   return messages.map((message) => message.ruleId);
-}
+};
 
 describe("ESLint style-guide rules", () => {
-  it("DEV-001 AC-6: const-стрілка як компонент → func-style", async () => {
-    expect(await ruleIdsOf("src/features/sample/ArrowComponent.tsx")).toEqual(["func-style"]);
+  it("DEV-014 AC-1: function declaration як компонент → func-style", async () => {
+    expect(await ruleIdsOf("src/features/sample/DeclarationComponent.tsx")).toEqual(["func-style"]);
   });
 
   it("DEV-001 AC-6: export default у features/ → no-restricted-syntax", async () => {

@@ -10,14 +10,14 @@ const STATE_TEXT: Record<AgentStepState, string> = {
   fail: "помилка",
 };
 
-function StepIcon({ state }: { state: AgentStepState }) {
+const StepIcon = ({ state }: { state: AgentStepState }) => {
   if (state === "run") return <span aria-hidden="true" className={spinnerStyles} />;
   if (state === "done") return <Check aria-hidden="true" strokeWidth={3} className="size-3.5 animate-pop text-success" />;
   if (state === "fail") return <X aria-hidden="true" strokeWidth={3} className="size-3.5" />;
   return <span aria-hidden="true" className={pendingStyles} />;
-}
+};
 
-export function AgentStepList({ steps }: AgentStepListProps) {
+export const AgentStepList = ({ steps }: AgentStepListProps) => {
   if (steps.length === 0) return null;
   return (
     <ol className={stepListStyles} aria-live="polite">
@@ -35,4 +35,4 @@ export function AgentStepList({ steps }: AgentStepListProps) {
       ))}
     </ol>
   );
-}
+};

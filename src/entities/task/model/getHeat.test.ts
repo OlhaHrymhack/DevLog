@@ -6,10 +6,10 @@ const NOW = Date.UTC(2026, 10, 21, 12, 0);
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-function task(overrides: Partial<HeatInput> & { staleDays?: number }): HeatInput {
+const task = (overrides: Partial<HeatInput> & { staleDays?: number }): HeatInput => {
   const { staleDays = 0, ...rest } = overrides;
   return { status: "todo", priority: "medium", updatedAt: NOW - staleDays * DAY, ...rest };
-}
+};
 
 describe("getHeat", () => {
   it("DEV-002 AC-2: done → done, навіть із дедлайном у минулому", () => {
@@ -32,9 +32,9 @@ describe("getHeat", () => {
   });
 
   it("DEV-002 AC-2: high 2/3/5/7 днів → fresh/warm/hot/fire", () => {
-    function heat(staleDays: number) {
+    const heat = (staleDays: number) => {
       return getHeat(task({ priority: "high", staleDays }), NOW).key;
-    }
+    };
     expect(heat(2)).toBe("fresh");
     expect(heat(3)).toBe("warm");
     expect(heat(4)).toBe("warm");
@@ -44,9 +44,9 @@ describe("getHeat", () => {
   });
 
   it("DEV-002 AC-2: medium 3 і 8 днів → warm (зупиняється на warm); 2 дні → fresh", () => {
-    function heat(staleDays: number) {
+    const heat = (staleDays: number) => {
       return getHeat(task({ priority: "medium", staleDays }), NOW).key;
-    }
+    };
     expect(heat(3)).toBe("warm");
     expect(heat(8)).toBe("warm");
     expect(heat(2)).toBe("fresh");

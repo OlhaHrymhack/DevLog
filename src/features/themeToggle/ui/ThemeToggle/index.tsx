@@ -6,7 +6,7 @@ import { Button } from "@/shared/ui/Button";
 import { DEFAULT_THEME, applyTheme, readTheme, subscribeToTheme } from "../../model/theme";
 
 /** Темна тема — Sun («увімкнути світлу»), світла — Moon («увімкнути темну»). */
-export function ThemeToggle() {
+export const ThemeToggle = () => {
   const theme = useSyncExternalStore(subscribeToTheme, readTheme, () => DEFAULT_THEME);
   const isDark = theme === "dark";
   const Icon = isDark ? Sun : Moon;
@@ -21,4 +21,4 @@ export function ThemeToggle() {
       <Icon aria-hidden="true" className="size-4" />
     </Button>
   );
-}
+};

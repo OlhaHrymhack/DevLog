@@ -1,5 +1,5 @@
 /** Підміняє window.matchMedia: усі запити повертають однакове `matches`. */
-export function mockMatchMedia(matches: boolean): void {
+export const mockMatchMedia = (matches: boolean): void => {
   window.matchMedia = (query: string): MediaQueryList => ({
     matches,
     media: query,
@@ -10,4 +10,4 @@ export function mockMatchMedia(matches: boolean): void {
     removeListener: () => {},
     dispatchEvent: () => false,
   });
-}
+};

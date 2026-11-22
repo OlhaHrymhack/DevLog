@@ -73,14 +73,14 @@ describe("EmptyState", () => {
 });
 
 describe("ResponsiveDialog", () => {
-  function renderDialog(onOpenChange = vi.fn()) {
+  const renderDialog = (onOpenChange = vi.fn()) => {
     render(
       <ResponsiveDialog open onOpenChange={onOpenChange} title="Видалити задачу?" description="Підзадачі теж буде видалено" actions={<Button>Видалити</Button>}>
         <p>Тіло</p>
       </ResponsiveDialog>,
     );
     return onOpenChange;
-  }
+  };
 
   it("DEV-002 AC-5: ≥ 768px — діалог із заголовком, описом і діями", () => {
     mockMatchMedia(true);
@@ -108,7 +108,7 @@ describe("ResponsiveDialog", () => {
 
   it("DEV-002 AC-5: після закриття фокус повертається на елемент, що відкрив діалог", async () => {
     mockMatchMedia(true);
-    function Host() {
+    const Host = () => {
       const [open, setOpen] = useState(false);
       return (
         <>
@@ -120,7 +120,7 @@ describe("ResponsiveDialog", () => {
           </ResponsiveDialog>
         </>
       );
-    }
+    };
     render(<Host />);
     const opener = screen.getByRole("button", { name: "Відкрити" });
     opener.focus();

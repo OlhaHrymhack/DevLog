@@ -8,9 +8,9 @@ const NOW = new Date(2026, 10, 21, 14, 5).getTime();
 const DAY = 86_400_000;
 
 describe("plural", () => {
-  function forms(n: number) {
+  const forms = (n: number) => {
     return plural(n, "день", "дні", "днів");
-  }
+  };
 
   it("DEV-002 AC-3: plural — 1 день, 2 дні, 5 днів, 11 днів, 21 день", () => {
     expect(forms(1)).toBe("день");

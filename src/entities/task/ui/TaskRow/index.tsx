@@ -20,7 +20,7 @@ import {
 import type { TaskRowProps } from "./types";
 
 /** Один компонент: рядок таблиці ≥ 1024px, картка < 1024px. */
-export function TaskRow({ task, now, focusRank, serious = false, onEdit, onDelete }: TaskRowProps) {
+export const TaskRow = ({ task, now, focusRank, serious = false, onEdit, onDelete }: TaskRowProps) => {
   const heat = getHeat(task, now);
   const isDone = task.status === "done";
 
@@ -51,4 +51,4 @@ export function TaskRow({ task, now, focusRank, serious = false, onEdit, onDelet
       </div>
     </div>
   );
-}
+};

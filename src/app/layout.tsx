@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 type RootLayoutProps = Readonly<{ children: ReactNode }>;
 
-export default function RootLayout({ children }: RootLayoutProps) {
+const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <html lang="uk" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${jetBrainsMono.variable} h-full antialiased`}>
       <head>
@@ -34,4 +34,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
-}
+};
+
+export default RootLayout;

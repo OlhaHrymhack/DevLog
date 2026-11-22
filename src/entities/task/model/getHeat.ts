@@ -9,7 +9,7 @@ const ALARM_WINDOW_MS = 24 * MS_PER_HOUR;
  * Температура задачі — чиста функція (DESIGN §4). Порядок перевірок:
  * done → alarm (дедлайн менше ніж за 24 год) → low → calm → high 7+/5+/3+ → medium 3+ → fresh.
  */
-export function getHeat(task: HeatInput, now: Timestamp): HeatLevel {
+export const getHeat = (task: HeatInput, now: Timestamp): HeatLevel => {
   if (task.status === "done") return HEAT_LEVELS.done;
   if (task.dueAt !== undefined && toMillis(task.dueAt) - toMillis(now) < ALARM_WINDOW_MS) {
     return HEAT_LEVELS.alarm;
@@ -24,4 +24,4 @@ export function getHeat(task: HeatInput, now: Timestamp): HeatLevel {
   }
   if (task.priority === "medium" && staleDays >= 3) return HEAT_LEVELS.warm;
   return HEAT_LEVELS.fresh;
-}
+};

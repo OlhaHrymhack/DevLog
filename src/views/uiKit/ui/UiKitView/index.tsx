@@ -24,16 +24,16 @@ import { ThemeToggle } from "@/features/themeToggle";
 import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ResponsiveDialog } from "@/shared/ui/ResponsiveDialog";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { Input } from "@/shared/ui/input";
-import { Progress } from "@/shared/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { Switch } from "@/shared/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { Textarea } from "@/shared/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/toggle-group";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/Alert";
+import { Checkbox } from "@/shared/ui/Checkbox";
+import { Input } from "@/shared/ui/Input";
+import { Progress } from "@/shared/ui/Progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/Select";
+import { Skeleton } from "@/shared/ui/Skeleton";
+import { Switch } from "@/shared/ui/Switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/Tabs";
+import { Textarea } from "@/shared/ui/Textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/ToggleGroup";
 import { SAMPLE_TASKS, UI_KIT_NOW } from "../../model/sampleTasks";
 import { pageStyles, rowStyles, sectionTitleStyles, tableStyles } from "./styles";
 
@@ -53,7 +53,7 @@ const FAILED_STEPS: readonly AgentStep[] = [
   { label: "Перевірити результат", state: "fail", detail: "Відповідь не пройшла валідацію двічі" },
 ];
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+const Section = ({ title, children }: { title: string; children: ReactNode }) => {
   const id = `ui-kit-${title}`;
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
@@ -63,11 +63,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       {children}
     </section>
   );
-}
+};
 
-function noop() {}
+const noop = () => {};
 
-export function UiKitView() {
+export const UiKitView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -245,4 +245,4 @@ export function UiKitView() {
       </Section>
     </main>
   );
-}
+};

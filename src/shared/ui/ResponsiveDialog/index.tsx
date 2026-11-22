@@ -8,8 +8,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/shared/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
+} from "@/shared/ui/Dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/Sheet";
 import {
   descriptionStyles,
   dialogActionsStyles,
@@ -21,7 +21,7 @@ import {
 import type { ResponsiveDialogProps } from "./types";
 
 /** Діалог по центру ≥ 768px, bottom sheet з липкими діями < 768px. Фокус-пастка, Esc і повернення фокусу — від Radix. */
-export function ResponsiveDialog({ open, onOpenChange, title, description, children, actions, wide = false }: ResponsiveDialogProps) {
+export const ResponsiveDialog = ({ open, onOpenChange, title, description, children, actions, wide = false }: ResponsiveDialogProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)", true);
   const openerRef = useRef<HTMLElement | null>(null);
 
@@ -64,4 +64,4 @@ export function ResponsiveDialog({ open, onOpenChange, title, description, child
       </SheetContent>
     </Sheet>
   );
-}
+};

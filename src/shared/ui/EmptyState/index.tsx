@@ -2,7 +2,7 @@ import { cn } from "@/shared/lib/cn";
 import { descriptionStyles, emojiStyles, emptyStateStyles, titleStyles } from "./styles";
 import type { EmptyStateProps } from "./types";
 
-export function EmptyState({ tone = "neutral", emoji, title, description, action, className }: EmptyStateProps) {
+export const EmptyState = ({ tone = "neutral", emoji, title, description, action, className }: EmptyStateProps) => {
   return (
     <div role={tone === "error" ? "alert" : undefined} data-tone={tone} className={cn(emptyStateStyles(), className)}>
       <div aria-hidden="true" className={emojiStyles({ tone })}>
@@ -13,4 +13,4 @@ export function EmptyState({ tone = "neutral", emoji, title, description, action
       {action}
     </div>
   );
-}
+};

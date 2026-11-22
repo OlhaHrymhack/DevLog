@@ -7,7 +7,7 @@ const TOKENS_CSS = path.join(ROOT, "docs/design/tokens.css");
 const GLOBALS_CSS = path.join(ROOT, "src/app/globals.css");
 
 /** Блоки без вкладених дужок: селектор → { змінна → значення }. Коментарі відкидаються. */
-function parseVariableBlocks(css: string): Map<string, Map<string, string>> {
+const parseVariableBlocks = (css: string): Map<string, Map<string, string>> => {
   const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const blocks = new Map<string, Map<string, string>>();
   for (const [, rawSelector = "", body = ""] of withoutComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
@@ -19,7 +19,7 @@ function parseVariableBlocks(css: string): Map<string, Map<string, string>> {
     if (variables.size > 0 && !blocks.has(selector)) blocks.set(selector, variables);
   }
   return blocks;
-}
+};
 
 const tokens = parseVariableBlocks(fs.readFileSync(TOKENS_CSS, "utf8"));
 const globals = parseVariableBlocks(fs.readFileSync(GLOBALS_CSS, "utf8"));

@@ -3,12 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 const SECTIONS = ["Button", "Badges", "Heat", "TaskRow", "Agent", "EmptyState", "Dialog"];
 const THEMES = ["dark", "light"] as const;
 
-async function openKit(page: Page, theme: (typeof THEMES)[number]) {
+const openKit = async (page: Page, theme: (typeof THEMES)[number]) => {
   await page.addInitScript((value) => localStorage.setItem("devlog-theme", value), theme);
   const response = await page.goto("/ui-kit");
   expect(response?.status()).toBe(200);
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-}
+};
 
 for (const theme of THEMES) {
   test(`DEV-002 AC-6: /ui-kit показує всі секції (${theme})`, async ({ page }) => {

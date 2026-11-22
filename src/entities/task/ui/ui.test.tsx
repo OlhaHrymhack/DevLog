@@ -12,7 +12,7 @@ afterEach(cleanup);
 const NOW = Date.UTC(2026, 10, 21, 12, 0);
 const DAY = 86_400_000;
 
-function makeTask(overrides: Partial<TaskRowData> = {}): TaskRowData {
+const makeTask = (overrides: Partial<TaskRowData> = {}): TaskRowData => {
   return {
     id: "t1",
     title: "Виправити витік пам’яті",
@@ -23,7 +23,7 @@ function makeTask(overrides: Partial<TaskRowData> = {}): TaskRowData {
     updatedAt: NOW - 5 * DAY,
     ...overrides,
   };
-}
+};
 
 describe("StatusBadge і PriorityLabel", () => {
   it("DEV-002 AC-5: StatusBadge рендерить три підписи статусів", () => {

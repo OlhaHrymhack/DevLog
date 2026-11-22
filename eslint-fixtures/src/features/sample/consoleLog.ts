@@ -1,3 +1,3 @@
-export function logSample() {
+export const logSample = () => {
   console.log("sample");
-}
+};
