@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const realRoot = path.resolve(here, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-selftest-'));
 const reports = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-reports-'));
-const env = { ...process.env, FACTORY_ROOT: tmp, CLAUDE_PROJECT_DIR: tmp };
+const env = { ...process.env, FACTORY_ROOT: tmp, CLAUDE_PROJECT_DIR: tmp, FACTORY_SESSION_DIR: path.join(reports, 'sessions') };
 let passed = 0; const failures = [];
 
 // ---------- підготовка ----------
@@ -197,7 +197,7 @@ r = factory('classify', 'DEV-093', ...allScores(1, { security: 0, integrations: 
 check('11a. рядок старту: tier, реалізація (заплановано), модель рев\'ю', /DEV-093 · PLANNING · tier balanced · реалізація: головна сесія sonnet \(заплановано\) · рев'ю: sonnet \(заплановано\)/.test(r.stdout), r.stdout);
 factory('transition', 'DEV-093', 'AWAITING_APPROVAL'); user('APPROVE DEV-093');
 r = factory('transition', 'DEV-093', 'IMPLEMENTING');
-check('11b. після переходу line показує актуальну наступну дію', /далі: головна сесія \(sonnet\) пише код і тести на кожен AC → verify DEV-093/.test(r.stdout), r.stdout);
+check('11b. після переходу line показує актуальну наступну дію', /далі: головна сесія \(sonnet\) продовжує реалізацію і тести на кожен AC → verify DEV-093/.test(r.stdout), r.stdout);
 check('11c. balanced без ризику: reviewer на sonnet → allow', guard('Agent', { subagent_type: 'reviewer', model: 'sonnet', prompt: 'x' }) === 'allow');
 r = factory('escalate', 'DEV-093');
 check('11d. escalate без причини → помилка', r.status !== 0);
@@ -256,6 +256,80 @@ factory('add', 'DEV-081', 'План з e2e без UI'); factory('start', 'DEV-08
 w('.factory/task-plans/DEV-081.md', '# plan\n- перевірка: `npm run test:e2e`\n');
 factory('classify', 'DEV-081', ...allScores(1, { security: 0, integrations: 0 }));
 check('12i. ui=0, але план вимагає test:e2e → E2E потрібен, QA ні', /QA-етап: не потрібен · E2E: потрібен/.test(factory('report', 'DEV-081').stdout));
+
+console.log('\n[13] Відновлення активної задачі (resume) після старої автоескалації');
+{
+  const st = state();
+  const at = new Date().toISOString();
+  const legacy = (id, extraHistory = []) => ({
+    id, title: `Legacy ${id}`, status: 'AWAITING_APPROVAL', tier: 'strong', model: 'opus',
+    scores: { modules: 2, architecture: 2, criticality: 1, security: 0, integrations: 0, migrations: 0, state: 0, uncertainty: 1 },
+    securityRequired: false, agent: 'developer', attempts: { balanced: 2 }, issues: [], blockers: [], nextAction: null, pr: null,
+    history: [{ at, event: 'classified', note: 'сума 6 → balanced' }, { at, event: 'escalation', from: 'balanced', to: 'strong', note: '2 провали на verify' }, ...extraHistory],
+    createdAt: at, updatedAt: at,
+  });
+  st.tasks['DEV-086'] = legacy('DEV-086');
+  st.tasks['DEV-087'] = legacy('DEV-087', [{ at, event: 'escalation', manual: true, from: 'sonnet', to: 'opus', note: 'складний дефект' }]);
+  fs.writeFileSync(path.join(tmp, '.factory', 'workflow-state.json'), JSON.stringify(st, null, 2));
+}
+for (const id of ['DEV-086', 'DEV-087']) {
+  w(`.factory/task-plans/${id}.md`, `# ${id}\n- AC-1: x\n`);
+  w(`src/${id}.test.ts`, `test("${id} AC-1: x", () => {});\n`);
+  user(`APPROVE ${id}`); factory('transition', id, 'IMPLEMENTING');
+}
+factory('next', 'DEV-086', 'чекаємо рішення користувача: продовжити після merge');
+r = factory('resume', 'DEV-086');
+check('13a. resume: стара автоескалація → tier і модель за балами (balanced / sonnet)', /відновлено за балами: tier strong → balanced, модель opus → sonnet/.test(r.stdout) && state().tasks['DEV-086'].tier === 'balanced' && state().tasks['DEV-086'].model === 'sonnet', r.stdout);
+check('13b. resume: наступна дія зі статусу і gates, а не зі старого nextAction', /далі: головна сесія \(sonnet\) продовжує реалізацію/.test(r.stdout) && !/після merge/.test(state().tasks['DEV-086'].nextAction), r.stdout);
+check('13c. resume: погодження чинне → продовжувати без питань', /Продовжувати без питань: так/.test(r.stdout), r.stdout);
+r = factory('resume', 'DEV-087');
+check('13d. resume зберігає ручне підвищення моделі (developer opus), tier balanced', /tier balanced · реалізація: developer opus/.test(r.stdout) && state().tasks['DEV-087'].model === 'opus' && / · перебіг subagent: \/tasks/.test(r.stdout), r.stdout);
+w('.factory/task-plans/DEV-087.md', '# DEV-087\n- AC-1: x\n- AC-2: новий обсяг\n');
+r = factory('resume', 'DEV-087');
+check('13e. resume: план змінився після approval → не продовжувати без користувача', /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+w('.factory/task-plans/DEV-087.md', '# DEV-087\n- AC-1: x\n');
+
+console.log('\n[14] Stop hook: блокує лише за зміни коду цієї сесії');
+factory('resume', 'DEV-086');
+const stop = (input) => hook('stop.mjs', { hook_event_name: 'Stop', ...input }).decision;
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S1' });
+check('14a. IMPLEMENTING без verify, але сесія не змінювала код → не блокує', stop({ session_id: 'S1' }) !== 'block');
+w('.claude/rules/extra.md', '# правка фабрики\n'); w('docs/vault/notes.md', 'x\n');
+check('14b. сесія змінила лише фабрику / docs → не блокує', stop({ session_id: 'S1' }) !== 'block');
+check('14c. сесія без бази (стартувала до hook-а) → не блокує', stop({ session_id: 'S0' }) !== 'block');
+w('src/feature.ts', 'export const f = 1;\n');
+check('14d. сесія змінила код без verify → блокує', stop({ session_id: 'S1' }) === 'block');
+check('14e. stop_hook_active → не блокує повторно в тому ж ході', stop({ session_id: 'S1', stop_hook_active: true }) !== 'block');
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S2' });
+check('14f. нова сесія S2 після чужих змін коду (як DEV-001 зараз) → не блокує', stop({ session_id: 'S2' }) !== 'block');
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S1', source: 'compact' });
+check('14g. compact не скидає базу S1 → зміни коду цієї сесії і далі блокують', stop({ session_id: 'S1' }) === 'block');
+
+console.log('\n[15] Перевірки у відповідний момент');
+r = factory('verify', 'DEV-086');
+check('15a. verify зелений', r.status === 0, r.stdout + r.stderr);
+check('15b. після verify Stop не блокує', stop({ session_id: 'S1' }) !== 'block');
+r = factory('verify', 'DEV-086');
+check('15c. незмінний tree → зелений результат повторно використано', r.status === 0 && /♻ verify/.test(r.stdout) && !/… typecheck/.test(r.stdout), r.stdout);
+w('FAIL', 'delta: expected 2, got 3');
+r = factory('verify', 'DEV-086');
+check('15d. падіння → лише команда і конкретна діагностика', r.status === 1 && /команда: node check\.mjs/.test(r.stdout) && /│ delta: expected 2, got 3/.test(r.stdout), r.stdout);
+fs.rmSync(path.join(tmp, 'FAIL'));
+factory('add', 'DEV-088', 'E2E за специфікацією'); factory('start', 'DEV-088'); factory('transition', 'DEV-088', 'PLANNING');
+w('docs/vault/specs/DEV-088.md', '# DEV-088\n**Агенти:** стандарт + E2E (фільтр)\n- AC-1: фільтр\n');
+w('.factory/task-plans/DEV-088.md', '# DEV-088\n- AC-1: фільтр (спека docs/vault/specs/DEV-088.md)\n');
+factory('classify', 'DEV-088', ...allScores(1, { security: 0, integrations: 0 }));
+factory('transition', 'DEV-088', 'AWAITING_APPROVAL'); user('APPROVE DEV-088'); factory('transition', 'DEV-088', 'IMPLEMENTING');
+w('src/DEV-088.test.ts', 'test("DEV-088 AC-1: фільтр", () => {});\n');
+factory('verify', 'DEV-088'); factory('transition', 'DEV-088', 'REVIEWING');
+factory('record', 'DEV-088', 'review', findings('rev-88', 'reviewer', 'sonnet', []));
+r = factory('line', 'DEV-088');
+check('15e. спека вимагає E2E, ui=0 → після рев\'ю наступна дія verify --full, без QA', /далі: verify DEV-088 --full \(E2E за специфікацією\)/.test(r.stdout), r.stdout);
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('15f. без verify --full фінальне погодження заблоковано', r.status !== 0 && /verify --full/.test(r.stderr), r.stderr);
+factory('verify', 'DEV-088', '--full');
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('15g. E2E зелений → фінальне погодження без ручного QA', r.status === 0 && !state().tasks['DEV-088'].history.some((e) => e.event === 'qa'), r.stderr);
 
 console.log('\n[+] Git staging записів фабрики');
 check('git add state → allow', guard('Bash', { command: 'git add .factory/workflow-state.json' }) === 'allow');

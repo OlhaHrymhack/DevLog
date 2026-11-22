@@ -18,6 +18,7 @@ const HELP = `Команди:
   record <ID> <review|codex|security|qa> <file.json>    записати звіт агента
   escalate <ID> <причина...>             підвищити модель developer (tier і рівень рев'ю не змінюються)
   line [ID]                              один рядок статусу (між етапами замість report)
+  resume [ID]                            відновити задачу: модель за балами, наступна дія з gates, чи можна продовжувати
   usage <ID> <role> <tokens>             записати токени субагента · metrics [ID] — токени, цикли, час до PR
   retitle <ID> <назва...> | remove <ID>  (remove — лише для BACKLOG)
   issue <ID> <текст> | next <ID> <текст> | pr <ID> <url>
@@ -78,38 +79,67 @@ function line(t, cfg) {
     `tier ${tier ?? 'не оцінено'}${legacy}`,
     `реалізація: ${impl ? `${impl.who} ${impl.model} (заплановано)` : '—'}`,
     `рев'ю: ${rev ? `${rev} (${confirmed ? `підтверджено звітом ${lastReview.model}` : 'заплановано'})` : '—'}`,
-    `далі: ${t.nextAction ?? '—'}`,
-  ].join(' · ');
+    `далі: ${deriveNext(t, cfg)}`,
+  ].join(' · ') + (impl?.who === 'developer' && t.status === 'IMPLEMENTING' ? ' · перебіг subagent: /tasks' : '');
 }
 
-/** Наступна дія для статусу — оновлюється при кожному переході, щоб line завжди був актуальний. */
-function nextFor(t, cfg) {
+const ALL_GATES = ['approval', 'verify', 'review', 'security', 'tests', 'qa', 'final'];
+
+/**
+ * Наступна дія зі статусу, approval і результатів перевірок для поточного tree (D-018).
+ * Збережений nextAction не використовується: старий запис не може зупинити роботу.
+ */
+function deriveNext(t, cfg, tree = core.treeHash(root)) {
   const id = t.id;
   const impl = core.implementer(t);
-  const tier = core.effectiveTier(t);
+  const who = impl ? `${impl.who} (${impl.model})` : 'developer';
+  const g = Object.fromEntries(core.evaluateGates(root, cfg, t, tree, ALL_GATES).map((x) => [x.gate, x]));
   switch (t.status) {
-    case 'DISCOVERY': return `контекст за маршрутом → transition ${id} PLANNING`;
-    case 'PLANNING': return `план .factory/task-plans/${id}.md → classify ${id} … ui=0|1`;
-    case 'AWAITING_APPROVAL': return `чекаємо від користувача: APPROVE ${id}`;
-    case 'IMPLEMENTING': return `${impl?.who ?? 'developer'} (${impl?.model ?? '—'}) пише код і тести на кожен AC → verify ${id}`;
+    case 'BACKLOG': return `start ${id}`;
+    case 'DISCOVERY': return `контекст за маршрутом (спека docs/vault/specs/${id}.md, якщо є) → transition ${id} PLANNING`;
+    case 'PLANNING':
+      if (!fs.existsSync(core.planFile(root, id))) return `план .factory/task-plans/${id}.md (AC і прототип зі специфікації) → classify ${id} … ui=0|1`;
+      if (!t.scores) return `classify ${id} … ui=0|1`;
+      return core.effectiveTier(t) === 'fast' ? `transition ${id} IMPLEMENTING` : `transition ${id} AWAITING_APPROVAL і показати план користувачу`;
+    case 'AWAITING_APPROVAL': return g.approval.ok ? `transition ${id} IMPLEMENTING` : `чекаємо від користувача: APPROVE ${id}`;
+    case 'IMPLEMENTING':
+      if (!g.approval.ok) return `${g.approval.detail} → transition ${id} PLANNING`;
+      if (g.verify.ok) return `transition ${id} REVIEWING --agent reviewer`;
+      if (!g.verify.pending) return `${who} виправляє: ${g.verify.detail} → verify ${id}`;
+      return `${who} продовжує реалізацію і тести на кожен AC → verify ${id}`;
     case 'REVIEWING': {
-      const extra = [cfg.crossFamilyReview?.enabled && cfg.crossFamilyReview.tiers.includes(tier) ? 'codex' : null, t.securityRequired ? 'security (opus)' : null].filter(Boolean);
-      return `reviewer (${core.requiredReviewModel(cfg, t)})${extra.length ? ` + ${extra.join(' + ')}` : ''} → record ${id} …`;
+      const failing = ['review', 'security'].find((k) => !g[k].ok && !g[k].pending);
+      if (failing) return `transition ${id} IMPLEMENTING → ${who} виправляє ${failing} findings`;
+      const todo = [];
+      if (!g.review.ok) todo.push(/codex/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
+      if (!g.security.ok) todo.push('security (opus)');
+      if (todo.length) return `${todo.join(' + ')} → record ${id} …`;
+      if (core.qaRequired(t)) return `transition ${id} QA --agent qa`;
+      if (!g.tests.ok) return `verify ${id} --full (E2E за специфікацією) → transition ${id} AWAITING_FINAL_APPROVAL`;
+      return `transition ${id} AWAITING_FINAL_APPROVAL`;
     }
-    case 'QA': return `verify ${id} --full, qa → record ${id} qa`;
-    case 'AWAITING_FINAL_APPROVAL': return `report ${id}; чекаємо від користувача: APPROVE-FINAL ${id}`;
-    case 'READY_FOR_PR': return `коміт, push фіча-гілки, PR у stage → pr ${id} <url>`;
+    case 'QA':
+      if (!g.tests.ok) return g.tests.pending ? `verify ${id} --full` : `transition ${id} IMPLEMENTING → ${who} виправляє: ${g.tests.detail}`;
+      if (!g.qa.ok) return g.qa.pending ? `qa → record ${id} qa` : `transition ${id} IMPLEMENTING → ${who} виправляє QA findings`;
+      return `transition ${id} AWAITING_FINAL_APPROVAL`;
+    case 'AWAITING_FINAL_APPROVAL': return g.final.ok ? `transition ${id} READY_FOR_PR` : `report ${id}; чекаємо від користувача: APPROVE-FINAL ${id}`;
+    case 'READY_FOR_PR': return t.pr ? `transition ${id} COMPLETED` : `коміт, push фіча-гілки, PR у stage → pr ${id} <url>`;
     case 'COMPLETED': return `docs + metrics ${id}`;
-    default: return t.nextAction;
+    case 'BLOCKED': return `блокер: ${t.blockers.join('; ') || '—'} → рішення користувача, потім unblock ${id}`;
+    default: return t.nextAction ?? '—';
   }
 }
 
-/** Після запису звіту рев'ю/security: що лишилось до виходу з REVIEWING. */
-function afterReview(t, cfg) {
-  const tree = core.treeHash(root);
-  const pending = core.evaluateGates(root, cfg, t, tree, ['review', 'security']).filter((g) => !g.ok);
-  if (pending.length) return `${pending.map((g) => g.gate).join(', ')}: ${pending.map((g) => g.detail).join('; ')}`;
-  return core.qaRequired(t) ? `transition ${t.id} QA --agent qa` : `transition ${t.id} AWAITING_FINAL_APPROVAL`;
+/** Чи може orchestrator продовжувати без питань до користувача. */
+function canContinue(t, cfg, tree) {
+  if (t.status === 'BLOCKED') return { ok: false, why: 'задача BLOCKED' };
+  if (['AWAITING_APPROVAL', 'AWAITING_FINAL_APPROVAL'].includes(t.status)) return { ok: false, why: 'потрібне погодження користувача' };
+  if (['IMPLEMENTING', 'REVIEWING', 'QA', 'READY_FOR_PR'].includes(t.status)) {
+    const a = core.approvalStatus(root, t);
+    if (!a.ok) return { ok: false, why: a.detail };
+    if (t.status === 'READY_FOR_PR' && !core.evaluateGate(root, cfg, t, tree, 'final').ok) return { ok: false, why: 'фінальний approval не для поточного коду' };
+  }
+  return { ok: true, why: 'погодження чинне, обсяг той самий' };
 }
 
 function metrics(t) {
@@ -138,7 +168,9 @@ function report(state, id, cfg) {
   ];
   if (t.issues.length) lines.push(`Проблеми: ${t.issues.join('; ')}`);
   if (t.blockers.length) lines.push(`Блокери: ${t.blockers.join('; ')}`);
-  lines.push(`Наступна дія: ${t.nextAction ?? '—'}`);
+  const next = deriveNext(t, cfg, tree);
+  lines.push(`Наступна дія: ${next}`);
+  if (t.nextAction && t.nextAction !== next) lines.push(`Нотатка (збережена, на рішення не впливає): ${t.nextAction}`);
   lines.push(`Потрібне твоє підтвердження: ${needsHuman ? 'так' : 'ні'}`);
   if (t.pr) lines.push(`PR: ${t.pr}`);
   lines.push(`Стан коду (tree): ${tree.slice(0, 10)}`);
@@ -177,7 +209,7 @@ const commands = {
       const t = core.getTask(s, id);
       if (t.status !== 'BACKLOG') fail(`${id} уже в статусі ${t.status}`);
       t.status = 'DISCOVERY'; t.agent = 'orchestrator';
-      t.nextAction = `контекст за маршрутом (fast — сам, balanced — architect sonnet, strong — researcher opus) → transition ${id} PLANNING`;
+      t.nextAction = deriveNext(t, core.loadConfig(root));
       core.pushHistory(t, { event: 'transition', from: 'BACKLOG', to: 'DISCOVERY' });
       s.currentTask = id;
     });
@@ -194,8 +226,8 @@ const commands = {
       if (!fs.existsSync(core.planFile(root, id))) fail(`немає плану .factory/task-plans/${id}.md`);
       Object.assign(t, { scores, tier: c.tier, model: core.TIER_MODEL[c.tier], securityRequired: c.securityRequired });
       t.lastFailure = null;
-      t.nextAction = c.requiresApproval ? `transition ${id} AWAITING_APPROVAL і показати план користувачу` : `transition ${id} IMPLEMENTING`;
       core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
+      t.nextAction = deriveNext(t, core.loadConfig(root));
     });
     const cfg = core.loadConfig(root);
     const t = core.getTask(core.loadState(root), id);
@@ -225,7 +257,7 @@ const commands = {
       core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
       t.status = to;
       if (opt.agent) t.agent = opt.agent;
-      t.nextAction = nextFor(t, cfg);
+      t.nextAction = deriveNext(t, cfg);
       s.currentTask = id;
     });
     ok(`${id} → ${to}`);
@@ -237,6 +269,14 @@ const commands = {
     const kind = opt.full ? 'tests' : 'verify';
     const names = opt.full ? ['typecheck', 'lint', 'test', 'e2e'] : ['typecheck', 'lint', 'test'];
     const before = core.treeHash(root);
+    if (!opt.force) {
+      // Зелений результат для незмінного tree перевикористовується (повний прогін покриває і звичайний).
+      const prev = core.readEvidence(root, id, before, kind) ?? (kind === 'verify' ? core.readEvidence(root, id, before, 'tests') : null);
+      if (prev?.ok && !core.untracedCriteria(root, id, cfg).length) {
+        console.log(`♻ ${kind}: зелений результат для цього стану коду вже є (${prev.kind}, ${prev.at}) — повторно використано; --force для перезапуску`);
+        process.exit(0);
+      }
+    }
     const results = names.map((n) => { console.log(`… ${n}`); return runCommand(n, cfg.commands[n]); });
     const after = core.treeHash(root);
     const failed = results.filter((r) => r.status !== 'passed').map((r) => `${r.name}(${r.status})`);
@@ -253,15 +293,18 @@ const commands = {
       if (failed.length) {
         escalation = core.recordFailure(t, cfg, kind, signature);
         if (t.issues.at(-1) !== `${kind} failed: ${failed.join(', ')}`) t.issues.push(`${kind} failed: ${failed.join(', ')}`);
-        if (t.status !== 'BLOCKED') t.nextAction = `${core.implementer(t)?.who ?? 'developer'} виправляє ${failed.join(', ')} → verify ${id}`;
-      } else {
-        if (t.lastFailure?.stage === kind) t.lastFailure = null;
-        if (t.status === 'IMPLEMENTING') t.nextAction = `transition ${id} REVIEWING --agent reviewer`;
-        if (t.status === 'QA' && kind === 'tests') t.nextAction = `qa → record ${id} qa`;
-      }
+      } else if (t.lastFailure?.stage === kind) t.lastFailure = null;
+      t.nextAction = deriveNext(t, cfg);
       core.pushHistory(t, { event: kind, ok: failed.length === 0, evidence: path.relative(root, file) });
     });
-    results.forEach((r) => console.log(`${r.status === 'passed' ? '✅' : '❌'} ${r.name}: ${r.status}${r.exitCode !== null && r.exitCode !== undefined ? ` (exit ${r.exitCode})` : ''}`));
+    results.forEach((r) => {
+      console.log(`${r.status === 'passed' ? '✅' : '❌'} ${r.name}: ${r.status}${r.exitCode !== null && r.exitCode !== undefined ? ` (exit ${r.exitCode})` : ''}`);
+      if (r.status === 'failed') {
+        // Для передачі виконавцю: лише команда і конкретна діагностика.
+        console.log(`   команда: ${r.command}`);
+        r.output.split('\n').filter((l) => l.trim()).slice(-12).forEach((l) => console.log(`   │ ${l}`));
+      }
+    });
     if (untraced.length) console.log(`❌ AC без тестів: ${untraced.join(', ')} (developer додає тести з "${id} AC-n" у назві)`);
     if (escalation) console.log(escalation);
     console.log(`evidence: ${path.relative(root, file)}`);
@@ -291,10 +334,8 @@ const commands = {
       if (blocking.length) {
         t.issues.push(`${kind}: ${blocking.length} блокувальних findings`);
         if (kind !== 'qa') escalation = core.recordFailure(t, cfg, kind, core.failureSignature(blocking.map((f) => `${f.severity}:${f.title}:${f.file ?? ''}`)));
-        if (t.status !== 'BLOCKED') t.nextAction = `transition ${id} IMPLEMENTING → ${core.implementer(t)?.who ?? 'developer'} виправляє ${kind} findings`;
-      } else if (t.status === 'REVIEWING' && kind !== 'qa') {
-        t.nextAction = afterReview(t, cfg);
-      } else if (t.status === 'QA' && kind === 'qa') t.nextAction = `transition ${id} AWAITING_FINAL_APPROVAL`;
+      }
+      t.nextAction = deriveNext(t, cfg);
       core.pushHistory(t, { event: kind, model: report.model, findings: report.findings.length, blocking: blocking.length, evidence: path.relative(root, ev) });
     });
     console.log(`${blocking.length ? '❌' : '✅'} ${kind}: ${report.findings.length} findings, блокувальних ${blocking.length}`);
@@ -330,6 +371,34 @@ const commands = {
       return core.escalateModel(t, reason.join(' '));
     });
     ok(msg);
+  },
+
+  resume([id]) {
+    const cfg = core.loadConfig(root);
+    const taskId = id ?? core.loadState(root).currentTask;
+    if (!taskId) fail('немає поточної задачі');
+    const tree = core.treeHash(root);
+    const notes = [];
+    withState((s) => {
+      const t = core.getTask(s, taskId);
+      const tier = core.effectiveTier(t);
+      const model = core.effectiveModel(t);
+      // Стара автоескалація: tier/модель повертаються до оцінки складності, ручні підвищення лишаються.
+      if (tier && (t.tier !== tier || (t.model && model && t.model !== model))) {
+        notes.push(`відновлено за балами: tier ${t.tier} → ${tier}, модель ${t.model ?? '—'} → ${model}`);
+        core.pushHistory(t, { event: 'restored', note: notes.at(-1) });
+        t.tier = tier; t.model = model;
+      }
+      t.nextAction = deriveNext(t, cfg, tree);
+      s.currentTask = taskId;
+    });
+    const t = core.getTask(core.loadState(root), taskId);
+    notes.forEach((n) => console.log(`↺ ${n}`));
+    console.log(line(t, cfg));
+    const gates = core.evaluateGates(root, cfg, t, tree, ALL_GATES);
+    console.log(gates.map((g) => `${g.ok ? '✅' : g.pending ? '⏳' : '❌'}${g.gate}`).join(' '));
+    const c = canContinue(t, cfg, tree);
+    console.log(`Продовжувати без питань: ${c.ok ? 'так' : 'ні'} — ${c.why}`);
   },
 
   line([id]) {

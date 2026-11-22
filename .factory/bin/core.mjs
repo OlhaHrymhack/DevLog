@@ -295,6 +295,34 @@ export function untracedCriteria(root, id, cfg) {
   return acs.filter((ac) => !new RegExp(`\\b${ac}\\b`).test(corpus));
 }
 
+// ---------- session baseline (Stop hook) ----------
+/** Відбиток лише файлів коду застосунку (codeGlobs): зміни фабрики, docs і .claude його не змінюють. */
+export function codeFingerprint(root, cfg) {
+  const h = createHash('sha256');
+  for (const f of listProjectFiles(root).filter((x) => matchesAny(x, cfg.codeGlobs)).sort()) {
+    h.update(f).update('\0');
+    try { h.update(fs.readFileSync(path.join(root, f))); } catch { h.update('<missing>'); }
+    h.update('\0');
+  }
+  return h.digest('hex');
+}
+
+/** Базова точка сесії — поза репозиторієм, щоб не змінювати tree hash. */
+function sessionFile(sessionId) {
+  const dir = process.env.FACTORY_SESSION_DIR ?? path.join(os.tmpdir(), 'factory-sessions');
+  return path.join(dir, `${String(sessionId).replace(/[^\w.-]/g, '_')}.json`);
+}
+export function readSessionBaseline(sessionId) { return sessionId ? readJson(sessionFile(sessionId)) : null; }
+/** Пише базову точку лише якщо її ще немає (compact / resume не скидають її посеред сесії). */
+export function ensureSessionBaseline(root, cfg, sessionId) {
+  if (!sessionId) return null;
+  const existing = readSessionBaseline(sessionId);
+  if (existing?.root === root) return existing;
+  const data = { root, code: codeFingerprint(root, cfg), at: now() };
+  writeJsonAtomic(sessionFile(sessionId), data);
+  return data;
+}
+
 // ---------- gates ----------
 export function approvalStatus(root, task) {
   if (effectiveTier(task) === 'fast') return { ok: true, detail: 'Fast-задача: approval не потрібен' };
