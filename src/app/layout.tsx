@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/features/themeToggle";
@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   title: "DevLog",
   description: "Трекер задач для інженерної команди з вбудованими AI-агентами",
 };
+
+export const viewport: Viewport = { interactiveWidget: "resizes-content" };
 
 type RootLayoutProps = Readonly<{ children: ReactNode }>;
 
