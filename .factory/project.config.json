@@ -27,7 +27,7 @@
     "$comment": "Друге рев'ю моделлю іншої сім'ї (OpenAI Codex через gstack /codex). Потрібен codex login. Пріоритет — codex; fallback — незалежне рев'ю тієї ж сім'ї (record codex-fallback) лише коли codex недоступний (квота, auth, немає CLI), з fallbackReason у звіті (D-027).",
     "enabled": true,
     "tiers": ["strong"],
-    "fallback": { "enabled": true, "minModel": "sonnet" }
+    "fallback": { "enabled": true, "minModel": "opus" }
   },
   "branches": {
     "$comment": "Фіча-гілки → PR у integration. Merge integration → production робить лише користувач.",
