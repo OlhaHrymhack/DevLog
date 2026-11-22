@@ -108,6 +108,18 @@ factory('verify', 'DEV-001');
 r = factory('transition', 'DEV-001', 'REVIEWING', '--agent', 'reviewer');
 check('9b. повторний verify → REVIEWING дозволено', r.status === 0, r.stderr);
 
+console.log('\n[4a] Хеш рев\'ю фіксується при вході в REVIEWING');
+check('4a1. вхід у REVIEWING запам\'ятовує хеш дерева', /^[0-9a-f]{40}$/.test(state().tasks['DEV-001'].reviewTree ?? ''));
+r = factory('transition', 'DEV-001', 'IMPLEMENTING');
+check('4a2. повернення в IMPLEMENTING до всіх звітів заблоковано (блокери збираємо разом)', r.status !== 0 && /дочекайся/.test(r.stderr), r.stderr);
+w('src/app.ts', 'export const a = 3;\n');
+r = factory('record', 'DEV-001', 'review', findings('rev-drift', 'reviewer', 'opus', []));
+check('4a3. код змінився між запуском рев\'ю і записом звіту → звіт відхилено', r.status !== 0 && /змінився/.test(r.stderr), r.stderr);
+r = factory('record', 'DEV-001', 'security', findings('sec-drift', 'security', 'opus', []));
+check('4a4. те саме для security', r.status !== 0 && /змінився/.test(r.stderr), r.stderr);
+check('4a5. відхилений звіт не потрапляє в історію', !state().tasks['DEV-001'].history.some((e) => e.event === 'review' || e.event === 'security'));
+w('src/app.ts', 'export const a = 2;\n');
+
 console.log('\n[4] Review gate');
 r = factory('record', 'DEV-001', 'review', findings('rev-bad', 'reviewer', 'opus', [{ severity: 'high', title: 'SQL injection' }, { severity: 'low', title: 'naming' }]));
 check('4a. High finding → record exit 1', r.status === 1);

@@ -10,7 +10,7 @@ tags: [architecture, factory]
 BACKLOG → DISCOVERY → PLANNING → AWAITING_APPROVAL → IMPLEMENTING → REVIEWING
   → QA (лише UI-задачі balanced/strong) → AWAITING_FINAL_APPROVAL → READY_FOR_PR → COMPLETED      (будь-де → BLOCKED)
 ```
-Реалізація + тести → `verify` → незалежне рев'ю → QA за потреби → фінальне погодження → PR. Тести пише developer в IMPLEMENTING, тому рев'ю бачить код разом із тестами, а правки тестів не анулюють рев'ю у звичайному проході.
+Реалізація + тести → `verify` → усі обов'язкові рев'ю (reviewer, security, codex для strong) для одного зафіксованого хешу → збір блокерів → виправлення одним пакетом і `verify` нового хешу → QA за потреби → фінальне погодження → PR (D-021). Тести пише developer в IMPLEMENTING, тому рев'ю бачить код разом із тестами, а правки тестів не анулюють рев'ю у звичайному проході.
 
 | Етап | Агент | Модель | Вихід | Gate для виходу |
 |---|---|---|---|---|
@@ -45,6 +45,7 @@ Orchestrator (головна сесія) — Sonnet за замовчуванн�
 | State / evidence / approvals — лише CLI; approval — лише промпт людини | guard + `user-prompt.mjs` | блок |
 | Зміна hooks / CLI / settings | guard | запит підтвердження |
 | reviewer не нижче моделі tier (`reviewModel`), security — opus | guard на `Agent` + перевірка у `factory record` | блок |
+| Звіти review/codex/security — лише для хешу, зафіксованого при вході в REVIEWING; правки (REVIEWING → IMPLEMENTING) — після всіх обов'язкових звітів (D-021) | `factory record` + `transition` | відхилення |
 | Права ролей (architect → плани, qa → лише `test-results/`, docs → vault) | `path-guard.mjs` у frontmatter агентів | блок |
 | `AGENT_LOG.md`, README «Рішення і компроміси» — лише автор | guard | блок |
 | `decisions.md` append-only | guard | блок |
