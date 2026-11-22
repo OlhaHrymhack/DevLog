@@ -52,7 +52,10 @@ export function tierFromScores(scores) {
  * Tier ризику — завжди з балів classify. Стара фабрика підвищувала task.tier після провалів;
  * таке підвищення не має визначати рівень рев'ю, QA чи codex (D-017).
  */
-export function effectiveTier(task) { return task.scores ? tierFromScores(task.scores) : task.tier; }
+export function effectiveTier(task) {
+  if (task.tierOverride?.tier) return task.tierOverride.tier;
+  return task.scores ? tierFromScores(task.scores) : task.tier;
+}
 
 /** Підвищений ризик усередині balanced: security/integrations ≥ 1 або criticality = 2. */
 export function elevatedRisk(task) {
@@ -64,6 +67,7 @@ export function elevatedRisk(task) {
 export function requiredReviewModel(cfg, task) {
   const tier = task ? effectiveTier(task) : 'strong';
   const m = cfg.reviewModel ?? {};
+  if (task?.tierOverride) return m[tier] ?? 'opus';
   if (tier === 'balanced' && elevatedRisk(task)) return m.balancedElevated ?? 'opus';
   return m[tier] ?? 'opus';
 }
@@ -366,7 +370,16 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       const cross = cfg.crossFamilyReview;
       if (gate === 'review' && cross?.enabled && cross.tiers.includes(effectiveTier(task))) {
         const cx = readEvidence(root, task.id, tree, 'codex');
-        if (!cx) return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}` + stale('codex') };
+        if (!cx) {
+          const fb = cross.fallback?.enabled ? readEvidence(root, task.id, tree, 'codex-fallback') : null;
+          if (fb) {
+            const fbBlocking = blockingFindings(fb);
+            if (fbBlocking.length) return { ok: false, detail: `codex-fallback: ${fbBlocking.length} блокувальних findings` };
+            return { ok: true, detail: `reviewer (${ev.model}) + резервне рев'ю тієї ж сім'ї (${fb.model}; codex недоступний: ${fb.fallbackReason}): блокувальних немає` };
+          }
+          const hint = cross.fallback?.enabled ? '; якщо codex недоступний (квота, auth, немає CLI) — резервне рев\'ю: record <ID> codex-fallback' : '';
+          return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}${hint}` + stale('codex') };
+        }
         const cb = blockingFindings(cx);
         if (cb.length) return { ok: false, detail: `codex: ${cb.length} блокувальних findings` };
         return { ok: true, detail: `reviewer (${ev.model}) + codex (${cx.model}): блокувальних немає` };

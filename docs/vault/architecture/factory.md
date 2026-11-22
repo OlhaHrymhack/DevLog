@@ -11,7 +11,7 @@ BACKLOG → DISCOVERY → PLANNING → AWAITING_APPROVAL → IMPLEMENTING → RE
   → QA (лише UI-задачі balanced/strong) → AWAITING_FINAL_APPROVAL → READY_FOR_PR → COMPLETED      (будь-де → BLOCKED)
   COMPLETED → REVIEWING — лише якщо код змінився після APPROVE-FINAL (ребейз на stage перед merge PR, D-024)
 ```
-Реалізація + тести → `verify` → усі обов'язкові рев'ю (reviewer, security, codex для strong) для одного зафіксованого хешу → збір блокерів → виправлення одним пакетом і `verify` нового хешу → QA за потреби → фінальне погодження → PR (D-021). Тести пише developer в IMPLEMENTING, тому рев'ю бачить код разом із тестами, а правки тестів не анулюють рев'ю у звичайному проході.
+Реалізація + тести → `verify` → усі обов'язкові рев'ю (reviewer, security, codex для strong; якщо Codex недоступний — `codex-fallback`, D-027) для одного зафіксованого хешу → збір блокерів → виправлення одним пакетом і `verify` нового хешу → QA за потреби → фінальне погодження → PR (D-021). Тести пише developer в IMPLEMENTING, тому рев'ю бачить код разом із тестами, а правки тестів не анулюють рев'ю у звичайному проході.
 
 | Етап | Агент | Модель | Вихід | Gate для виходу |
 |---|---|---|---|---|

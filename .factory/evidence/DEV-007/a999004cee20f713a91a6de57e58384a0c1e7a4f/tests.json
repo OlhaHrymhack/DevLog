@@ -1,0 +1,42 @@
+{
+  "taskId": "DEV-007",
+  "kind": "tests",
+  "tree": "a999004cee20f713a91a6de57e58384a0c1e7a4f",
+  "at": "2026-11-22T15:30:39.565Z",
+  "ok": true,
+  "failed": [],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1433,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3041,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2587,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev007\n\n\n Test Files  33 passed (33)\n      Tests  144 passed (144)\n   Start at  17:30:08\n   Duration  2.19s (import 42%, environment 29%, tests 18%, transform 10%, worker 1%, setup 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 28467,
+      "output": "Running 78 tests using 5 workers\n···°··°·······················°°°····················°·······×···°·±\n::error file=e2e/tasksList.spec.ts,title=[desktop-1280] › e2e/tasksList.spec.ts%3A6%3A1 › DEV-005 AC-1 AC-2 AC-3 AC-4%3A API list%2C status counts%2C sorting%2C search and reset,line=10,col=50::  1) [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset %0A    Error: expect(locator).toContainText(expected) failed%0A%0A    Locator: getByTestId('task-summary')%0A    Expected substring: \"12 задач · 4 в роботі · 3 гарячі\"%0A    Received string:    \"15 задач · 4 в роботі · 3 гарячі 🌶️\"%0A    Timeout: 5000ms%0A%0A    Call log:%0A      - Expect \"toContainText\" getByTestId('task-summary') with timeout 5000ms%0A      - waiting for getByTestId('task-summary')%0A        14 × locator resolved to <p data-testid=\"task-summary\" class=\"mt-2 text-sm text-fg-muted\">15 задач · 4 в роботі · 3 гарячі 🌶️</p>%0A           - unexpected value \"15 задач · 4 в роботі · 3 гарячі 🌶️\"%0A%0A%0A       8 |   const tasks = page.locator(rows);%0A       9 |   await expect(tasks).toHaveCount(10);%0A    > 10 |   await expect(page.getByTestId(\"task-summary\")).toContainText(\"12 задач · 4 в роботі · 3 гарячі\");%0A         |                                                  ^%0A      11 |   await expect(tasks.nth(0)).toContainText(\"Rate limiting\");%0A      12 |   await expect(tasks.nth(1)).toContainText(\"Виправити витік\");%0A      13 |   await expect(tasks.nth(2)).toContainText(\"Оновити Next.js до 15\");%0A        at /private/tmp/devlog-dev007/e2e/tasksList.spec.ts:10:50\n···········\n\n  1) [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset \n\n    Error: expect(locator).toContainText(expected) failed\n\n    Locator: getByTestId('task-summary')\n    Expected substring: \"12 задач · 4 в роботі · 3 гарячі\"\n    Received string:    \"15 задач · 4 в роботі · 3 гарячі 🌶️\"\n    Timeout: 5000ms\n\n    Call log:\n      - Expect \"toContainText\" getByTestId('task-summary') with timeout 5000ms\n      - waiting for getByTestId('task-summary')\n        14 × locator resolved to <p data-testid=\"task-summary\" class=\"mt-2 text-sm text-fg-muted\">15 задач · 4 в роботі · 3 гарячі 🌶️</p>\n           - unexpected value \"15 задач · 4 в роботі · 3 гарячі 🌶️\"\n\n\n       8 |   const tasks = page.locator(rows);\n       9 |   await expect(tasks).toHaveCount(10);\n    > 10 |   await expect(page.getByTestId(\"task-summary\")).toContainText(\"12 задач · 4 в роботі · 3 гарячі\");\n         |                                                  ^\n      11 |   await expect(tasks.nth(0)).toContainText(\"Rate limiting\");\n      12 |   await expect(tasks.nth(1)).toContainText(\"Виправити витік\");\n      13 |   await expect(tasks.nth(2)).toContainText(\"Оновити Next.js до 15\");\n        at /private/tmp/devlog-dev007/e2e/tasksList.spec.ts:10:50\n\n    Error Context: test-results/tasksList-DEV-005-AC-1-AC--dc82c-ts-sorting-search-and-reset-desktop-1280/error-context.md\n\n  1 flaky\n    [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset \n  7 skipped\n  70 passed (28.0s)\n::notice title=🎭 Playwright Run Summary::  1 flaky%0A    [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset %0A  7 skipped%0A  70 passed (28.0s)\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n"
+    }
+  ]
+}

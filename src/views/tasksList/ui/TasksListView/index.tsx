@@ -18,13 +18,12 @@ import { EmptyState } from "@/shared/ui/EmptyState";
 import { AppHeader } from "@/widgets/appHeader";
 import { DemoModeBanner } from "@/widgets/demoModeBanner";
 import { DevStatesPanel, type ModeOverride, type ScreenOverride } from "@/widgets/devStatesPanel";
+import { TaskDialogs, type TaskDialog } from "@/widgets/taskDialogs";
 import { TaskList, TaskListSkeleton } from "@/widgets/taskList";
 import { t } from "../../model/copy.uk";
 import { formatTaskSummary } from "../../model/formatTaskSummary";
 import { isSortOption, SORT_OPTIONS, useTaskListParams } from "../../model/useTaskListParams";
 import { fabStyles, filtersStyles, layoutStyles, mainStyles, skipLinkStyles, titleStyles } from "./styles";
-import { TaskDialogs } from "../TaskDialogs";
-import type { TaskDialog } from "../TaskDialogs/types";
 
 const sortOptions = Object.entries(SORT_OPTIONS).map(([value, { label }]) => ({ value, label }));
 const EMPTY_SUMMARY = { all: 0, todo: 0, "in-progress": 0, done: 0, hot: 0 };

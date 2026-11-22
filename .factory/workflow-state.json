@@ -972,16 +972,30 @@
     "DEV-007": {
       "id": "DEV-007",
       "title": "Деталі задачі",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 0,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 2,
+        "uncertainty": 0,
+        "ui": 1
+      },
       "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "agent": "qa",
+      "attempts": {
+        "sonnet": 2
+      },
+      "issues": [
+        "tests failed: e2e(failed)"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-007 <url>",
       "pr": null,
       "history": [
         {
@@ -992,10 +1006,160 @@
           "at": "2026-11-21T19:54:44.764Z",
           "event": "retitled",
           "note": "AI-ядро agent loop → Деталі задачі"
+        },
+        {
+          "at": "2026-11-22T15:15:46.612Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T15:15:46.856Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T15:20:01.843Z",
+          "event": "classified",
+          "note": "сума 6 → balanced"
+        },
+        {
+          "at": "2026-11-22T15:20:02.190Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T15:22:34.302Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T15:28:52.281Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-007/5b401997f9b5bd93b71a380ab2c1531e17a84f8a/verify.json"
+        },
+        {
+          "at": "2026-11-22T15:30:03.734Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-007/a999004cee20f713a91a6de57e58384a0c1e7a4f/verify.json"
+        },
+        {
+          "at": "2026-11-22T15:30:39.682Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-007/a999004cee20f713a91a6de57e58384a0c1e7a4f/tests.json"
+        },
+        {
+          "at": "2026-11-22T15:30:44.131Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "a999004cee"
+        },
+        {
+          "at": "2026-11-22T15:55:27.487Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 10,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-007/a999004cee20f713a91a6de57e58384a0c1e7a4f/review.json"
+        },
+        {
+          "at": "2026-11-22T15:55:30.129Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T15:56:45.414Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T15:58:27.904Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-007/52e487f1c761382da82e34158297c89f033e53fa/tests.json"
+        },
+        {
+          "at": "2026-11-22T15:59:24.540Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-007/15723445420f064918795b7581427dd77e9805ba/tests.json"
+        },
+        {
+          "at": "2026-11-22T16:00:30.742Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-007/98c350906df30c2c7be37a315c849b1bb2c1909c/tests.json"
+        },
+        {
+          "at": "2026-11-22T16:00:33.640Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "98c350906d"
+        },
+        {
+          "at": "2026-11-22T16:01:11.065Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-007/98c350906df30c2c7be37a315c849b1bb2c1909c/review.json"
+        },
+        {
+          "at": "2026-11-22T16:01:11.379Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T16:02:35.831Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 0,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-007/98c350906df30c2c7be37a315c849b1bb2c1909c/qa.json"
+        },
+        {
+          "at": "2026-11-22T16:02:36.144Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T16:03:20.464Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-007/98c350906df30c2c7be37a315c849b1bb2c1909c/tests.json"
+        },
+        {
+          "at": "2026-11-22T16:04:18.182Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.769Z",
-      "updatedAt": "2026-11-21T19:54:44.765Z"
+      "updatedAt": "2026-11-22T16:04:18.182Z",
+      "lastFailure": null,
+      "usage": {
+        "reviewer": 87828,
+        "qa": 48450
+      },
+      "reviewTree": "98c350906df30c2c7be37a315c849b1bb2c1909c"
     },
     "DEV-008": {
       "id": "DEV-008",
