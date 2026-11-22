@@ -45,6 +45,7 @@ DEV-013 README + перевірка з нуля (після всіх)
 | DEV-011 | [[specs/DEV-011]] Агент C — Статус-апдейт | balanced | R-08 |
 | DEV-012 | [[specs/DEV-012]] Агент D — Радар застряглих | strong | R-09 |
 | DEV-013 | [[specs/DEV-013]] README + перевірка з нуля | balanced | R-11, R-12, R-16 |
+| DEV-015 | [[specs/DEV-015]] Конфігуровані ліміти агентів і безпечний dev-smoke | strong (очікується) | R-11, R-12; TC-28 |
 
 ## Наскрізні домовленості (діють у всіх задачах)
 - **Доменна мова:** `Task`, `Subtask`, `Note`, `AgentRun`, `AgentStep`, `DayPlan` (A), `Decomposition` (B), `StatusUpdate` (C), `Triage` (D). Однаково в коді, API, БД, UI-типах.
