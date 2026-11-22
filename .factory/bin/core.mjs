@@ -23,7 +23,7 @@ export const TRANSITIONS = {
   QA: ['AWAITING_FINAL_APPROVAL', 'IMPLEMENTING'],
   AWAITING_FINAL_APPROVAL: ['READY_FOR_PR', 'IMPLEMENTING'],
   READY_FOR_PR: ['COMPLETED', 'IMPLEMENTING'],
-  COMPLETED: [],
+  COMPLETED: ['REVIEWING'], // лише якщо код змінився після APPROVE-FINAL (напр. ребейз перед merge PR) — див. applyTransition
   BLOCKED: [],
 };
 

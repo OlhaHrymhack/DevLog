@@ -363,6 +363,25 @@ fs.rmSync(path.join(tmp, 'src/DEV-088.ts'));
 r = factory('resume', 'DEV-088');
 check('16e. APPROVE-FINAL чинний для поточного коду → resume сам переходить у READY_FOR_PR', state().tasks['DEV-088'].status === 'READY_FOR_PR' && /погодження вже чинне: AWAITING_FINAL_APPROVAL → READY_FOR_PR/.test(r.stdout) && /Продовжувати без питань: так/.test(r.stdout) && /далі: коміт, push/.test(r.stdout), r.stdout);
 
+console.log('\n[17] COMPLETED → REVIEWING: повторне рев\'ю, коли код змінився після фінального approval');
+factory('pr', 'DEV-088', 'https://github.com/x/y/pull/88');
+r = factory('transition', 'DEV-088', 'COMPLETED');
+check('17a. READY_FOR_PR з PR reference → COMPLETED', r.status === 0 && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17b. код не змінився після APPROVE-FINAL → COMPLETED → REVIEWING заборонено', r.status !== 0 && /не змінився/.test(r.stderr) && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+w('src/DEV-088.ts', 'export const rebased = 1;\n');
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17c. код змінився, але verify на новому хеші ще немає → REVIEWING заблоковано', r.status !== 0 && /verify/.test(r.stderr) && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+factory('verify', 'DEV-088', '--full');
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17d. після verify на новому хеші → REVIEWING, хеш рев\'ю зафіксовано', r.status === 0 && state().tasks['DEV-088'].status === 'REVIEWING' && !!state().tasks['DEV-088'].reviewTree, r.stderr);
+factory('record', 'DEV-088', 'review', findings('rev-88b', 'reviewer', 'sonnet', []));
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('17e. рев\'ю пройдено → AWAITING_FINAL_APPROVAL, потрібен новий APPROVE-FINAL', r.status === 0, r.stderr);
+r = factory('transition', 'DEV-088', 'READY_FOR_PR');
+check('17f. READY_FOR_PR без нового APPROVE-FINAL → заблоковано (старий approval для іншого коду)', r.status !== 0, r.stderr);
+fs.rmSync(path.join(tmp, 'src/DEV-088.ts'));
+
 console.log('\n[+] Git staging записів фабрики');
 check('git add state → allow', guard('Bash', { command: 'git add .factory/workflow-state.json' }) === 'allow');
 check('git diff state → allow', guard('Bash', { command: 'git diff .factory/workflow-state.json' }) === 'allow');
