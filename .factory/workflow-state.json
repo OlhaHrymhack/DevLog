@@ -439,7 +439,7 @@
     "DEV-005": {
       "id": "DEV-005",
       "title": "Список задач",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -465,8 +465,8 @@
         "tests failed: код змінився під час перевірки"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-005 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-005",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/17",
       "history": [
         {
           "at": "2026-11-21T17:47:23.642Z",
@@ -762,10 +762,21 @@
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR",
           "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T14:22:28.766Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/17"
+        },
+        {
+          "at": "2026-11-22T14:22:28.918Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.642Z",
-      "updatedAt": "2026-11-22T14:22:00.822Z",
+      "updatedAt": "2026-11-22T14:22:28.919Z",
       "lastFailure": null,
       "repeats": 1,
       "reviewTree": "5a08853967781f2ed64d1160c9aaf9f5c30a37f3"
