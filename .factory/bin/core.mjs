@@ -68,11 +68,27 @@ export function requiredReviewModel(cfg, task) {
   return m[tier] ?? 'opus';
 }
 
+/**
+ * Модель реалізації: базова за tier з балів + лише **ручні** підвищення після останнього classify
+ * (події escalation з моделлю в `to`). Стара автоескалація писала в `to` tier (`strong`) — її ігноруємо (D-018).
+ */
+export function effectiveModel(task) {
+  const tier = effectiveTier(task);
+  if (!tier) return task.model ?? null;
+  let model = TIER_MODEL[tier];
+  const h = task.history ?? [];
+  const last = h.map((e) => e.event).lastIndexOf('classified');
+  for (const e of h.slice(last + 1)) {
+    if (e.event === 'escalation' && MODELS.includes(e.to) && modelRank(e.to) > modelRank(model)) model = e.to;
+  }
+  return model;
+}
+
 /** Хто реалізує: balanced на sonnet — головна сесія; інакше — developer subagent. */
 export function implementer(task) {
   const tier = effectiveTier(task);
   if (!tier) return null;
-  const model = task.model ?? TIER_MODEL[tier];
+  const model = effectiveModel(task);
   return tier === 'balanced' && model === 'sonnet' ? { who: 'головна сесія', model } : { who: 'developer', model };
 }
 
@@ -86,10 +102,13 @@ export function qaRequired(task) {
 }
 
 /** e2e (verify --full) потрібен для QA-задач або якщо план явно вимагає verify --full / test:e2e. */
+export function specFile(root, id) { return path.join(root, 'docs', 'vault', 'specs', `${id}.md`); }
+
+/** e2e (verify --full) потрібен для QA-задач або якщо план чи специфікація вимагають E2E / Playwright / test:e2e. */
 export function e2eRequired(root, task) {
   if (qaRequired(task)) return true;
-  const f = planFile(root, task.id);
-  return fs.existsSync(f) && /verify[^\n]*--full|test:e2e/.test(fs.readFileSync(f, 'utf8'));
+  const re = /test:e2e|verify[^\n]*--full|playwright|\be2e\b/i;
+  return [planFile(root, task.id), specFile(root, task.id)].some((f) => fs.existsSync(f) && re.test(fs.readFileSync(f, 'utf8')));
 }
 export const CRITERIA = ['modules', 'architecture', 'criticality', 'security', 'integrations', 'migrations', 'state', 'uncertainty'];
 export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
@@ -290,7 +309,9 @@ export function evaluateGate(root, cfg, task, tree, gate) {
   switch (gate) {
     case 'approval': return approvalStatus(root, task);
     case 'verify': {
-      const ev = readEvidence(root, task.id, tree, 'verify');
+      // Зелений повний прогін (verify --full) для того самого tree теж зараховується.
+      const full = readEvidence(root, task.id, tree, 'tests');
+      const ev = full?.ok ? full : readEvidence(root, task.id, tree, 'verify');
       if (!ev) return { ok: false, pending: true, detail: 'verify не запускався для поточного коду' + stale('verify') };
       if (!ev.ok) return { ok: false, detail: `failed: ${ev.failed.join(', ')}` };
       const missing = untracedCriteria(root, task.id, cfg);
@@ -370,7 +391,7 @@ export function failureSignature(parts) {
  */
 export function recordFailure(task, cfg, stage, signature) {
   const limit = cfg.escalation?.failuresOnOpusBeforeBlock ?? 3;
-  const model = task.model ?? TIER_MODEL[effectiveTier(task)];
+  const model = effectiveModel(task) ?? 'sonnet';
   const repeated = Boolean(signature) && task.lastFailure?.signature === signature;
   task.lastFailure = { stage, signature: signature ?? null, at: now() };
   if (repeated) {
@@ -391,10 +412,10 @@ export function recordFailure(task, cfg, stage, signature) {
 
 /** Ручне підвищення моделі developer orchestrator-ом. Tier (і рівень рев'ю) не змінюється. */
 export function escalateModel(task, reason) {
-  const from = task.model ?? TIER_MODEL[effectiveTier(task)];
+  const from = effectiveModel(task);
   const i = modelRank(from);
   if (i < 0 || i >= MODELS.length - 1) throw new Error(`developer уже на ${from} — вище нікуди`);
   task.model = MODELS[i + 1];
-  pushHistory(task, { event: 'escalation', from, to: task.model, note: reason });
+  pushHistory(task, { event: 'escalation', manual: true, from, to: task.model, note: reason });
   return `developer: ${from} → ${task.model} (tier ${effectiveTier(task)} і рівень рев'ю без змін)`;
 }
