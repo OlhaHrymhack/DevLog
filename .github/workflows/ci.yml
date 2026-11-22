@@ -30,4 +30,4 @@ jobs:
       - if: steps.app.outputs.exists == 'true'
         run: npx playwright install --with-deps chromium && npm run test:e2e
         env:
-          AI_MOCK: "true"
+          AI_MODE: demo
