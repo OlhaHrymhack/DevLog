@@ -6,6 +6,7 @@ import {
   type SubtaskUpdateInput, type Task, type TaskCreateInput, type TaskListItem,
   type TaskListQuery, type TaskUpdateInput,
 } from "@/entities/task";
+import { NotFoundError } from "@/shared/api/errors";
 import { MS_PER_DAY } from "@/shared/lib/timestamp";
 import type { DevLogDb } from "../db/client";
 import { createId } from "../ids";
@@ -126,11 +127,13 @@ export const createTaskRepository = (db: DevLogDb) => {
   const setFocus = (taskIds: string[]) => db.transaction(() => {
     if (new Set(taskIds).size !== taskIds.length) throw new Error("Focus task IDs must be unique");
     if (taskIds.length && db.select({ id: tasks.id }).from(tasks).where(inArray(tasks.id, taskIds)).all().length !== taskIds.length) {
-      throw new Error("Focus includes an unknown task");
+      throw new NotFoundError("Focus includes an unknown task");
     }
     db.update(tasks).set({ focusRank: null }).run();
-    taskIds.forEach((id, index) => {
-      db.update(tasks).set({ focusRank: index + 1 }).where(eq(tasks.id, id)).run();
+    return taskIds.map((taskId, index) => {
+      const focusRank = index + 1;
+      db.update(tasks).set({ focusRank }).where(eq(tasks.id, taskId)).run();
+      return { taskId, focusRank };
     });
   }, { behavior: "immediate" });
 

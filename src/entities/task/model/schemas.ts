@@ -116,7 +116,7 @@ const emptyToUndefined = (value: string | undefined): string | undefined => {
 };
 
 /** Параметри списку; DEV-004 перевикористовує схему для query `GET /api/tasks`. */
-export const TaskListQuerySchema = z.object({
+export const TaskListQuerySchema = z.strictObject({
   status: TaskStatusSchema.optional(),
   q: z.string().trim().max(200).optional().transform(emptyToUndefined),
   sort: TaskSortSchema.default("priority"),
