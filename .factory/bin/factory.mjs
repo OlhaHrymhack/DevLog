@@ -16,6 +16,7 @@ const HELP = `Команди:
   transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
   verify <ID> [--full]                   typecheck/lint/unit + AC traceability (+e2e з --full), записати evidence
   record <ID> <review|codex|codex-fallback|security|qa> <file.json>    записати звіт агента (codex-fallback — резервне рев'ю тієї ж сім'ї, лише коли codex недоступний)
+  override <ID> <fast|balanced|strong> <причина...>   явне рішення користувача про tier (бали й план не змінюються; classify скидає)
   escalate <ID> <причина...>             підвищити модель developer (tier і рівень рев'ю не змінюються)
   line [ID]                              один рядок статусу (між етапами замість report)
   resume [ID]                            відновити задачу: модель за балами, наступна дія з gates, чи можна продовжувати
@@ -270,6 +271,7 @@ const commands = {
       const t = core.getTask(s, id);
       if (t.status !== 'PLANNING') fail(`класифікація можлива лише в PLANNING (зараз ${t.status})`);
       if (!fs.existsSync(core.planFile(root, id))) fail(`немає плану .factory/task-plans/${id}.md`);
+      delete t.tierOverride;
       Object.assign(t, { scores, tier: c.tier, model: core.TIER_MODEL[c.tier], securityRequired: c.securityRequired });
       t.lastFailure = null;
       core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
@@ -278,6 +280,22 @@ const commands = {
     const cfg = core.loadConfig(root);
     const t = core.getTask(core.loadState(root), id);
     console.log(JSON.stringify({ id, ...c, developerModel: core.TIER_MODEL[c.tier], reviewModel: core.requiredReviewModel(cfg, t) }, null, 2));
+    console.log(line(t, cfg));
+  },
+
+  override([id, tier, ...reason]) {
+    if (!id || !core.TIER_MODEL[tier] || !reason.join(' ').trim()) fail('override <ID> <fast|balanced|strong> <причина — рішення користувача, з його слів>');
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status === 'COMPLETED') fail('задача вже завершена');
+      t.tierOverride = { tier, reason: reason.join(' ').trim(), at: new Date().toISOString() };
+      t.tier = tier; t.model = core.TIER_MODEL[tier];
+      core.pushHistory(t, { event: 'tierOverride', note: `tier → ${tier} (бали лишаються: ${core.tierFromScores(t.scores ?? {})}): ${t.tierOverride.reason}` });
+      t.nextAction = deriveNext(t, core.loadConfig(root));
+    });
+    const cfg = core.loadConfig(root);
+    const t = core.getTask(core.loadState(root), id);
+    ok(`${id}: tier ${tier} за рішенням користувача; реалізація ${core.implementer(t).who} (${core.effectiveModel(t)}), рев'ю ${core.requiredReviewModel(cfg, t)}, security ${t.securityRequired ? 'лишається обов\'язковим' : 'не потрібен'}`);
     console.log(line(t, cfg));
   },
 

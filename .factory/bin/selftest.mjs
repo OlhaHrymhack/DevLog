@@ -225,6 +225,25 @@ factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-ok', { fallbac
 r = factory('transition', 'DEV-098', 'AWAITING_FINAL_APPROVAL');
 check('4m. reviewer + security + codex-fallback без блокерів → gate пройдено', r.status === 0, r.stderr);
 
+console.log('\n[4+++] Явне рішення користувача: override tier (D-028)');
+factory('add', 'DEV-097', 'Override'); factory('start', 'DEV-097'); factory('transition', 'DEV-097', 'PLANNING');
+w('.factory/task-plans/DEV-097.md', '# plan\n');
+factory('classify', 'DEV-097', ...allScores(0, { security: 2 }));
+factory('transition', 'DEV-097', 'AWAITING_APPROVAL'); user('APPROVE DEV-097');
+factory('transition', 'DEV-097', 'IMPLEMENTING'); factory('verify', 'DEV-097');
+r = factory('override', 'DEV-097', 'balanced');
+check('4n. override без причини відхилено', r.status !== 0, r.stderr);
+r = factory('override', 'DEV-097', 'turbo', 'нестача токенів');
+check('4o. override з невідомим tier відхилено', r.status !== 0, r.stderr);
+r = factory('override', 'DEV-097', 'balanced', 'нестача токенів, рішення користувача');
+check('4p. override → balanced; security лишається обов\'язковим', r.status === 0 && /security лишається обов/.test(r.stdout), r.stdout + r.stderr);
+factory('transition', 'DEV-097', 'REVIEWING');
+r = factory('record', 'DEV-097', 'review', findings('ov-rev', 'reviewer', 'sonnet', []));
+check('4q. після override reviewer на sonnet приймається', r.status === 0, r.stderr);
+factory('record', 'DEV-097', 'security', findings('ov-sec', 'security', 'opus', []));
+r = factory('transition', 'DEV-097', 'AWAITING_FINAL_APPROVAL');
+check('4r. після override codex/fallback не вимагається', r.status === 0, r.stderr);
+
 console.log('\n[11] Balanced без ризику, ручна ескалація і ліміт циклів');
 factory('add', 'DEV-093', 'Ескалація'); factory('start', 'DEV-093'); factory('transition', 'DEV-093', 'PLANNING');
 w('.factory/task-plans/DEV-093.md', '# plan\n');

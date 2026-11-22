@@ -52,7 +52,10 @@ export function tierFromScores(scores) {
  * Tier ризику — завжди з балів classify. Стара фабрика підвищувала task.tier після провалів;
  * таке підвищення не має визначати рівень рев'ю, QA чи codex (D-017).
  */
-export function effectiveTier(task) { return task.scores ? tierFromScores(task.scores) : task.tier; }
+export function effectiveTier(task) {
+  if (task.tierOverride?.tier) return task.tierOverride.tier;
+  return task.scores ? tierFromScores(task.scores) : task.tier;
+}
 
 /** Підвищений ризик усередині balanced: security/integrations ≥ 1 або criticality = 2. */
 export function elevatedRisk(task) {
@@ -64,6 +67,7 @@ export function elevatedRisk(task) {
 export function requiredReviewModel(cfg, task) {
   const tier = task ? effectiveTier(task) : 'strong';
   const m = cfg.reviewModel ?? {};
+  if (task?.tierOverride) return m[tier] ?? 'opus';
   if (tier === 'balanced' && elevatedRisk(task)) return m.balancedElevated ?? 'opus';
   return m[tier] ?? 'opus';
 }
