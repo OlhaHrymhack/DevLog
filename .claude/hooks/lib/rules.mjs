@@ -215,5 +215,13 @@ export function checkAgentModel(tool, input, root) {
   if (cfg.pinnedStrongAgents.includes(input.subagent_type) && input.model && input.model !== 'opus') {
     return { decision: 'deny', reason: `${input.subagent_type} обов'язково працює на opus; зниження моделі лише з дозволу користувача` };
   }
+  if (input.subagent_type === 'reviewer' && input.model) {
+    const state = core.loadState(root);
+    const task = state.currentTask ? state.tasks[state.currentTask] : null;
+    const need = core.requiredReviewModel(cfg, task);
+    if (core.modelRank(input.model) < core.modelRank(need)) {
+      return { decision: 'deny', reason: `reviewer для tier ${task ? core.effectiveTier(task) : '—'} має працювати щонайменше на ${need}` };
+    }
+  }
   return null;
 }

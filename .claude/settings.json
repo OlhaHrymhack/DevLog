@@ -1,4 +1,5 @@
 {
+  "model": "sonnet",
   "env": {
     "GSTACK_CODEX_MODEL": "gpt-6.2-sol"
   },
