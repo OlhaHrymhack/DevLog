@@ -18,13 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/Tabs";
 import { AppHeader } from "@/widgets/appHeader";
 import { DecomposePanel } from "@/widgets/decomposePanel";
 import { NoteList } from "@/widgets/noteList";
+import { StatusUpdatePanel } from "@/widgets/statusUpdatePanel";
 import { areAllSubtasksDone, SubtaskList } from "@/widgets/subtaskList";
 import { TaskDialogs, type TaskDialog } from "@/widgets/taskDialogs";
 import { TaskOverview } from "@/widgets/taskOverview";
 import { parseDetailsTab } from "../../model/detailsTab";
 import { allSubtasksDoneMessage, priorityChangedMessage, statusChangedMessage } from "../../model/messages";
 import { useDetailsTab } from "../../model/useDetailsTab";
-import { AgentPlaceholder } from "../AgentPlaceholder";
 import { TaskDetailsSkeleton } from "../TaskDetailsSkeleton";
 import { backStyles, columnStyles, layoutStyles, mainStyles, skipLinkStyles, tabsListStyles } from "./styles";
 import type { TaskDetailsViewProps } from "./types";
@@ -144,7 +144,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
             <div className={columnStyles}>{overview}{details}</div>
             <aside aria-label="AI-агенти" className={columnStyles}>
               <DecomposePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} autorun={autorun} onAutorunHandled={consumeAutorun} />
-              <AgentPlaceholder id="agent-c" title="Агент статус-апдейту" />
+              <StatusUpdatePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} />
             </aside>
           </div>
         )}
@@ -157,7 +157,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
             </TabsList>
             <TabsContent value="task" className={columnStyles}>{overview}{details}</TabsContent>
             <TabsContent value="decompose" forceMount className="data-[state=inactive]:hidden"><DecomposePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} autorun={autorun} onAutorunHandled={consumeAutorun} /></TabsContent>
-            <TabsContent value="update"><AgentPlaceholder id="agent-c" title="Агент статус-апдейту" /></TabsContent>
+            <TabsContent value="update" forceMount className="data-[state=inactive]:hidden"><StatusUpdatePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} /></TabsContent>
           </Tabs>
         )}
       </main>

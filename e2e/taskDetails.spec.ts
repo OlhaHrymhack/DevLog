@@ -153,7 +153,7 @@ test("DEV-007 AC-5: відсутня задача і помилка завант
   failing = false;
   await page.getByRole("button", { name: "Спробувати ще раз" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Міграція auth на нові токени" })).toBeVisible();
-  await expect(page.getByText(/дедлайн/)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Міграція auth на нові токени" }).getByText(/дедлайн/)).toBeVisible();
 });
 
 test("DEV-007 AC-6: на tablet і mobile — вкладки, ?tab=decompose, aria-selected", async ({ page }) => {
@@ -174,7 +174,7 @@ test("DEV-007 AC-6: на tablet і mobile — вкладки, ?tab=decompose, ar
   await page.keyboard.press("ArrowRight");
   const updateTab = tabs.getByRole("tab", { name: "Апдейт" });
   await expect(updateTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator("#agent-c")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Статус-апдейт" })).toBeVisible();
 
   await page.keyboard.press("Tab");
   await expect(updateTab).not.toBeFocused();

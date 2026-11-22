@@ -12,6 +12,7 @@ const CRUD_SPEC = /taskCrud\.spec\.ts/;
 const DETAILS_SPEC = /taskDetails\.spec\.ts/;
 const DAY_PLAN_SPEC = /dayPlan\.spec\.ts/;
 const DECOMPOSE_SPEC = /decompose\.spec\.ts/;
+const STATUS_UPDATE_SPEC = /statusUpdate\.spec\.ts/;
 const SINGLE_VIEWPORT_SPECS = /(health|theme|tasksList)\.spec\.ts/;
 
 export default defineConfig({
@@ -38,18 +39,18 @@ export default defineConfig({
     {
       name: "mobile-375",
       dependencies: ["desktop-1280"],
-      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC],
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
     },
     {
       name: "tablet-768",
       dependencies: ["desktop-1280"],
-      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC],
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
     },
     {
       name: "desktop-1280",
-      testIgnore: [CRUD_SPEC, DETAILS_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC],
+      testIgnore: [CRUD_SPEC, DETAILS_SPEC, DAY_PLAN_SPEC, DECOMPOSE_SPEC, STATUS_UPDATE_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
     {
@@ -78,6 +79,13 @@ export default defineConfig({
       name: "decompose",
       dependencies: ["day-plan"],
       testMatch: DECOMPOSE_SPEC,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
+    {
+      // Status updates read seed tasks (heat, notes) and create their own, so they run after every suite that mutates tasks.
+      name: "status-update",
+      dependencies: ["decompose"],
+      testMatch: STATUS_UPDATE_SPEC,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
   ],

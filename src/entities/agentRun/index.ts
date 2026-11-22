@@ -69,3 +69,15 @@ export {
   type Decomposition,
   type DecompositionItem,
 } from "./model/decomposition";
+export {
+  STATUS_UPDATE_REQUESTED_TONES,
+  STATUS_UPDATE_SHORT_MAX,
+  STATUS_UPDATE_TEXT,
+  STATUS_UPDATE_TONES,
+  StatusUpdateInputSchema,
+  StatusUpdateSchema,
+  type StatusUpdate,
+  type StatusUpdateInput,
+  type StatusUpdateRequestedTone,
+  type StatusUpdateTone,
+} from "./model/statusUpdate";
