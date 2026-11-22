@@ -1,7 +1,7 @@
 import "server-only";
 import {
   NoteCreateInputSchema, SubtaskCreateInputSchema, SubtaskUpdateInputSchema,
-  TaskCreateInputSchema, TaskUpdateInputSchema,
+  TaskCreateInputSchema, TaskUpdateInputSchema, type TaskPageQuery,
 } from "@/entities/task";
 import { getDb, type DevLogDb } from "../db/client";
 import { createTaskRepository } from "./repository";
@@ -24,6 +24,7 @@ export const createTaskService = ({ db, clock = () => new Date() }: { db: DevLog
 
   return {
     ...repository,
+    listTaskPage: (query: TaskPageQuery) => repository.listTaskPage(query, clock()),
     createTask: (input: unknown) => repository.createTask(TaskCreateInputSchema.parse(input), clock()),
     updateTask,
     addSubtasks: (taskId: string, items: unknown) =>

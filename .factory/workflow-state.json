@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-014",
+  "currentTask": "DEV-005",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -439,16 +439,33 @@
     "DEV-005": {
       "id": "DEV-005",
       "title": "Список задач",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 0,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 2,
+        "uncertainty": 0,
+        "ui": 1
+      },
       "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "agent": "qa",
+      "attempts": {
+        "sonnet": 5
+      },
+      "issues": [
+        "tests failed: e2e(failed)",
+        "review: 1 блокувальних findings",
+        "tests failed: e2e(failed)",
+        "tests failed: код змінився під час перевірки"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-005 <url>",
       "pr": null,
       "history": [
         {
@@ -459,10 +476,299 @@
           "at": "2026-11-21T19:54:44.630Z",
           "event": "retitled",
           "note": "UI список задач → Список задач"
+        },
+        {
+          "at": "2026-11-22T11:58:58.124Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T11:58:58.315Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T11:58:58.486Z",
+          "event": "classified",
+          "note": "сума 6 → balanced"
+        },
+        {
+          "at": "2026-11-22T11:58:58.728Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T12:00:39.247Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T13:41:39.491Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-005/ab43276070baa1318fa77ec43d04345958eda2c4/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:43:07.155Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-005/2738f5e7695bdbf833afb176dc663c9d30adcc5f/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:45:58.306Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/3ca98f70266261c77884befac5d34a7b6e2dabc2/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:45:58.517Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "3ca98f7026"
+        },
+        {
+          "at": "2026-11-22T13:48:30.388Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 8,
+          "blocking": 1,
+          "evidence": ".factory/evidence/DEV-005/3ca98f70266261c77884befac5d34a7b6e2dabc2/review.json"
+        },
+        {
+          "at": "2026-11-22T13:48:30.532Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING",
+          "agent": "developer"
+        },
+        {
+          "at": "2026-11-22T13:53:18.834Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-005/49c1ccc6e3b930dba695e51454c6e25a0cfd6d6e/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:55:24.447Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/c83c308c4af01c6ee72765cd1007d2527f560bfa/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:55:24.665Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "c83c308c4a"
+        },
+        {
+          "at": "2026-11-22T13:56:15.014Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 6,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/c83c308c4af01c6ee72765cd1007d2527f560bfa/review.json"
+        },
+        {
+          "at": "2026-11-22T13:56:15.227Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T13:57:12.781Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/c83c308c4af01c6ee72765cd1007d2527f560bfa/qa.json"
+        },
+        {
+          "at": "2026-11-22T13:57:12.901Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "IMPLEMENTING",
+          "agent": "developer",
+          "note": "QA: align table headings and verify FAB dimensions"
+        },
+        {
+          "at": "2026-11-22T13:58:00.881Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/3275a10f835f8d364679c36ccc70239fe12a173d/tests.json"
+        },
+        {
+          "at": "2026-11-22T13:58:01.096Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "3275a10f83"
+        },
+        {
+          "at": "2026-11-22T13:58:51.377Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/3275a10f835f8d364679c36ccc70239fe12a173d/review.json"
+        },
+        {
+          "at": "2026-11-22T13:58:51.577Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T13:59:08.889Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/3275a10f835f8d364679c36ccc70239fe12a173d/qa.json"
+        },
+        {
+          "at": "2026-11-22T13:59:09.094Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T14:07:07.371Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "IMPLEMENTING",
+          "agent": "developer",
+          "note": "На запит користувачки: пагінація списку задач у UI, 10 на сторінку"
+        },
+        {
+          "at": "2026-11-22T14:11:32.819Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-005/251ace72f11d5542b5b46140999524cad5dfd3fe/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:12:38.394Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-005/c543e1c82f54c62af12c2af26f30d49b0733b67d/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:13:32.950Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/2d766dd73e2e054140745607a6946af46430e372/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:13:33.166Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "2d766dd73e"
+        },
+        {
+          "at": "2026-11-22T14:15:48.506Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 5,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/2d766dd73e2e054140745607a6946af46430e372/review.json"
+        },
+        {
+          "at": "2026-11-22T14:15:48.732Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T14:16:30.838Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/2d766dd73e2e054140745607a6946af46430e372/qa.json"
+        },
+        {
+          "at": "2026-11-22T14:16:31.063Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T14:18:42.123Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "IMPLEMENTING",
+          "agent": "developer",
+          "note": "Вилучено зі складу PR два локальні файли pnpm; код застосунку не змінено"
+        },
+        {
+          "at": "2026-11-22T14:19:04.919Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-005/5a08853967781f2ed64d1160c9aaf9f5c30a37f3/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:19:05.148Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "5a08853967"
+        },
+        {
+          "at": "2026-11-22T14:21:49.650Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/5a08853967781f2ed64d1160c9aaf9f5c30a37f3/review.json"
+        },
+        {
+          "at": "2026-11-22T14:21:49.874Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T14:21:59.914Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-005/5a08853967781f2ed64d1160c9aaf9f5c30a37f3/qa.json"
+        },
+        {
+          "at": "2026-11-22T14:22:00.158Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T14:22:00.821Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR",
+          "note": "resume: погодження вже чинне"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.642Z",
-      "updatedAt": "2026-11-21T19:54:44.631Z"
+      "updatedAt": "2026-11-22T14:22:00.822Z",
+      "lastFailure": null,
+      "repeats": 1,
+      "reviewTree": "5a08853967781f2ed64d1160c9aaf9f5c30a37f3"
     },
     "DEV-006": {
       "id": "DEV-006",

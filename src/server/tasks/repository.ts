@@ -1,10 +1,10 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, lte, max, sql } from "drizzle-orm";
 import {
-  TaskListQuerySchema,
+  getHeat, TaskListQuerySchema,
   type Note, type NoteCreateInput, type Subtask, type SubtaskCreateInput,
   type SubtaskUpdateInput, type Task, type TaskCreateInput, type TaskListItem,
-  type TaskListQuery, type TaskUpdateInput,
+  type TaskListQuery, type TaskPage, type TaskPageQuery, type TaskSummary, type TaskUpdateInput,
 } from "@/entities/task";
 import { NotFoundError } from "@/shared/api/errors";
 import { MS_PER_DAY } from "@/shared/lib/timestamp";
@@ -34,30 +34,57 @@ export const createTaskRepository = (db: DevLogDb) => {
     };
   };
 
-  const listTasks = (query: Partial<TaskListQuery> = {}): TaskListItem[] => {
-    const { status, q, sort, order } = TaskListQuerySchema.parse(query);
+  const taskFilters = ({ status, q }: TaskListQuery) => and(
+    status ? eq(tasks.status, status) : undefined,
+    q ? sql`unicode_lower(${tasks.title} || ' ' || ${tasks.description}) like ${`%${escapeLike(q.toLowerCase())}%`} escape ${"\\"}` : undefined,
+  );
+
+  const buildTaskList = (connection: Pick<DevLogDb, "select">, { sort, order }: TaskListQuery) => {
     const direction = order === "asc" ? asc : desc;
     const priority = sql`case ${tasks.priority} when 'high' then 3 when 'medium' then 2 else 1 end`;
     const ordering = sort === "priority"
       ? [direction(priority), desc(tasks.createdAt), asc(tasks.id)]
       : [direction(tasks.createdAt), asc(tasks.id)];
-    const counts = db.select({
+    const counts = connection.select({
       taskId: subtasks.taskId,
       total: count().as("total"),
       done: sql<number>`count(case when ${subtasks.status} = 'done' then 1 end)`.as("done"),
     }).from(subtasks).groupBy(subtasks.taskId).as("subtask_counts");
 
-    return db.select({
+    return connection.select({
       id: tasks.id, title: tasks.title, description: tasks.description,
       status: tasks.status, priority: tasks.priority, createdAt: tasks.createdAt,
       updatedAt: tasks.updatedAt, dueAt: tasks.dueAt, focusRank: tasks.focusRank,
       subtaskCount: sql<number>`coalesce(${counts.total}, 0)`,
       subtaskDone: sql<number>`coalesce(${counts.done}, 0)`,
-    }).from(tasks).leftJoin(counts, eq(tasks.id, counts.taskId)).where(and(
-      status ? eq(tasks.status, status) : undefined,
-      q ? sql`unicode_lower(${tasks.title} || ' ' || ${tasks.description}) like ${`%${escapeLike(q.toLowerCase())}%`} escape ${"\\"}` : undefined,
-    )).orderBy(...ordering).all();
+    }).from(tasks).leftJoin(counts, eq(tasks.id, counts.taskId)).orderBy(...ordering);
   };
+
+  const listTasks = (input: Partial<TaskListQuery> = {}): TaskListItem[] => {
+    const query = TaskListQuerySchema.parse(input);
+    return buildTaskList(db, query).where(taskFilters(query)).all();
+  };
+
+  const listTaskPage = (query: TaskPageQuery, now: Date): TaskPage => db.transaction((tx) => {
+    const filters = taskFilters(query);
+    const total = tx.select({ count: count() }).from(tasks).where(filters).get()?.count ?? 0;
+    const totalPages = Math.ceil(total / query.pageSize);
+    const page = Math.min(query.page, Math.max(1, totalPages));
+    const data = buildTaskList(tx, query).where(filters)
+      .limit(query.pageSize).offset((page - 1) * query.pageSize).all();
+
+    const summary: TaskSummary = { all: 0, todo: 0, "in-progress": 0, done: 0, hot: 0 };
+    const heatInputs = tx.select({
+      status: tasks.status, priority: tasks.priority, updatedAt: tasks.updatedAt, dueAt: tasks.dueAt,
+    }).from(tasks).all();
+    for (const task of heatInputs) {
+      summary.all++;
+      summary[task.status]++;
+      if (getHeat(task, now).rank >= 2) summary.hot++;
+    }
+
+    return { data, pagination: { page, pageSize: query.pageSize, total, totalPages }, summary };
+  });
 
   const createTask = (input: TaskCreateInput, now: Date): Task => {
     const timestamp = now.toISOString();
@@ -144,7 +171,7 @@ export const createTaskRepository = (db: DevLogDb) => {
     )).orderBy(asc(tasks.updatedAt), asc(tasks.id)).all();
 
   return {
-    listTasks, getTask, getTaskRow, createTask, updateTask, deleteTask, addSubtasks,
+    listTasks, listTaskPage, getTask, getTaskRow, createTask, updateTask, deleteTask, addSubtasks,
     updateSubtask, deleteSubtask, addNote, setFocus, findStale,
   };
 };

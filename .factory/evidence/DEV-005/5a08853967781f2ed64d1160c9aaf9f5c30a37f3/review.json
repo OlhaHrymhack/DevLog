@@ -1,0 +1,18 @@
+{
+  "taskId": "DEV-005",
+  "kind": "review",
+  "tree": "5a08853967781f2ed64d1160c9aaf9f5c30a37f3",
+  "at": "2026-11-22T14:21:49.552Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Нового блокера немає. Різниця між 2d766dd… і 5a08853… — лише видалення `pnpm-lock.yaml` і `pnpm-workspace.yaml`. Код застосунку не змінився, тому висновки попереднього рев'ю чинні. CI використовує `npm ci` із `cache: npm`, тобто pnpm-файли йому не потрібні. Видалення прибирає розбіжність менеджерів пакетів і відповідає стеку з CLAUDE.md (npm). Одна умова: `npm ci` потребує `package-lock.json`, а наявність і синхронність його з `package.json` я не міг перевірити, бо інструменти читання файлів були недоступні (Glob і Grep відхилено). Тести не запускав і нічого не змінював.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Не підтверджено наявність і синхронність package-lock.json для `npm ci`",
+      "file": "package-lock.json",
+      "line": 1,
+      "detail": "CI виконує `npm ci` і `cache: npm`. Команда падає, якщо `package-lock.json` відсутній або розходиться з `package.json`. Перед фіналом виконайте `git ls-files package-lock.json` і локально `npm ci --dry-run`. Також перевірте, що в `package.json` немає поля `packageManager: pnpm` і що ніде не лишилось посилань на pnpm (скрипти, `.factory/project.config.json`, документація). Якщо lock-файл є і синхронний, зауваження знімається."
+    }
+  ]
+}

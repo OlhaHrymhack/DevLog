@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-005",
+  "kind": "review",
+  "tree": "2d766dd73e2e054140745607a6946af46430e372",
+  "at": "2026-11-22T14:15:48.407Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Блокерів немає. SQL-порядок стабільний (тай-брейк `id`, `limit/offset` у транзакції зі зведенням). Параметри валідуються суворо: сміття, 0, дроби та небезпечні цілі дають 400. Старий API без `page`/`pageSize` лишився сумісним. Підсумки глобальні й не залежать від фільтра. Є кілька зауважень середньої та низької важливості щодо покриття тестами, UI на краях і обсягу змін. Тести я не запускав і код не змінював.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Немає компонентних/unit-тестів для Pagination і formatTaskSummary",
+      "file": "src/shared/ui/Pagination/index.tsx",
+      "line": 6,
+      "detail": "Видалено `summarizeTasks` і тест `AC-2` про збій запиту зі лічильниками. Замість них немає [U]-тесту для `formatTaskSummary` (нуль задач, відмінки, `serious`). Немає і тесту для `Pagination` (`aria-disabled` блокує клік, межі `page`). Поведінку покриває лише e2e. Додайте unit-тести на `formatTaskSummary` і `Pagination`."
+    },
+    {
+      "severity": "medium",
+      "title": "Стан `page` на клієнті розходиться з clamped-сторінкою сервера",
+      "file": "src/views/tasksList/model/useTaskListParams.ts",
+      "line": 23,
+      "detail": "Якщо після видалення задачі поточна сторінка стала порожньою, сервер повертає `page=1`, а клієнтський `page` лишається, наприклад, 2. Ключ кешу і запит йдуть із застарілим значенням. Це видно в UI й дає зайвий refetch. Синхронізуйте `filters.page` з `current.data.pagination.page`, наприклад через `onPageChange` або `useEffect`."
+    },
+    {
+      "severity": "low",
+      "title": "Під час перемикання сторінки список замінюється скелетоном",
+      "file": "src/views/tasksList/ui/TasksListView/index.tsx",
+      "line": 52,
+      "detail": "`loading` включає `isPlaceholderData`. Тому `keepPreviousData` не зберігає попередній список, а на кожному кліку «Далі» з'являється скелетон. Це міняє висоту сторінки й може збивати фокус. Пагінація при цьому показує стару сторінку з `pending`. Розгляньте показ попередніх рядків із приглушенням."
+    },
+    {
+      "severity": "low",
+      "title": "Підсумок рахує `hot` на сервері з `clock()`, а рядки — з клієнтського `now`",
+      "file": "src/server/tasks/repository.ts",
+      "line": 71,
+      "detail": "Лічильник «гарячих» і позначки рядків можуть розійтися біля порога. Крім того, кожен запит читає всі задачі заради `getHeat`. Для MVP це прийнятно, але додайте коментар про O(N) і задокументуйте це в decisions.md."
+    },
+    {
+      "severity": "low",
+      "title": "Зміни tooling поза скоупом пагінації",
+      "file": "next.config.ts",
+      "line": 4,
+      "detail": "`distDir` для Playwright і правки `tsconfig.json`/`playwright.config.ts` не пов'язані з AC-13. Бажано винести в окремий коміт чи PR або пояснити в описі. Також `pb-[88px]` у `mainStyles` не має відношення до задачі."
+    }
+  ]
+}

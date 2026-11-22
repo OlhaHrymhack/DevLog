@@ -7,7 +7,7 @@ import {
 } from "@/app/api/tasks/[id]/subtasks/[subtaskId]/route";
 import { POST as addSubtasks } from "@/app/api/tasks/[id]/subtasks/route";
 import { PUT as setFocus } from "@/app/api/tasks/focus/route";
-import { SubtaskSchema, TaskSchema } from "@/entities/task";
+import { SubtaskSchema, TaskPageSchema, TaskSchema } from "@/entities/task";
 import { createDb, getDb } from "@/server/db/client";
 import { seedDatabase } from "@/server/db/seed";
 import { logger } from "@/server/logger";
@@ -124,6 +124,46 @@ describe("REST tasks", () => {
     for (const query of ["status=foo", "sort=bar", "unknown=x"]) {
       expect((await getTasks(request("GET", `?${query}`))).status).toBe(400);
     }
+  });
+
+  it("DEV-005 AC-13: returns a stable page with filtered totals and global counters", async () => {
+    const getPage = async (query: string) => {
+      const response = await getTasks(request("GET", `?${query}`));
+      expect(response.status).toBe(200);
+      return TaskPageSchema.parse(await response.json());
+    };
+
+    const first = await getPage("page=1");
+    const last = await getPage("page=2");
+    const unpaginated = z.object({ data: z.array(z.object({ id: z.string() })) })
+      .parse(await (await getTasks(request("GET"))).json());
+    expect([...first.data, ...last.data].map(({ id }) => id)).toEqual(unpaginated.data.map(({ id }) => id));
+    expect(first.data).toHaveLength(10);
+    expect(last.data).toHaveLength(2);
+    expect(last.pagination).toEqual({ page: 2, pageSize: 10, total: 12, totalPages: 2 });
+    expect(last.summary).toEqual(first.summary);
+    expect(last.summary).toMatchObject({ all: 12, todo: 6, "in-progress": 4, done: 2 });
+
+    const filtered = await getPage("page=2&pageSize=2&status=in-progress&sort=createdAt&order=asc");
+    expect(filtered.data).toHaveLength(2);
+    expect(filtered.data.every(({ status }) => status === "in-progress")).toBe(true);
+    expect(filtered.pagination).toEqual({ page: 2, pageSize: 2, total: 4, totalPages: 2 });
+    expect(filtered.summary).toEqual(first.summary);
+
+    const searched = await getPage("page=9&pageSize=1&status=in-progress&q=OOM");
+    expect(searched.data.map(({ id }) => id)).toEqual(["t1"]);
+    expect(searched.pagination).toEqual({ page: 1, pageSize: 1, total: 1, totalPages: 1 });
+    const empty = await getPage("page=9&q=no-such-task");
+    expect(empty.data).toEqual([]);
+    expect(empty.pagination).toEqual({ page: 1, pageSize: 10, total: 0, totalPages: 0 });
+  });
+
+  it("DEV-005 AC-13: validates page parameters before querying", async () => {
+    for (const query of ["page=0", "page=-1", "page=1.5", "page=9007199254740992", "pageSize=", "pageSize=101", "page=1&unknown=x"]) {
+      const response = await getTasks(request("GET", `?${query}`));
+      expect(response.status).toBe(400);
+    }
+    expect(getDb).not.toHaveBeenCalled();
   });
 
   it("DEV-004 AC-6: manages subtasks and notes and rejects a subtask of another task", async () => {

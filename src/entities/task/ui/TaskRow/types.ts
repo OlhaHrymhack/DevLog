@@ -12,6 +12,7 @@ export type TaskRowProps = {
   focusRank?: number;
   /** Серйозний режим: tooltip температури без жарту. */
   serious?: boolean;
-  onEdit: (task: TaskRowData) => void;
-  onDelete: (task: TaskRowData) => void;
+  tableRow?: boolean;
+  onEdit?: (task: TaskRowData) => void;
+  onDelete?: (task: TaskRowData) => void;
 };
