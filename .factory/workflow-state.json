@@ -841,7 +841,7 @@
     "DEV-006": {
       "id": "DEV-006",
       "title": "Створення редагування видалення",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -860,8 +860,8 @@
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-006 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-006",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/19",
       "history": [
         {
           "at": "2026-11-21T17:47:23.705Z",
@@ -951,10 +951,21 @@
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR",
           "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T15:09:54.302Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/19"
+        },
+        {
+          "at": "2026-11-22T15:09:54.452Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.704Z",
-      "updatedAt": "2026-11-22T15:09:46.350Z",
+      "updatedAt": "2026-11-22T15:09:54.452Z",
       "lastFailure": null,
       "reviewTree": "3f81ecebe71d7c704fc83757a1836e4996d9f626"
     },
