@@ -1,0 +1,42 @@
+{
+  "taskId": "DEV-001",
+  "kind": "tests",
+  "tree": "871120a9ad605315ab96255fb9a12d2538d8bcd0",
+  "at": "2026-11-22T09:21:55.812Z",
+  "ok": true,
+  "failed": [],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1033,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1690,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1351,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /Users/olhahrymchak/Desktop/DevLog\n\n\n Test Files  5 passed (5)\n      Tests  25 passed (25)\n   Start at  11:21:50\n   Duration  954ms (tests 54%, environment 27%, import 16%, transform 2%, worker 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3861,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nRunning 4 tests using 4 workers\n····\n  4 passed (3.4s)\n::notice title=🎭 Playwright Run Summary::  4 passed (3.4s)\n"
+    }
+  ]
+}

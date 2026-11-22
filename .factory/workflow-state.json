@@ -1,20 +1,34 @@
 {
   "version": 1,
-  "currentTask": null,
+  "currentTask": "DEV-001",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
       "title": "Каркас і tooling",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 2,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 0,
+        "uncertainty": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "balanced": 2
+      },
+      "issues": [
+        "verify failed: typecheck(failed), test(failed)",
+        "verify failed: typecheck(failed), test(failed)"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-001 <url>",
       "pr": null,
       "history": [
         {
@@ -25,10 +39,166 @@
           "at": "2026-11-21T19:54:44.355Z",
           "event": "retitled",
           "note": "Ініціалізація Next.js і tooling → Каркас і tooling"
+        },
+        {
+          "at": "2026-11-21T20:46:57.254Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-21T20:50:54.724Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-21T20:54:51.006Z",
+          "event": "classified",
+          "note": "сума 7 → balanced"
+        },
+        {
+          "at": "2026-11-21T20:54:51.085Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-21T21:02:00.594Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-21T21:03:51.628Z",
+          "event": "verify",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-001/44dbfb9536fbcb96217c840776f86cfc8ac892ce/verify.json"
+        },
+        {
+          "at": "2026-11-22T08:29:27.672Z",
+          "event": "escalation",
+          "from": "balanced",
+          "to": "strong",
+          "note": "2 провали на verify"
+        },
+        {
+          "at": "2026-11-22T08:29:27.672Z",
+          "event": "verify",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-001/458b5f3924fafe8ea732830fd913e629f0dc3c3e/verify.json"
+        },
+        {
+          "at": "2026-11-22T09:21:23.253Z",
+          "event": "restored",
+          "note": "відновлено за балами: tier strong → balanced, модель opus → sonnet"
+        },
+        {
+          "at": "2026-11-22T09:21:30.377Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-001/871120a9ad605315ab96255fb9a12d2538d8bcd0/verify.json"
+        },
+        {
+          "at": "2026-11-22T09:21:55.877Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-001/871120a9ad605315ab96255fb9a12d2538d8bcd0/tests.json"
+        },
+        {
+          "at": "2026-11-22T09:22:00.786Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T09:23:22.466Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 7,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-001/871120a9ad605315ab96255fb9a12d2538d8bcd0/security.json"
+        },
+        {
+          "at": "2026-11-22T09:23:42.112Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T09:24:16.083Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-001/5af1a1055b08d3d33e4150e9a7c8934fda8573b9/tests.json"
+        },
+        {
+          "at": "2026-11-22T09:24:42.953Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 10,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-001/5af1a1055b08d3d33e4150e9a7c8934fda8573b9/review.json"
+        },
+        {
+          "at": "2026-11-22T09:26:22.768Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-001/95fd391a8ed443b97f7ba193c5c22c5daebea597/tests.json"
+        },
+        {
+          "at": "2026-11-22T09:31:14.019Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer"
+        },
+        {
+          "at": "2026-11-22T09:34:12.996Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 7,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-001/95fd391a8ed443b97f7ba193c5c22c5daebea597/review.json"
+        },
+        {
+          "at": "2026-11-22T09:34:25.741Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-001/95fd391a8ed443b97f7ba193c5c22c5daebea597/security.json"
+        },
+        {
+          "at": "2026-11-22T09:34:39.611Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T09:36:18.182Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-001/95fd391a8ed443b97f7ba193c5c22c5daebea597/qa.json"
+        },
+        {
+          "at": "2026-11-22T09:36:18.406Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T09:36:37.626Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.366Z",
-      "updatedAt": "2026-11-21T19:54:44.361Z"
+      "updatedAt": "2026-11-22T09:36:37.627Z"
     },
     "DEV-002": {
       "id": "DEV-002",
