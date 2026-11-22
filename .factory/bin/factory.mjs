@@ -11,11 +11,14 @@ const HELP = `Команди:
   init                                   створити state, якщо його немає
   add <ID> <назва...>                    додати задачу в BACKLOG
   start <ID>                             BACKLOG → DISCOVERY, зробити поточною
-  classify <ID> modules=0..2 architecture=.. criticality=.. security=.. integrations=.. migrations=.. state=.. uncertainty=..
+  classify <ID> modules=0..2 architecture=.. criticality=.. security=.. integrations=.. migrations=.. state=.. uncertainty=.. ui=0|1
                                          оцінити складність (потрібен task-plans/<ID>.md), обрати tier/модель
   transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
-  verify <ID> [--full]                   запустити typecheck/lint/unit (+e2e з --full), записати evidence
-  record <ID> <review|security|qa> <file.json>          записати звіт агента
+  verify <ID> [--full]                   typecheck/lint/unit + AC traceability (+e2e з --full), записати evidence
+  record <ID> <review|codex|security|qa> <file.json>    записати звіт агента
+  escalate <ID> <причина...>             підвищити модель developer (tier і рівень рев'ю не змінюються)
+  line [ID]                              один рядок статусу (між етапами замість report)
+  usage <ID> <role> <tokens>             записати токени субагента · metrics [ID] — токени, цикли, час до PR
   retitle <ID> <назва...> | remove <ID>  (remove — лише для BACKLOG)
   issue <ID> <текст> | next <ID> <текст> | pr <ID> <url>
   block <ID> <причина> | unblock <ID>
@@ -60,7 +63,24 @@ function gateLine(g) {
   return `- ${icon} ${g.gate}: ${g.detail}`;
 }
 
-const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify', review: 'Gate 3 Review', security: 'Gate 4 Security', tests: 'Gate 5 Tests', qa: 'QA', final: 'Gate 6 Final approval' };
+const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify (код + тести)', review: 'Gate 3 Review', security: 'Gate 4 Security', tests: 'Gate 5 E2E', qa: 'QA', final: 'Gate 6 Final approval' };
+
+function line(t) {
+  return `${t.id} · ${t.status} · developer ${t.model ?? '—'} · tier ${t.tier ?? '—'} · далі: ${t.nextAction ?? '—'}`;
+}
+
+function metrics(t) {
+  const h = t.history;
+  const reworks = h.filter((e) => e.event === 'transition' && e.to === 'IMPLEMENTING' && e.from !== 'AWAITING_APPROVAL' && e.from !== 'PLANNING').length;
+  const failedVerify = h.filter((e) => (e.event === 'verify' || e.event === 'tests') && e.ok === false).length;
+  const blockingReviews = h.filter((e) => ['review', 'codex', 'security', 'qa'].includes(e.event) && e.blocking > 0).length;
+  const started = h.find((e) => e.event === 'transition' && e.to === 'DISCOVERY')?.at;
+  const pr = h.find((e) => e.event === 'pr')?.at;
+  const hours = started && pr ? Math.round(((new Date(pr) - new Date(started)) / 36e5) * 10) / 10 : null;
+  const usage = t.usage ?? {};
+  const total = Object.values(usage).reduce((a, b) => a + b, 0);
+  return { id: t.id, tier: t.tier, developerModel: t.model, tokensByRole: usage, tokensTotal: total, reworkCycles: reworks, failedVerify, blockingReviews, hoursToPR: hours };
+}
 
 function report(state, id, cfg) {
   const t = core.getTask(state, id);
@@ -70,6 +90,7 @@ function report(state, id, cfg) {
   const lines = [
     `**${t.id} — ${t.title}**`,
     `Етап: ${t.status} · Агент: ${t.agent ?? '—'} · Модель: ${t.model ?? '—'} (tier: ${t.tier ?? 'не оцінено'})`,
+    `QA-етап: ${core.qaRequired(t) ? 'потрібен (UI-задача)' : 'не потрібен'} · Security: ${t.securityRequired ? 'потрібен' : 'не потрібен'}`,
     ...gates.map((g) => gateLine({ ...g, gate: GATE_TITLES[g.gate] })),
   ];
   if (t.issues.length) lines.push(`Проблеми: ${t.issues.join('; ')}`);
@@ -128,6 +149,7 @@ const commands = {
       if (t.status !== 'PLANNING') fail(`класифікація можлива лише в PLANNING (зараз ${t.status})`);
       if (!fs.existsSync(core.planFile(root, id))) fail(`немає плану .factory/task-plans/${id}.md`);
       Object.assign(t, { scores, tier: c.tier, model: core.TIER_MODEL[c.tier], securityRequired: c.securityRequired });
+      t.lastFailure = null;
       t.nextAction = c.requiresApproval ? `transition ${id} AWAITING_APPROVAL і показати план користувачу` : `transition ${id} IMPLEMENTING`;
       core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
     });
@@ -143,7 +165,7 @@ const commands = {
       if (!core.TRANSITIONS[t.status].includes(to)) fail(`перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`);
       if (to === 'IMPLEMENTING' && !t.tier) fail('спершу classify');
       if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && t.tier !== 'fast') fail('задача не Fast → спершу AWAITING_APPROVAL');
-      if (t.status === 'TESTING' && to === 'AWAITING_FINAL_APPROVAL' && t.tier !== 'fast') fail('пропустити QA можна лише Fast-задачі');
+      if (t.status === 'REVIEWING' && to === 'AWAITING_FINAL_APPROVAL' && core.qaRequired(t)) fail('UI-задача balanced/strong → спершу QA');
       if (to === 'COMPLETED' && !t.pr) fail('немає PR reference (factory pr <ID> <url>)');
       const required = core.REQUIRED_GATES[to] ?? [];
       // Повернення назад (на доопрацювання) gates не вимагає.
@@ -170,17 +192,24 @@ const commands = {
     const after = core.treeHash(root);
     const failed = results.filter((r) => r.status !== 'passed').map((r) => `${r.name}(${r.status})`);
     if (before !== after) failed.push('код змінився під час перевірки');
+    const untraced = core.untracedCriteria(root, id, cfg);
+    if (untraced.length) failed.push(`AC без тестів: ${untraced.join(', ')}`);
     const file = core.writeEvidence(root, id, before, kind, { ok: failed.length === 0, failed, results });
+    const signature = failed.length
+      ? core.failureSignature([...failed, ...results.filter((r) => r.status !== 'passed').map((r) => r.output.split('\n').slice(-10).join('\n'))])
+      : null;
     let escalation = null;
     withState((s) => {
       const t = core.getTask(s, id);
       if (failed.length) {
-        escalation = core.recordFailure(t, cfg, kind);
-        t.issues.push(`${kind} failed: ${failed.join(', ')}`);
-      }
+        escalation = core.recordFailure(t, cfg, kind, signature);
+        if (t.issues.at(-1) !== `${kind} failed: ${failed.join(', ')}`) t.issues.push(`${kind} failed: ${failed.join(', ')}`);
+        if (t.status !== 'BLOCKED') t.nextAction = `developer виправляє ${failed.join(', ')} → verify ${id}`;
+      } else if (t.lastFailure?.stage === kind) t.lastFailure = null;
       core.pushHistory(t, { event: kind, ok: failed.length === 0, evidence: path.relative(root, file) });
     });
     results.forEach((r) => console.log(`${r.status === 'passed' ? '✅' : '❌'} ${r.name}: ${r.status}${r.exitCode !== null && r.exitCode !== undefined ? ` (exit ${r.exitCode})` : ''}`));
+    if (untraced.length) console.log(`❌ AC без тестів: ${untraced.join(', ')} (developer додає тести з "${id} AC-n" у назві)`);
     if (escalation) console.log(escalation);
     console.log(`evidence: ${path.relative(root, file)}`);
     process.exit(failed.length ? 1 : 0);
@@ -194,7 +223,12 @@ const commands = {
     const errors = core.validateFindingsReport(report);
     if (errors.length) fail(`звіт невалідний:\n- ${errors.join('\n- ')}`);
     if (kind === 'codex' && report.agent !== 'codex') fail('звіт codex має мати agent: "codex"');
-    if (kind !== 'qa' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
+    const task = core.getTask(core.loadState(root), id);
+    if (kind === 'review') {
+      const need = core.requiredReviewModel(cfg, task.tier);
+      if (core.modelRank(report.model) < core.modelRank(need)) fail(`reviewer для tier ${task.tier} має працювати щонайменше на ${need} (отримано ${report.model})`);
+    }
+    if (kind === 'security' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
     const tree = core.treeHash(root);
     const ev = core.writeEvidence(root, id, tree, kind, report);
     const blocking = core.blockingFindings(report);
@@ -203,7 +237,8 @@ const commands = {
       const t = core.getTask(s, id);
       if (blocking.length) {
         t.issues.push(`${kind}: ${blocking.length} блокувальних findings`);
-        if (kind === 'review') escalation = core.recordFailure(t, cfg, 'review');
+        if (kind !== 'qa') escalation = core.recordFailure(t, cfg, kind, core.failureSignature(blocking.map((f) => `${f.severity}:${f.title}:${f.file ?? ''}`)));
+        if (t.status !== 'BLOCKED') t.nextAction = `transition ${id} IMPLEMENTING → developer виправляє ${kind} findings`;
       }
       core.pushHistory(t, { event: kind, findings: report.findings.length, blocking: blocking.length, evidence: path.relative(root, ev) });
     });
@@ -230,6 +265,40 @@ const commands = {
       if (s.currentTask === id) s.currentTask = null;
     });
     ok(`${id} видалено з бектлогу`);
+  },
+
+  escalate([id, ...reason]) {
+    if (!reason.length) fail('потрібна причина: який складний дефект лишився після цільового виправлення');
+    const msg = withState((s) => {
+      const t = core.getTask(s, id);
+      if (!['IMPLEMENTING', 'REVIEWING', 'QA'].includes(t.status)) fail(`escalate лише під час доопрацювання (зараз ${t.status})`);
+      return core.escalateModel(t, reason.join(' '));
+    });
+    ok(msg);
+  },
+
+  line([id]) {
+    const s = core.loadState(root);
+    const taskId = id ?? s.currentTask;
+    if (!taskId) fail('немає поточної задачі');
+    console.log(line(core.getTask(s, taskId)));
+  },
+
+  usage([id, role, tokens]) {
+    const n = Number(tokens);
+    if (!role || !Number.isInteger(n) || n < 0) fail('використання: usage <ID> <role> <tokens>');
+    withState((s) => {
+      const t = core.getTask(s, id);
+      t.usage = t.usage ?? {};
+      t.usage[role] = (t.usage[role] ?? 0) + n;
+    });
+    ok(`${id}: ${role} +${n} токенів`);
+  },
+
+  metrics([id]) {
+    const s = core.loadState(root);
+    const ids = id ? [id] : Object.values(s.tasks).filter((t) => t.status === 'COMPLETED' || t.usage).map((t) => t.id);
+    console.log(JSON.stringify(ids.map((i) => metrics(core.getTask(s, i))), null, 2));
   },
 
   issue([id, ...text]) { withState((s) => { core.getTask(s, id).issues.push(text.join(' ')); }); ok('записано'); },

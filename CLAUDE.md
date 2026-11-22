@@ -6,12 +6,12 @@
 
 ## Процес: AI Development Factory
 Будь-яка зміна коду застосунку йде через skill `/factory <DEV-xxx>` (orchestrator) — див. `docs/vault/architecture/factory.md`.
-Етапи: Discovery → Planning → Approval → Implementation → Review → Security → Testing → QA → Final approval → PR → Docs → Retro.
+Етапи: Discovery/Planning → Approval → Implementation (код + тести) → Review → Security → QA (лише UI) → Final approval → PR → Docs → Retro. Обсяг процесу і рівень рев'ю — за tier (`fast`/`balanced`/`strong`), не за моделлю developer.
 Правила процесу, безпеки й тестів — у `.claude/rules/` (завантажуються автоматично). Ключове:
 - код змінюється лише в статусі IMPLEMENTING погодженої задачі (enforced hook-ом);
 - approval дає лише користувач текстом `APPROVE <ID>` / `APPROVE-FINAL <ID>`;
 - стан і evidence — лише через `node .factory/bin/factory.mjs`; результати не вигадуємо;
-- reviewer і security — окремі subagents на opus; merge PR — лише користувач.
+- reviewer (opus; sonnet для fast) і security (opus) — окремі subagents; модель developer підвищує лише orchestrator (`factory escalate`); merge PR — лише користувач.
 Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/product.md` (скоуп MVP і тест-кейси — джерело правди про продукт), `docs/vault/specs/` (детальні специфікації задач і порядок виконання — читати перед `/factory <ID>`), `docs/vault/decisions.md`.
 
 ## Стек

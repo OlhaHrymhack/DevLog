@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Збирає контекст перед задачею фабрики (етап DISCOVERY) — код, документацію, рішення, попередні помилки, відсутні вимоги. Read-only. Викликай на старті кожної задачі.
+description: Збирає контекст перед задачею фабрики (етап DISCOVERY) — код, документацію, рішення, попередні помилки, відсутні вимоги. Read-only. Обов'язковий для strong (opus), для balanced — лише коли бракує контексту.
 model: haiku
 tools: Read, Grep, Glob, WebFetch, WebSearch
 maxTurns: 25

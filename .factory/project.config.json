@@ -15,7 +15,13 @@
     "sections": [{ "file": "README.md", "heading": "Рішення і компроміси" }]
   },
   "appendOnly": ["docs/vault/decisions.md"],
-  "pinnedStrongAgents": ["reviewer", "security"],
+  "pinnedStrongAgents": ["security"],
+  "reviewModel": {
+    "$comment": "Мінімальна модель reviewer за tier задачі (ризик зміни), не за моделлю developer (D-016).",
+    "fast": "sonnet",
+    "balanced": "opus",
+    "strong": "opus"
+  },
   "crossFamilyReview": {
     "$comment": "Друге рев'ю моделлю іншої сім'ї (OpenAI Codex через gstack /codex). Потрібен codex login.",
     "enabled": true,
@@ -27,5 +33,8 @@
     "production": "main",
     "protected": ["main", "stage"]
   },
-  "escalation": { "failuresBeforeTierUp": 2, "failuresOnStrongBeforeBlock": 3 }
+  "escalation": {
+    "$comment": "Автоматичної ескалації немає: модель developer підвищує orchestrator (factory escalate). BLOCKED — після N провалів, коли developer уже на opus.",
+    "failuresOnOpusBeforeBlock": 3
+  }
 }
