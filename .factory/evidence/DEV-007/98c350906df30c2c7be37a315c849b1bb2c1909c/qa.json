@@ -1,0 +1,10 @@
+{
+  "taskId": "DEV-007",
+  "kind": "qa",
+  "tree": "98c350906df30c2c7be37a315c849b1bb2c1909c",
+  "at": "2026-11-22T16:02:35.721Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "npm test: 33 файли, 145 тестів passed. Playwright e2e: 74 passed, 7 skipped (за умовами viewport), 0 failed. AC-1…AC-7 пройшли на 375, 768 і 1280 px (AC-6 на 1280 — skip за дизайном). Ручна перевірка /tasks/t1: горизонтального скролу немає, вкладки на 375/768, дві колонки на 1280. Піксельне порівняння з прототипом не виконувалось. Скріншоти: test-results/DEV-007/details-375.png, details-768.png, details-1280.png.",
+  "findings": []
+}

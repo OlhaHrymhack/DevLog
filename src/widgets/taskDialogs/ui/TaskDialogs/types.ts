@@ -6,5 +6,6 @@ export type TaskDialogsProps = {
   dialog: TaskDialog;
   serious: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated?: () => void;
+  onDeleted?: () => void;
 };

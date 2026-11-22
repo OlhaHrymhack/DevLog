@@ -28,10 +28,10 @@ export const ageCellStyles = "text-sm [grid-area:age] lg:[grid-area:auto]";
 export const actionsCellStyles = "relative z-10 flex justify-end gap-0.5 [grid-area:actions] lg:[grid-area:auto]";
 
 export const linkStyles = cva(
-  "font-medium text-fg-strong no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none",
+  "font-medium text-fg-strong after:absolute after:inset-0 after:content-[''] focus-visible:outline-none",
   {
     variants: {
-      done: { true: "text-fg-dim line-through", false: "" },
+      done: { true: "text-fg-dim line-through", false: "no-underline" },
     },
   },
 );
