@@ -27,6 +27,11 @@ describe("getHeat", () => {
     expect(getHeat(task({ priority: "low", dueAt: NOW + 2 * HOUR }), NOW).key).toBe("alarm");
   });
 
+  it("DEV-002 AC-2: dueAt: null (дедлайну немає) → не alarm", () => {
+    expect(getHeat(task({ priority: "high", dueAt: null }), NOW).key).toBe("fresh");
+    expect(getHeat(task({ priority: "low", dueAt: null }), NOW).key).toBe("calm");
+  });
+
   it("DEV-002 AC-2: low (10 днів без змін) → calm", () => {
     expect(getHeat(task({ priority: "low", staleDays: 10 }), NOW).key).toBe("calm");
   });
