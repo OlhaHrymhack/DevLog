@@ -108,12 +108,12 @@ function deriveNext(t, cfg, tree = core.treeHash(root)) {
       if (!g.verify.pending) return `${who} виправляє: ${g.verify.detail} → verify ${id}`;
       return `${who} продовжує реалізацію і тести на кожен AC → verify ${id}`;
     case 'REVIEWING': {
-      const failing = ['review', 'security'].find((k) => !g[k].ok && !g[k].pending);
-      if (failing) return `transition ${id} IMPLEMENTING → ${who} виправляє ${failing} findings`;
       const todo = [];
-      if (!g.review.ok) todo.push(/codex/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
-      if (!g.security.ok) todo.push('security (opus)');
-      if (todo.length) return `${todo.join(' + ')} → record ${id} …`;
+      if (g.review.pending) todo.push(/codex/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
+      if (g.security.pending) todo.push('security (opus)');
+      if (todo.length) return `${todo.join(' + ')} для одного хешу${t.reviewTree ? ` ${t.reviewTree.slice(0, 10)}` : ''}, дочекайся всіх → record ${id} …`;
+      const failing = ['review', 'security'].filter((k) => !g[k].ok);
+      if (failing.length) return `transition ${id} IMPLEMENTING → ${who} виправляє findings (${failing.join(' + ')}) одним пакетом, потім verify ${id}`;
       if (core.qaRequired(t)) return `transition ${id} QA --agent qa`;
       if (!g.tests.ok) return `verify ${id} --full (E2E за специфікацією) → transition ${id} AWAITING_FINAL_APPROVAL`;
       return `transition ${id} AWAITING_FINAL_APPROVAL`;
@@ -149,7 +149,16 @@ function applyTransition(t, to, cfg, opt = {}) {
     const failed = core.evaluateGates(root, cfg, t, core.treeHash(root), required).filter((g) => !g.ok);
     if (failed.length) return `gates не пройдені для ${to}:\n${failed.map(gateLine).join('\n')}`;
   }
-  core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
+  const tree = core.treeHash(root);
+  if (t.status === 'REVIEWING' && to === 'IMPLEMENTING' && t.reviewTree === tree) {
+    // Правки — лише після всіх обов'язкових звітів для зафіксованого хешу: блокери збираємо разом і виправляємо одним пакетом.
+    const waiting = core.evaluateGates(root, cfg, t, tree, ['review', 'security']).filter((g) => g.pending);
+    if (waiting.length) return `рев'ю ще не завершено для зафіксованого хешу ${tree.slice(0, 10)} — дочекайся всіх звітів:\n${waiting.map(gateLine).join('\n')}`;
+  }
+  // Хеш фіксується при вході в REVIEWING: звіти review/codex/security зараховуються лише для нього.
+  if (to === 'REVIEWING') t.reviewTree = tree;
+  if (to === 'IMPLEMENTING') delete t.reviewTree;
+  core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note, ...(to === 'REVIEWING' ? { reviewTree: tree.slice(0, 10) } : {}) });
   t.status = to;
   if (opt.agent) t.agent = opt.agent;
   t.nextAction = deriveNext(t, cfg);
@@ -340,6 +349,10 @@ const commands = {
     }
     if (kind === 'security' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
     const tree = core.treeHash(root);
+    if (kind !== 'qa') {
+      if (task.status !== 'REVIEWING') fail(`звіт ${kind} записується лише в REVIEWING (зараз ${task.status})`);
+      if (task.reviewTree && task.reviewTree !== tree) fail(`звіт ${kind} відхилено: код змінився після початку рев'ю (було ${task.reviewTree.slice(0, 10)}, зараз ${tree.slice(0, 10)}). Звіти рахуються лише для зафіксованого хешу — поверни задачу в IMPLEMENTING, перевір новий хеш (verify) і повтори рев'ю.`);
+    }
     const ev = core.writeEvidence(root, id, tree, kind, report);
     const blocking = core.blockingFindings(report);
     let escalation = null;
