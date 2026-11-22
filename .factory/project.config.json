@@ -17,9 +17,10 @@
   "appendOnly": ["docs/vault/decisions.md"],
   "pinnedStrongAgents": ["security"],
   "reviewModel": {
-    "$comment": "Мінімальна модель reviewer за tier задачі (ризик зміни), не за моделлю developer (D-016).",
+    "$comment": "Мінімальна модель reviewer за ризиком зміни (бали classify), не за моделлю developer. balancedElevated — balanced із security/integrations ≥ 1 або criticality = 2 (D-016, D-017).",
     "fast": "sonnet",
-    "balanced": "opus",
+    "balanced": "sonnet",
+    "balancedElevated": "opus",
     "strong": "opus"
   },
   "crossFamilyReview": {
@@ -34,7 +35,7 @@
     "protected": ["main", "stage"]
   },
   "escalation": {
-    "$comment": "Автоматичної ескалації немає: модель developer підвищує orchestrator (factory escalate). BLOCKED — після N провалів, коли developer уже на opus.",
+    "$comment": "Автоматичної ескалації немає: модель developer підвищує orchestrator (factory escalate). BLOCKED — після N різних невдалих спроб, коли developer уже на opus; повтор тієї самої діагностики не рахується.",
     "failuresOnOpusBeforeBlock": 3
   }
 }

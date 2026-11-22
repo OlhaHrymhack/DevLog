@@ -65,8 +65,51 @@ function gateLine(g) {
 
 const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify (код + тести)', review: 'Gate 3 Review', security: 'Gate 4 Security', tests: 'Gate 5 E2E', qa: 'QA', final: 'Gate 6 Final approval' };
 
-function line(t) {
-  return `${t.id} · ${t.status} · developer ${t.model ?? '—'} · tier ${t.tier ?? '—'} · далі: ${t.nextAction ?? '—'}`;
+/** Рядок старту / зміни етапу: Task ID, tier, хто і на чому реалізує, модель рев'ю, наступна дія. */
+function line(t, cfg) {
+  const tier = core.effectiveTier(t);
+  const impl = core.implementer(t);
+  const rev = tier ? core.requiredReviewModel(cfg, t) : null;
+  const lastReview = [...t.history].reverse().find((e) => e.event === 'review' && e.model);
+  const confirmed = rev && lastReview && core.modelRank(lastReview.model) >= core.modelRank(rev);
+  const legacy = t.tier && tier && t.tier !== tier ? ` (збережений ${t.tier} — стара ескалація, на рев'ю не впливає)` : '';
+  return [
+    t.id, t.status,
+    `tier ${tier ?? 'не оцінено'}${legacy}`,
+    `реалізація: ${impl ? `${impl.who} ${impl.model} (заплановано)` : '—'}`,
+    `рев'ю: ${rev ? `${rev} (${confirmed ? `підтверджено звітом ${lastReview.model}` : 'заплановано'})` : '—'}`,
+    `далі: ${t.nextAction ?? '—'}`,
+  ].join(' · ');
+}
+
+/** Наступна дія для статусу — оновлюється при кожному переході, щоб line завжди був актуальний. */
+function nextFor(t, cfg) {
+  const id = t.id;
+  const impl = core.implementer(t);
+  const tier = core.effectiveTier(t);
+  switch (t.status) {
+    case 'DISCOVERY': return `контекст за маршрутом → transition ${id} PLANNING`;
+    case 'PLANNING': return `план .factory/task-plans/${id}.md → classify ${id} … ui=0|1`;
+    case 'AWAITING_APPROVAL': return `чекаємо від користувача: APPROVE ${id}`;
+    case 'IMPLEMENTING': return `${impl?.who ?? 'developer'} (${impl?.model ?? '—'}) пише код і тести на кожен AC → verify ${id}`;
+    case 'REVIEWING': {
+      const extra = [cfg.crossFamilyReview?.enabled && cfg.crossFamilyReview.tiers.includes(tier) ? 'codex' : null, t.securityRequired ? 'security (opus)' : null].filter(Boolean);
+      return `reviewer (${core.requiredReviewModel(cfg, t)})${extra.length ? ` + ${extra.join(' + ')}` : ''} → record ${id} …`;
+    }
+    case 'QA': return `verify ${id} --full, qa → record ${id} qa`;
+    case 'AWAITING_FINAL_APPROVAL': return `report ${id}; чекаємо від користувача: APPROVE-FINAL ${id}`;
+    case 'READY_FOR_PR': return `коміт, push фіча-гілки, PR у stage → pr ${id} <url>`;
+    case 'COMPLETED': return `docs + metrics ${id}`;
+    default: return t.nextAction;
+  }
+}
+
+/** Після запису звіту рев'ю/security: що лишилось до виходу з REVIEWING. */
+function afterReview(t, cfg) {
+  const tree = core.treeHash(root);
+  const pending = core.evaluateGates(root, cfg, t, tree, ['review', 'security']).filter((g) => !g.ok);
+  if (pending.length) return `${pending.map((g) => g.gate).join(', ')}: ${pending.map((g) => g.detail).join('; ')}`;
+  return core.qaRequired(t) ? `transition ${t.id} QA --agent qa` : `transition ${t.id} AWAITING_FINAL_APPROVAL`;
 }
 
 function metrics(t) {
@@ -79,7 +122,7 @@ function metrics(t) {
   const hours = started && pr ? Math.round(((new Date(pr) - new Date(started)) / 36e5) * 10) / 10 : null;
   const usage = t.usage ?? {};
   const total = Object.values(usage).reduce((a, b) => a + b, 0);
-  return { id: t.id, tier: t.tier, developerModel: t.model, tokensByRole: usage, tokensTotal: total, reworkCycles: reworks, failedVerify, blockingReviews, hoursToPR: hours };
+  return { id: t.id, tier: core.effectiveTier(t), developerModel: t.model, tokensByRole: usage, tokensTotal: total, reworkCycles: reworks, failedVerify, repeatedFailures: t.repeats ?? 0, blockingReviews, hoursToPR: hours };
 }
 
 function report(state, id, cfg) {
@@ -89,8 +132,8 @@ function report(state, id, cfg) {
   const needsHuman = t.status === 'AWAITING_APPROVAL' || t.status === 'AWAITING_FINAL_APPROVAL' || t.status === 'BLOCKED';
   const lines = [
     `**${t.id} — ${t.title}**`,
-    `Етап: ${t.status} · Агент: ${t.agent ?? '—'} · Модель: ${t.model ?? '—'} (tier: ${t.tier ?? 'не оцінено'})`,
-    `QA-етап: ${core.qaRequired(t) ? 'потрібен (UI-задача)' : 'не потрібен'} · Security: ${t.securityRequired ? 'потрібен' : 'не потрібен'}`,
+    line(t, cfg),
+    `QA-етап: ${core.qaRequired(t) ? (core.uiUnknown(t) ? 'потрібен (ui не оцінено — задача старої фабрики)' : 'потрібен (UI-задача)') : 'не потрібен'} · E2E: ${core.e2eRequired(root, t) ? 'потрібен' : 'не потрібен'} · Security: ${t.securityRequired ? 'потрібен' : 'не потрібен'}`,
     ...gates.map((g) => gateLine({ ...g, gate: GATE_TITLES[g.gate] })),
   ];
   if (t.issues.length) lines.push(`Проблеми: ${t.issues.join('; ')}`);
@@ -133,12 +176,13 @@ const commands = {
     withState((s) => {
       const t = core.getTask(s, id);
       if (t.status !== 'BACKLOG') fail(`${id} уже в статусі ${t.status}`);
-      t.status = 'DISCOVERY'; t.agent = 'researcher'; t.model = 'haiku';
-      t.nextAction = 'researcher збирає контекст → task-plans/' + id + '.md';
+      t.status = 'DISCOVERY'; t.agent = 'orchestrator';
+      t.nextAction = `контекст за маршрутом (fast — сам, balanced — architect sonnet, strong — researcher opus) → transition ${id} PLANNING`;
       core.pushHistory(t, { event: 'transition', from: 'BACKLOG', to: 'DISCOVERY' });
       s.currentTask = id;
     });
     ok(`${id} → DISCOVERY (поточна задача)`);
+    console.log(line(core.getTask(core.loadState(root), id), core.loadConfig(root)));
   },
 
   classify([id, ...pairs]) {
@@ -153,7 +197,10 @@ const commands = {
       t.nextAction = c.requiresApproval ? `transition ${id} AWAITING_APPROVAL і показати план користувачу` : `transition ${id} IMPLEMENTING`;
       core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
     });
-    console.log(JSON.stringify({ id, ...c, developerModel: core.TIER_MODEL[c.tier] }, null, 2));
+    const cfg = core.loadConfig(root);
+    const t = core.getTask(core.loadState(root), id);
+    console.log(JSON.stringify({ id, ...c, developerModel: core.TIER_MODEL[c.tier], reviewModel: core.requiredReviewModel(cfg, t) }, null, 2));
+    console.log(line(t, cfg));
   },
 
   transition([id, to], opt) {
@@ -164,7 +211,7 @@ const commands = {
       if (t.status === 'BLOCKED') fail('задача BLOCKED — спершу unblock');
       if (!core.TRANSITIONS[t.status].includes(to)) fail(`перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`);
       if (to === 'IMPLEMENTING' && !t.tier) fail('спершу classify');
-      if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && t.tier !== 'fast') fail('задача не Fast → спершу AWAITING_APPROVAL');
+      if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && core.effectiveTier(t) !== 'fast') fail('задача не Fast → спершу AWAITING_APPROVAL');
       if (t.status === 'REVIEWING' && to === 'AWAITING_FINAL_APPROVAL' && core.qaRequired(t)) fail('UI-задача balanced/strong → спершу QA');
       if (to === 'COMPLETED' && !t.pr) fail('немає PR reference (factory pr <ID> <url>)');
       const required = core.REQUIRED_GATES[to] ?? [];
@@ -178,9 +225,11 @@ const commands = {
       core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
       t.status = to;
       if (opt.agent) t.agent = opt.agent;
+      t.nextAction = nextFor(t, cfg);
       s.currentTask = id;
     });
     ok(`${id} → ${to}`);
+    console.log(line(core.getTask(core.loadState(root), id), cfg));
   },
 
   verify([id], opt) {
@@ -204,8 +253,12 @@ const commands = {
       if (failed.length) {
         escalation = core.recordFailure(t, cfg, kind, signature);
         if (t.issues.at(-1) !== `${kind} failed: ${failed.join(', ')}`) t.issues.push(`${kind} failed: ${failed.join(', ')}`);
-        if (t.status !== 'BLOCKED') t.nextAction = `developer виправляє ${failed.join(', ')} → verify ${id}`;
-      } else if (t.lastFailure?.stage === kind) t.lastFailure = null;
+        if (t.status !== 'BLOCKED') t.nextAction = `${core.implementer(t)?.who ?? 'developer'} виправляє ${failed.join(', ')} → verify ${id}`;
+      } else {
+        if (t.lastFailure?.stage === kind) t.lastFailure = null;
+        if (t.status === 'IMPLEMENTING') t.nextAction = `transition ${id} REVIEWING --agent reviewer`;
+        if (t.status === 'QA' && kind === 'tests') t.nextAction = `qa → record ${id} qa`;
+      }
       core.pushHistory(t, { event: kind, ok: failed.length === 0, evidence: path.relative(root, file) });
     });
     results.forEach((r) => console.log(`${r.status === 'passed' ? '✅' : '❌'} ${r.name}: ${r.status}${r.exitCode !== null && r.exitCode !== undefined ? ` (exit ${r.exitCode})` : ''}`));
@@ -225,8 +278,8 @@ const commands = {
     if (kind === 'codex' && report.agent !== 'codex') fail('звіт codex має мати agent: "codex"');
     const task = core.getTask(core.loadState(root), id);
     if (kind === 'review') {
-      const need = core.requiredReviewModel(cfg, task.tier);
-      if (core.modelRank(report.model) < core.modelRank(need)) fail(`reviewer для tier ${task.tier} має працювати щонайменше на ${need} (отримано ${report.model})`);
+      const need = core.requiredReviewModel(cfg, task);
+      if (core.modelRank(report.model) < core.modelRank(need)) fail(`reviewer для tier ${core.effectiveTier(task)}${core.elevatedRisk(task) ? ' (підвищений ризик)' : ''} має працювати щонайменше на ${need} (отримано ${report.model})`);
     }
     if (kind === 'security' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
     const tree = core.treeHash(root);
@@ -238,9 +291,11 @@ const commands = {
       if (blocking.length) {
         t.issues.push(`${kind}: ${blocking.length} блокувальних findings`);
         if (kind !== 'qa') escalation = core.recordFailure(t, cfg, kind, core.failureSignature(blocking.map((f) => `${f.severity}:${f.title}:${f.file ?? ''}`)));
-        if (t.status !== 'BLOCKED') t.nextAction = `transition ${id} IMPLEMENTING → developer виправляє ${kind} findings`;
-      }
-      core.pushHistory(t, { event: kind, findings: report.findings.length, blocking: blocking.length, evidence: path.relative(root, ev) });
+        if (t.status !== 'BLOCKED') t.nextAction = `transition ${id} IMPLEMENTING → ${core.implementer(t)?.who ?? 'developer'} виправляє ${kind} findings`;
+      } else if (t.status === 'REVIEWING' && kind !== 'qa') {
+        t.nextAction = afterReview(t, cfg);
+      } else if (t.status === 'QA' && kind === 'qa') t.nextAction = `transition ${id} AWAITING_FINAL_APPROVAL`;
+      core.pushHistory(t, { event: kind, model: report.model, findings: report.findings.length, blocking: blocking.length, evidence: path.relative(root, ev) });
     });
     console.log(`${blocking.length ? '❌' : '✅'} ${kind}: ${report.findings.length} findings, блокувальних ${blocking.length}`);
     if (escalation) console.log(escalation);
@@ -281,7 +336,7 @@ const commands = {
     const s = core.loadState(root);
     const taskId = id ?? s.currentTask;
     if (!taskId) fail('немає поточної задачі');
-    console.log(line(core.getTask(s, taskId)));
+    console.log(line(core.getTask(s, taskId), core.loadConfig(root)));
   },
 
   usage([id, role, tokens]) {
@@ -351,7 +406,7 @@ const commands = {
     const s = core.loadState(root);
     if (id) return console.log(JSON.stringify(core.getTask(s, id), null, 2));
     console.log(`Поточна задача: ${s.currentTask ?? '—'}`);
-    Object.values(s.tasks).forEach((t) => console.log(`${t.id}  ${t.status.padEnd(24)} ${(t.tier ?? '-').padEnd(9)} ${t.title}`));
+    Object.values(s.tasks).forEach((t) => console.log(`${t.id}  ${t.status.padEnd(24)} ${(core.effectiveTier(t) ?? '-').padEnd(9)} ${t.title}`));
   },
 
   report([id]) {

@@ -16,10 +16,10 @@ BACKLOG → DISCOVERY → PLANNING → AWAITING_APPROVAL → IMPLEMENTING → RE
 |---|---|---|---|---|
 | Discovery + Planning | orchestrator (fast) · architect (balanced) · researcher + architect (strong) | — / sonnet / opus | `task-plans/<ID>.md`, CLASSIFY (+`ui`) | план за шаблоном, AC-n |
 | Approval | **користувач** | — | `APPROVE <ID>` | Gate 1 (fast — без approval) |
-| Implementation | developer | haiku / sonnet / opus за tier | код + тести на кожен AC | Gate 2: `factory verify` (typecheck, lint, unit, AC traceability) |
-| Review | reviewer (+ codex для strong) | sonnet для fast, інакше opus / OpenAI | JSON findings | Gate 3: без Critical/High |
+| Implementation | developer (fast, strong) · головна сесія (balanced) | haiku / sonnet / opus | код + тести на кожен AC | Gate 2: `factory verify` (typecheck, lint, unit, AC traceability) |
+| Review | reviewer (+ codex для strong) | sonnet (fast, balanced) · opus (balanced з підвищеним ризиком, strong) / OpenAI | JSON findings | Gate 3: без Critical/High |
 | Security | security | opus (pinned) | JSON findings | Gate 4 (якщо security/integrations ≥ 1) |
-| QA | qa | sonnet | `verify --full` + браузер, findings | Gate 5 + QA: лише balanced/strong з `ui=1`; QA не править код і тести |
+| QA | qa | sonnet | `verify --full` + браузер, findings | Gate 5 + QA: balanced/strong з `ui=1` (без оцінки `ui` — обов'язково); e2e також, якщо план вимагає `verify --full`; QA не править код і тести |
 | Final approval | **користувач** | — | `APPROVE-FINAL <ID>` | Gate 6, прив'язаний до tree hash |
 | PR | orchestrator | — | гілка, коміт, PR (без merge) | pre-commit / pre-push / CI |
 | Docs / Retro | docs | haiku | vault + `factory metrics` | — |
@@ -29,7 +29,9 @@ Orchestrator (головна сесія) — Sonnet за замовчуванн�
 ## Маршрутизація моделей
 8 критеріїв × 0–2 бали (architect) + прапорець `ui` (0/1, не входить у суму). 0–3 fast · 4–8 balanced · ≥ 9 strong; security = 2 або integrations = 2 → завжди strong. **Tier визначає обсяг процесу і рівень рев'ю** (див. таблицю маршрутів у SKILL.md), а не модель developer.
 
-**Ескалації автоматично немає.** Червоний `verify` (відсутня залежність, конфіг, тести) → developer доробляє на поточній моделі. Повтор тієї самої помилки (відбиток провалених перевірок і хвоста виводу) → CLI каже про повтор, модель не змінюється. Складний дефект після цільового виправлення → orchestrator: `factory escalate <ID> <причина>` — підвищує лише модель developer; tier, рівень рев'ю і codex лишаються. Захист від нескінченних циклів: 3 провали з developer на opus → BLOCKED і питання користувачу.
+**Tier рахується з балів** (`effectiveTier`): у задач старої фабрики збережений tier міг бути підвищений ескалацією — на рев'ю, QA і codex він не впливає (D-017).
+
+**Ескалації автоматично немає.** Червоний `verify` (відсутня залежність, конфіг, тести) → developer доробляє на поточній моделі. Повтор тієї самої помилки (відбиток провалених перевірок і хвоста виводу) → CLI каже про повтор, модель не змінюється. Складний дефект після цільового виправлення → orchestrator: `factory escalate <ID> <причина>` — підвищує лише модель developer; tier, рівень рев'ю і codex лишаються. Захист від нескінченних циклів: 3 **різні** невдалі спроби з developer на opus → BLOCKED і питання користувачу; повтор тієї самої діагностики лічильник не збільшує (рахується окремо як `repeatedFailures` у metrics).
 
 ## Метрики
 `factory usage <ID> <role> <tokens>` — токени субагента (orchestrator записує після кожного виклику). `factory metrics [ID]` — токени за ролями, цикли доопрацювання, провали verify/review, години до PR. Токени головної сесії — вручну з `/cost`. На найближчих задачах порівнюємо ці три числа, щоб перевірити, що фабрика подешевшала без зростання переробок.
@@ -60,7 +62,7 @@ Orchestrator (головна сесія) — Sonnet за замовчуванн�
 ## Як користуватися
 - `/factory DEV-001` — провести задачу; `/factory status`; `/factory new <опис>`.
 - Погодити план: написати `APPROVE DEV-001`. Перед PR: `APPROVE-FINAL DEV-001`.
-- `node .factory/bin/factory.mjs line` — один рядок статусу; `report` — повний звіт; `... selftest` — перевірка самої фабрики.
+- `node .factory/bin/factory.mjs line` — один рядок: tier, хто/на чому реалізує, модель рев'ю (заплановано/підтверджено), наступна дія; `report` — повний звіт; `... selftest` — перевірка самої фабрики.
 
 ## Чесні обмеження
 1. **LLM-рев'ю не доводиться машинно.** JSON reviewer записує головна сесія. Компенсація: перевірка схеми і моделі, фінальний людський gate, CI.

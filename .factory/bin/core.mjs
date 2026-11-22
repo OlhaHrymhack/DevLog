@@ -40,10 +40,57 @@ export const TIERS = ['fast', 'balanced', 'strong'];
 export const TIER_MODEL = { fast: 'haiku', balanced: 'sonnet', strong: 'opus' };
 export const MODELS = ['haiku', 'sonnet', 'opus'];
 export const modelRank = (m) => MODELS.indexOf(m);
-/** Мінімальна модель reviewer для tier задачі. Рівень рев'ю — за ризиком зміни, не за моделлю developer. */
-export function requiredReviewModel(cfg, tier) { return cfg.reviewModel?.[tier] ?? 'opus'; }
-/** QA потрібен лише для UI-задач balanced/strong (D-016). */
-export function qaRequired(task) { return task.tier !== 'fast' && task.scores?.ui === 1; }
+
+/** Tier за балами (без прапорця ui). */
+export function tierFromScores(scores) {
+  const sum = CRITERIA.reduce((s, c) => s + (scores[c] ?? 0), 0);
+  if (scores.security === 2 || scores.integrations === 2) return 'strong';
+  return sum <= 3 ? 'fast' : sum <= 8 ? 'balanced' : 'strong';
+}
+
+/**
+ * Tier ризику — завжди з балів classify. Стара фабрика підвищувала task.tier після провалів;
+ * таке підвищення не має визначати рівень рев'ю, QA чи codex (D-017).
+ */
+export function effectiveTier(task) { return task.scores ? tierFromScores(task.scores) : task.tier; }
+
+/** Підвищений ризик усередині balanced: security/integrations ≥ 1 або criticality = 2. */
+export function elevatedRisk(task) {
+  const s = task.scores ?? {};
+  return (s.security ?? 0) >= 1 || (s.integrations ?? 0) >= 1 || s.criticality === 2;
+}
+
+/** Мінімальна модель reviewer: за ризиком зміни, не за моделлю developer. */
+export function requiredReviewModel(cfg, task) {
+  const tier = task ? effectiveTier(task) : 'strong';
+  const m = cfg.reviewModel ?? {};
+  if (tier === 'balanced' && elevatedRisk(task)) return m.balancedElevated ?? 'opus';
+  return m[tier] ?? 'opus';
+}
+
+/** Хто реалізує: balanced на sonnet — головна сесія; інакше — developer subagent. */
+export function implementer(task) {
+  const tier = effectiveTier(task);
+  if (!tier) return null;
+  const model = task.model ?? TIER_MODEL[tier];
+  return tier === 'balanced' && model === 'sonnet' ? { who: 'головна сесія', model } : { who: 'developer', model };
+}
+
+/** ui не оцінено (задача старої фабрики) → QA не вимикаємо мовчки. */
+export function uiUnknown(task) { return task.scores && task.scores.ui === undefined; }
+
+/** QA потрібен для UI-задач balanced/strong; без оцінки ui — теж потрібен (D-016, D-017). */
+export function qaRequired(task) {
+  if (effectiveTier(task) === 'fast') return false;
+  return uiUnknown(task) || task.scores?.ui === 1;
+}
+
+/** e2e (verify --full) потрібен для QA-задач або якщо план явно вимагає verify --full / test:e2e. */
+export function e2eRequired(root, task) {
+  if (qaRequired(task)) return true;
+  const f = planFile(root, task.id);
+  return fs.existsSync(f) && /verify[^\n]*--full|test:e2e/.test(fs.readFileSync(f, 'utf8'));
+}
 export const CRITERIA = ['modules', 'architecture', 'criticality', 'security', 'integrations', 'migrations', 'state', 'uncertainty'];
 export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
 export const BLOCKING = new Set(['critical', 'high']);
@@ -231,7 +278,7 @@ export function untracedCriteria(root, id, cfg) {
 
 // ---------- gates ----------
 export function approvalStatus(root, task) {
-  if (task.tier === 'fast') return { ok: true, detail: 'Fast-задача: approval не потрібен' };
+  if (effectiveTier(task) === 'fast') return { ok: true, detail: 'Fast-задача: approval не потрібен' };
   const a = readApproval(root, task.id, 'plan');
   if (!a) return { ok: false, detail: 'немає approval плану (користувач має написати: APPROVE ' + task.id + ')' };
   if (a.planHash !== planHash(root, task.id)) return { ok: false, detail: 'план змінився після approval → потрібне повторне погодження' };
@@ -251,7 +298,7 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       return { ok: true, detail: 'typecheck/lint/unit passed, усі AC покриті тестами' };
     }
     case 'tests': {
-      if (!qaRequired(task)) return { ok: true, detail: 'e2e не потрібен (не UI-задача або fast): достатньо verify' };
+      if (!e2eRequired(root, task)) return { ok: true, detail: 'e2e не потрібен (не UI-задача і план не вимагає verify --full): достатньо verify' };
       const ev = readEvidence(root, task.id, tree, 'tests');
       if (!ev) return { ok: false, pending: true, detail: 'повний прогін тестів (verify --full) не запускався' + stale('tests') };
       if (!ev.ok) return { ok: false, detail: `failed: ${ev.failed.join(', ')}` };
@@ -268,9 +315,9 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       const b = blockingFindings(ev);
       if (b.length) return { ok: false, detail: `${b.length} блокувальних findings (${b.map((f) => f.severity).join(', ')})` };
       const cross = cfg.crossFamilyReview;
-      if (gate === 'review' && cross?.enabled && cross.tiers.includes(task.tier)) {
+      if (gate === 'review' && cross?.enabled && cross.tiers.includes(effectiveTier(task))) {
         const cx = readEvidence(root, task.id, tree, 'codex');
-        if (!cx) return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${task.tier}` + stale('codex') };
+        if (!cx) return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}` + stale('codex') };
         const cb = blockingFindings(cx);
         if (cb.length) return { ok: false, detail: `codex: ${cb.length} блокувальних findings` };
         return { ok: true, detail: `reviewer (${ev.model}) + codex (${cx.model}): блокувальних немає` };
@@ -299,8 +346,7 @@ export function classify(scores) {
   }
   if (![0, 1].includes(scores.ui)) throw new Error('Прапорець "ui" має бути 0 або 1 (чи зачіпає задача UI)');
   const sum = CRITERIA.reduce((s, c) => s + scores[c], 0);
-  let tier = sum <= 3 ? 'fast' : sum <= 8 ? 'balanced' : 'strong';
-  if (scores.security === 2 || scores.integrations === 2) tier = 'strong';
+  const tier = tierFromScores(scores);
   const securityRequired = scores.security >= 1 || scores.integrations >= 1;
   return {
     sum, tier, securityRequired,
@@ -318,16 +364,21 @@ export function failureSignature(parts) {
 /**
  * Фіксує провал verify/review. Модель і tier автоматично НЕ змінюються (D-016):
  * підвищити модель developer може лише orchestrator (`factory escalate`), а рівень рев'ю
- * визначає ризик зміни (tier з classify). Захист від нескінченних циклів — BLOCKED після
- * N провалів, коли developer уже на opus.
+ * визначає ризик зміни (бали classify). Захист від нескінченних циклів — BLOCKED після
+ * N **різних** невдалих спроб, коли developer уже на opus. Повтор тієї самої діагностики
+ * лічильник не збільшує (D-017): це та сама спроба, а не нова.
  */
 export function recordFailure(task, cfg, stage, signature) {
   const limit = cfg.escalation?.failuresOnOpusBeforeBlock ?? 3;
-  const model = task.model ?? TIER_MODEL[task.tier];
+  const model = task.model ?? TIER_MODEL[effectiveTier(task)];
+  const repeated = Boolean(signature) && task.lastFailure?.signature === signature;
+  task.lastFailure = { stage, signature: signature ?? null, at: now() };
+  if (repeated) {
+    task.repeats = (task.repeats ?? 0) + 1;
+    return `Повтор тієї самої помилки (${stage}). Лічильник спроб не змінюється; модель не змінюється: виправ саме цю причину на ${model}`;
+  }
   task.attempts[model] = (task.attempts[model] ?? 0) + 1;
   const n = task.attempts[model];
-  const repeated = signature && task.lastFailure?.signature === signature;
-  task.lastFailure = { stage, signature: signature ?? null, at: now() };
   if (model === 'opus' && n >= limit) {
     task.blockedFrom = task.status;
     task.status = 'BLOCKED';
@@ -335,18 +386,15 @@ export function recordFailure(task, cfg, stage, signature) {
     pushHistory(task, { event: 'blocked', note: `${n} провали на opus` });
     return 'Задачу заблоковано: потрібне рішення користувача';
   }
-  if (repeated) {
-    return `Повтор тієї самої помилки (${stage}). Модель не змінюється: developer виправляє саме цю причину на ${model}`;
-  }
   return `Провал ${stage} (спроба ${n} на ${model}). Developer виправляє на поточній моделі`;
 }
 
 /** Ручне підвищення моделі developer orchestrator-ом. Tier (і рівень рев'ю) не змінюється. */
 export function escalateModel(task, reason) {
-  const from = task.model ?? TIER_MODEL[task.tier];
+  const from = task.model ?? TIER_MODEL[effectiveTier(task)];
   const i = modelRank(from);
   if (i < 0 || i >= MODELS.length - 1) throw new Error(`developer уже на ${from} — вище нікуди`);
   task.model = MODELS[i + 1];
   pushHistory(task, { event: 'escalation', from, to: task.model, note: reason });
-  return `developer: ${from} → ${task.model} (tier ${task.tier} і рівень рев'ю без змін)`;
+  return `developer: ${from} → ${task.model} (tier ${effectiveTier(task)} і рівень рев'ю без змін)`;
 }

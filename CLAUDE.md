@@ -11,7 +11,7 @@
 - код змінюється лише в статусі IMPLEMENTING погодженої задачі (enforced hook-ом);
 - approval дає лише користувач текстом `APPROVE <ID>` / `APPROVE-FINAL <ID>`;
 - стан і evidence — лише через `node .factory/bin/factory.mjs`; результати не вигадуємо;
-- reviewer (opus; sonnet для fast) і security (opus) — окремі subagents; модель developer підвищує лише orchestrator (`factory escalate`); merge PR — лише користувач.
+- реалізація: fast — developer haiku, balanced — головна сесія, strong — developer opus; reviewer (sonnet для fast і balanced, opus за підвищеного ризику і для strong) і security (opus) — окремі subagents; модель developer підвищує лише orchestrator (`factory escalate`); після `APPROVE` — без рутинних пауз до фінального погодження; merge PR — лише користувач.
 Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/product.md` (скоуп MVP і тест-кейси — джерело правди про продукт), `docs/vault/specs/` (детальні специфікації задач і порядок виконання — читати перед `/factory <ID>`), `docs/vault/decisions.md`.
 
 ## Стек

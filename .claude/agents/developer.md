@@ -1,6 +1,6 @@
 ---
 name: developer
-description: Developer фабрики (етап IMPLEMENTING) — реалізує погоджений план малими кроками з проміжними перевірками і тестами. Модель задає orchestrator за tier задачі.
+description: Developer фабрики (етап IMPLEMENTING) для fast (haiku) і strong (opus) — реалізує погоджений план малими кроками з проміжними перевірками і тестами. Для balanced ці ж правила виконує головна сесія.
 model: sonnet
 disallowedTools: Agent
 maxTurns: 60
