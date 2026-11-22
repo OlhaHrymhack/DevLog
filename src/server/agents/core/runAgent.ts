@@ -153,6 +153,8 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
     return outcome;
   }
 
+  const factCheck = (result: z.infer<Result>, ctx: AgentContext): string[] => def.factCheck(result, ctx, input);
+
   let finalSent = false;
   const emit = (event: AgentEvent) => {
     if (!finalSent) onEvent(event);
@@ -162,7 +164,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
   const validationIndex = labels.length - 1;
   const lastWorkIndex = Math.max(0, validationIndex - 1);
   const stepStates: AgentStepState[] = labels.map(() => "pending");
-  const setStep = (index: number, state: Exclude<AgentStepState, "pending">, detail?: string) => {
+  const setStep = (index: number, state: AgentStepState, detail?: string) => {
     if (stepStates[index] === state && detail === undefined) return;
     stepStates[index] = state;
     emit({ type: "step", index, label: labels[index] ?? "", state, ...(detail ? { detail } : {}) });
@@ -189,7 +191,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
   const fallback = (reason: string): AgentOutcome => {
     const failing = stepStates.indexOf("run");
     setStep(failing === -1 ? validationIndex : failing, "fail", reason);
-    const checked = validateResult(def.resultSchema, def.factCheck, def.fallback(input, context), context);
+    const checked = validateResult(def.resultSchema, factCheck, def.fallback(input, context), context);
     if (!checked.ok) return finish({ status: "error", error: AGENT_ERRORS.fallback });
     return finish({ status: "fallback", reason, data: checked.data });
   };
@@ -280,6 +282,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
       const usedTools = new Set<string>();
       let accepted: { data: z.infer<Result> } | undefined;
       let submitHandled = false;
+      let clarifying = false;
       let executedTools = 0;
 
       for (const call of response.toolCalls) {
@@ -298,14 +301,20 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
           continue;
         }
         submitHandled = true;
-        for (let index = 0; index < validationIndex; index += 1) {
-          if (stepStates[index] !== "done") setStep(index, "done");
-        }
-        setStep(validationIndex, "run");
         const args = parseToolArguments(call.arguments);
         const checked = args.ok
-          ? validateResult(def.resultSchema, def.factCheck, args.value, context)
+          ? validateResult(def.resultSchema, factCheck, args.value, context)
           : { ok: false as const, violations: [args.error] };
+        clarifying = checked.ok && def.clarifyAfterStep !== undefined && def.classify?.(checked.data) === "clarify";
+        const doneUpTo = clarifying ? Math.min(def.clarifyAfterStep ?? 0, validationIndex - 1) : validationIndex - 1;
+        for (let index = 0; index <= doneUpTo; index += 1) {
+          if (stepStates[index] !== "done") setStep(index, "done");
+        }
+        if (clarifying) {
+          stepStates.forEach((state, index) => { if (index > doneUpTo && state === "run") setStep(index, "pending"); });
+        } else {
+          setStep(validationIndex, "run");
+        }
         runs.appendStep(run.id, {
           type: "validation", label: "Перевірка результату", state: checked.ok ? "done" : "fail",
           payload: checked.ok ? { result: checked.data } : { violations: checked.violations },
@@ -323,7 +332,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
 
       if (!submitHandled) awaitingRetry = false;
       if (accepted) {
-        setStep(validationIndex, "done");
+        if (!clarifying) setStep(validationIndex, "done");
         return finish({ status: def.classify?.(accepted.data) ?? "result", data: accepted.data });
       }
       if (usedTools.size > 0 && !awaitingRetry) {

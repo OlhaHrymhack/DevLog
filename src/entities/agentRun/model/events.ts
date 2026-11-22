@@ -18,7 +18,7 @@ export const AgentEventSchema = z.discriminatedUnion("type", [
     type: z.literal("step"),
     index: z.number().int().min(0),
     label: z.string(),
-    state: AgentStepStateSchema.exclude(["pending"]),
+    state: AgentStepStateSchema,
     detail: z.string().optional(),
   }),
   z.object({ type: z.literal("result"), status: z.enum(["result", "clarify"]), data: z.unknown() }),

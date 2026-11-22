@@ -2,9 +2,10 @@
 
 import { ArrowLeft, FileText, ListTree, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useHealth } from "@/shared/api/health/useHealth";
 import { ApiError } from "@/shared/api/http";
 import { useTask, type Subtask, type SubtaskStatus, type TaskPriority, type TaskStatus } from "@/entities/task";
 import { useSerious } from "@/features/seriousMode";
@@ -15,6 +16,7 @@ import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/Tabs";
 import { AppHeader } from "@/widgets/appHeader";
+import { DecomposePanel } from "@/widgets/decomposePanel";
 import { NoteList } from "@/widgets/noteList";
 import { areAllSubtasksDone, SubtaskList } from "@/widgets/subtaskList";
 import { TaskDialogs, type TaskDialog } from "@/widgets/taskDialogs";
@@ -31,9 +33,21 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
   const router = useRouter();
   const task = useTask(id);
   const serious = useSerious();
+  const health = useHealth();
   const [now] = useState(() => Date.now());
   const [dialog, setDialog] = useState<TaskDialog>();
   const { tab, setTab } = useDetailsTab();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [autorun, setAutorun] = useState(() => searchParams.get("autorun") === "1");
+  const consumeAutorun = useCallback(() => {
+    setAutorun(false);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("autorun")) return;
+    params.delete("autorun");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router]);
   const wide = useMediaQuery("(min-width: 1024px)");
   const update = useUpdateTask();
   const setSubtaskStatus = useSetSubtaskStatus();
@@ -96,7 +110,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
       <SubtaskList subtasks={current.subtasks} pending={pending}
         onToggle={(subtask) => void toggleSubtask(subtask)}
         onDelete={(subtask) => void removeSubtask(subtask)}
-        onDecompose={() => setTab("decompose")}
+        onDecompose={() => { setAutorun(true); setTab("decompose"); }}
       />
       <NoteList notes={current.notes} now={now} taskId={id} />
     </>
@@ -129,7 +143,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
           <div className={layoutStyles}>
             <div className={columnStyles}>{overview}{details}</div>
             <aside aria-label="AI-агенти" className={columnStyles}>
-              <AgentPlaceholder id="agent-b" title="Агент декомпозиції" />
+              <DecomposePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} autorun={autorun} onAutorunHandled={consumeAutorun} />
               <AgentPlaceholder id="agent-c" title="Агент статус-апдейту" />
             </aside>
           </div>
@@ -142,7 +156,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
               <TabsTrigger value="update"><MessageSquare aria-hidden="true" className="max-[419px]:hidden" /> Апдейт</TabsTrigger>
             </TabsList>
             <TabsContent value="task" className={columnStyles}>{overview}{details}</TabsContent>
-            <TabsContent value="decompose"><AgentPlaceholder id="agent-b" title="Агент декомпозиції" /></TabsContent>
+            <TabsContent value="decompose" forceMount className="data-[state=inactive]:hidden"><DecomposePanel task={current} serious={serious} demo={health.data?.aiMode === "demo"} autorun={autorun} onAutorunHandled={consumeAutorun} /></TabsContent>
             <TabsContent value="update"><AgentPlaceholder id="agent-c" title="Агент статус-апдейту" /></TabsContent>
           </Tabs>
         )}

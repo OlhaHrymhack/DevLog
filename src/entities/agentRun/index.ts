@@ -59,3 +59,13 @@ export { AgentProgress } from "./ui/AgentProgress";
 export { AgentRunPanel } from "./ui/AgentRunPanel";
 export { AgentStepList } from "./ui/AgentStepList";
 export { AgentTag } from "./ui/AgentTag";
+export {
+  CLARIFICATION,
+  DECOMPOSITION_ITEMS,
+  DECOMPOSITION_QUESTIONS,
+  DecomposeInputSchema,
+  DecompositionSchema,
+  type DecomposeInput,
+  type Decomposition,
+  type DecompositionItem,
+} from "./model/decomposition";

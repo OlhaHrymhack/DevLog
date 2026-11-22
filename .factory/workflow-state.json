@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-009",
+  "currentTask": "DEV-010",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1400,7 +1400,7 @@
     "DEV-009": {
       "id": "DEV-009",
       "title": "Агент A План на день",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -1425,8 +1425,8 @@
         "tests failed: test(failed)"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-009 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-009",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/25",
       "history": [
         {
           "at": "2026-11-21T17:47:23.898Z",
@@ -1582,26 +1582,52 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T19:36:17.580Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/25"
+        },
+        {
+          "at": "2026-11-22T19:36:17.805Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.898Z",
-      "updatedAt": "2026-11-22T19:35:55.675Z",
+      "updatedAt": "2026-11-22T19:36:17.806Z",
       "lastFailure": null,
       "reviewTree": "d8b7482b18b32c9415bc911f0a4f1bb5c625129f"
     },
     "DEV-010": {
       "id": "DEV-010",
       "title": "Агент B Декомпозиція",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 2,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "sonnet": 2
+      },
+      "issues": [
+        "tests failed: e2e(failed)",
+        "review: 1 блокувальних findings"
+      ],
       "blockers": [],
-      "nextAction": "start",
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-010 <url>",
       "pr": null,
       "history": [
         {
@@ -1612,10 +1638,154 @@
           "at": "2026-11-21T19:54:44.958Z",
           "event": "retitled",
           "note": "Агент C статус-апдейт → Агент B Декомпозиція"
+        },
+        {
+          "at": "2026-11-22T20:01:57.052Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T20:01:57.311Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T20:02:28.453Z",
+          "event": "classified",
+          "note": "сума 9 → strong"
+        },
+        {
+          "at": "2026-11-22T20:02:33.900Z",
+          "event": "tierOverride",
+          "note": "tier → balanced (бали лишаються: strong): рішення користувачки 2026-11-22: DEV-010 на balanced, головна сесія Sonnet (економія токенів); відповідь на питання про tier"
+        },
+        {
+          "at": "2026-11-22T20:02:34.244Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T20:08:19.758Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T20:17:22.508Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-010/1de588d0ba39cf744c3553ddb40114b17fb9e29c/tests.json"
+        },
+        {
+          "at": "2026-11-22T20:18:48.554Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-010/26fe7849e98e0c3aa3b8293aa16a5001dc256407/tests.json"
+        },
+        {
+          "at": "2026-11-22T20:19:06.611Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "26fe7849e9"
+        },
+        {
+          "at": "2026-11-22T20:21:17.822Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-010/26fe7849e98e0c3aa3b8293aa16a5001dc256407/security.json"
+        },
+        {
+          "at": "2026-11-22T20:23:32.507Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 9,
+          "blocking": 1,
+          "evidence": ".factory/evidence/DEV-010/26fe7849e98e0c3aa3b8293aa16a5001dc256407/review.json"
+        },
+        {
+          "at": "2026-11-22T20:23:32.666Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T20:25:29.009Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-010/67ee4be468dd427c1ea4565c55d50c26ab0f2f17/tests.json"
+        },
+        {
+          "at": "2026-11-22T20:25:38.276Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "67ee4be468"
+        },
+        {
+          "at": "2026-11-22T20:27:02.794Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-010/67ee4be468dd427c1ea4565c55d50c26ab0f2f17/security.json"
+        },
+        {
+          "at": "2026-11-22T20:29:13.761Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-010/67ee4be468dd427c1ea4565c55d50c26ab0f2f17/review.json"
+        },
+        {
+          "at": "2026-11-22T20:29:14.050Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T20:32:28.132Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-010/67ee4be468dd427c1ea4565c55d50c26ab0f2f17/qa.json"
+        },
+        {
+          "at": "2026-11-22T20:32:28.411Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T20:54:31.227Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.961Z",
-      "updatedAt": "2026-11-21T19:54:44.958Z"
+      "updatedAt": "2026-11-22T20:54:31.227Z",
+      "lastFailure": {
+        "stage": "review",
+        "signature": "7a241b76c280",
+        "at": "2026-11-22T20:23:32.378Z"
+      },
+      "tierOverride": {
+        "tier": "balanced",
+        "reason": "рішення користувачки 2026-11-22: DEV-010 на balanced, головна сесія Sonnet (економія токенів); відповідь на питання про tier",
+        "at": "2026-11-22T20:02:33.899Z"
+      },
+      "reviewTree": "67ee4be468dd427c1ea4565c55d50c26ab0f2f17"
     },
     "DEV-011": {
       "id": "DEV-011",

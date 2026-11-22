@@ -166,7 +166,7 @@ test("DEV-007 AC-6: на tablet і mobile — вкладки, ?tab=decompose, ar
   await tabs.getByRole("tab", { name: "Підзадачі" }).click();
   await expect(page).toHaveURL(/tab=decompose/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(0);
-  await expect(page.locator("#agent-b")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Декомпозиція" })).toBeVisible();
 
   await page.goto("/tasks/t1?tab=decompose");
   await expect(tabs.getByRole("tab", { name: "Підзадачі" })).toHaveAttribute("aria-selected", "true");

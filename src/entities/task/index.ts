@@ -1,6 +1,7 @@
 export { getHeat } from "./model/getHeat";
 export { HEAT_LEVELS, HEAT_ORDER, type HeatKey, type HeatLevel } from "./model/heatLevels";
 export { PRIORITY_LABELS, STATUS_LABELS } from "./model/labels";
+export { clarityReasons, isVague } from "./model/isVague";
 export {
   IsoDateTimeSchema,
   NoteCreateInputSchema,
