@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-008",
+  "currentTask": "DEV-015",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1669,6 +1669,73 @@
       "createdAt": "2026-11-22T10:17:28.607Z",
       "updatedAt": "2026-11-22T10:25:12.139Z",
       "lastFailure": null
+    },
+    "DEV-015": {
+      "id": "DEV-015",
+      "title": "Конфігуровані ліміти агентів і безпечний dev-smoke",
+      "status": "AWAITING_APPROVAL",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 1,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 2,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 1,
+        "ui": 0
+      },
+      "securityRequired": true,
+      "agent": "orchestrator",
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "чекаємо від користувача: APPROVE DEV-015",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-22T17:34:31.386Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-22T17:34:31.547Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T17:34:31.769Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T17:35:18.738Z",
+          "event": "classified",
+          "note": "сума 8 → strong"
+        },
+        {
+          "at": "2026-11-22T17:35:19.127Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T17:37:15.077Z",
+          "event": "tierOverride",
+          "note": "tier → balanced (бали лишаються: strong): рішення користувачки 2026-11-22: ліміт по токенах, продовжуємо на sonnet (головна сесія); security лишається на opus"
+        }
+      ],
+      "createdAt": "2026-11-22T17:34:31.385Z",
+      "updatedAt": "2026-11-22T17:37:15.077Z",
+      "lastFailure": null,
+      "tierOverride": {
+        "tier": "balanced",
+        "reason": "рішення користувачки 2026-11-22: ліміт по токенах, продовжуємо на sonnet (головна сесія); security лишається на opus",
+        "at": "2026-11-22T17:37:15.077Z"
+      }
     }
   }
 }

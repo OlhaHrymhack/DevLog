@@ -73,12 +73,12 @@ export const DEMO_STEP_DELAY_MS = 450;
 
 /** Вибір адаптера за `aiMode`: demo → `ScriptedClient`, live → `OpenAIClient` (ключ лише з серверного env). */
 export const selectModelClient = (
-  env: Pick<ServerEnv, "aiMode" | "OPENAI_API_KEY" | "OPENAI_MODEL">,
+  env: Pick<ServerEnv, "aiMode" | "OPENAI_API_KEY" | "OPENAI_MODEL"> & Partial<Pick<ServerEnv, "OPENAI_MAX_OUTPUT_TOKENS">>,
   script: () => readonly ScriptedTurn[],
   options: ScriptedClientOptions = { delayMs: DEMO_STEP_DELAY_MS },
 ): ModelClient => {
   if (env.aiMode === "live" && env.OPENAI_API_KEY) {
-    return createOpenAIClient({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
+    return createOpenAIClient({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL, maxOutputTokens: env.OPENAI_MAX_OUTPUT_TOKENS });
   }
   return createScriptedClient(script(), options);
 };

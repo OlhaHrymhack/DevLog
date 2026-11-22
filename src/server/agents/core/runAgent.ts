@@ -180,7 +180,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
     emit(toFinalEvent(outcome));
     finalSent = true;
     log.info({
-      kind: def.kind, runId: run.id, mode, modelCalls, status: outcome.status,
+      kind: def.kind, runId: run.id, mode, modelCalls, maxSteps, status: outcome.status,
       durationMs: Math.round(performance.now() - startedAt),
     }, "Agent run finished");
     return outcome;
