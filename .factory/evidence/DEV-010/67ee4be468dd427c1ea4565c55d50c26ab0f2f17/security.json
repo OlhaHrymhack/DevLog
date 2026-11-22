@@ -1,0 +1,39 @@
+{
+  "taskId": "DEV-010",
+  "kind": "security",
+  "tree": "67ee4be468dd427c1ea4565c55d50c26ab0f2f17",
+  "at": "2026-11-22T20:27:02.662Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Повторне security-рев'ю DEV-010 після правок buildItems/EXTRA_ITEMS, автозапуску в DecomposePanel, forceMount вкладки decompose, ключів списків і тестів. Лише статичний ручний аналіз: /cso не запускався, Docker немає, live- і платних запитів не було, .env* не читались, репозиторій не змінювався. npm audit --omit=dev: 0 вразливостей; package.json і package-lock.json не змінено. Critical, high і medium немає, нових блокувальних ризиків теж. (1) buildItems і templates. Це чиста детермінована функція над статичними рядками шаблонів. Цикли обмежені: ≤13 кандидатів × кількість наявних підзадач, isDuplicateTitle працює на коротких рядках. Дані користувача в результат не потрапляють. demo і fallback проходять ті самі resultSchema і factCheck. Якщо наявні підзадачі збігаються з усіма запасними пунктами, fallback дасть менше 3 пунктів. Тоді валідація його відхилить і буде status error — безпечна відмова, а не обхід. (2) Автозапуск. Прапорець autorun ініціалізується з ?autorun=1 або вмикається кліком «Розбити з AI» і споживається одразу: setAutorun(false) + router.replace прибирає параметр. Тож Stop, ремаунт і перехід між широкою та вузькою розкладкою запуск не повторюють; при unmount useAgentRun робить abort. Широка розкладка (aside) і раніше монтувала панель завжди, тому там ?autorun=1 вже запускав агента відразу. Новий ефект forceMount стосується лише вузької розкладки, коли посилання має ?autorun=1 без tab=decompose. Раніше запуск чекав, поки користувач відкриє вкладку, тепер він стартує відразу у прихованій вкладці. Тобто не більше запусків, ніж давала широка розкладка, але на мобільному запуск тепер невидимий (див. low). Запису даних це не дає: агент лише читає, підзадачі створюються тільки після «Створити». (3) Ядро (factCheck з input, clarifyAfterStep, pending у step-подіях) з минулого рев'ю не змінювалось, впливає лише на відображення кроків. assess_clarity лишається в read-only allowlist, тест це перевіряє. (4) Ключі списків і React-текст: dangerouslySetInnerHTML немає. (5) Три low з /tmp/dev010-security.json не виправлено (розмежувачі для clarification, автозапуск за посиланням / Origin і Content-Type в /api/agents/*, taskId без max і без 404), вони лишаються актуальними. Нижче — їхня актуалізація плюс один новий low.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "forceMount: на вузькому екрані ?autorun=1 без tab=decompose запускає агента у прихованій вкладці",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 159,
+      "detail": "TabsContent value=\"decompose\" монтується завжди, лише ховається через data-[state=inactive]:hidden. Тому /tasks/:id?autorun=1 на ширині <1024px стартує POST /api/agents/decompose відразу, хоча відкрита вкладка «Задача». Користувач не бачить ні запуску, ні кнопки «Зупинити», поки сам не відкриє вкладку. На широкому екрані це вже було й раніше (aside монтується завжди), тож загальну кількість можливих запусків зміна не збільшує, лише робить мобільний запуск непомітним. Прихований edge case: useMediaQuery на сервері повертає false. Якщо перший клієнтський рендер із даними задачі пройде з wide=false, вузька панель стартує і споживе autorun, а потім ремаунт на широку розкладку його abort-не. Тоді платний виклик міг уже піти, а результату не буде. Рекомендація: запускати автозапуск, лише коли панель видима, тобто autorun={autorun && (wide || tab === \"decompose\")}, або в consumeAutorun ігнорувати ?autorun без tab=decompose. Найнадійніше — прибрати autorun із URL (див. попередній low)."
+    },
+    {
+      "severity": "low",
+      "title": "?autorun=1 і /api/agents/* без перевірки Origin/Content-Type (без змін)",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 42,
+      "detail": "Лишається з попереднього звіту. Відкриття стороннього посилання з ?autorun=1 запускає платний live-виклик без кліку. Тепер параметр одразу прибирається з URL, тож повторів після reload немає, але сама поведінка не змінилась. Окремо: createAgentRoute не вимагає application/json і same-origin, тож cross-site запит з text/plain теж може запустити агента. Рекомендація та сама: autorun — через внутрішній стан навігації; в API — перевірка Content-Type і Origin або Sec-Fetch-Site."
+    },
+    {
+      "severity": "low",
+      "title": "clarification вставляється в user message без розмежувачів (без змін)",
+      "file": "src/server/agents/decompose/decomposeAgent.ts",
+      "line": 82,
+      "detail": "Лишається з попереднього звіту; рядок зсунувся з 69 на 82. Сирий текст до 1000 символів із переносами рядків іде прямо в user message, а DATA_POLICY його не покриває. Вплив малий: текст пише сам користувач, вихід проходить strict-схему + factCheck, запис можливий лише після «Створити». Рекомендація: JSON.stringify(clarification) або теги <clarification>…</clarification> + фраза в DATA_POLICY."
+    },
+    {
+      "severity": "low",
+      "title": "taskId без max; неіснуючий id дає error-стрім замість 404 (без змін)",
+      "file": "src/entities/agentRun/model/decomposition.ts",
+      "line": 44,
+      "detail": "Лишається з попереднього звіту. Для taskId задано лише z.string().min(1). Неіснуючий id відсікає FK ще до виклику моделі, але відповідь — HTTP 200 з error-стрімом і log.error. Рекомендація: .max(64) і перевірка, що задача існує, до відкриття стріму (404 у форматі { error })."
+    }
+  ]
+}

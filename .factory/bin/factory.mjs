@@ -15,7 +15,8 @@ const HELP = `Команди:
                                          оцінити складність (потрібен task-plans/<ID>.md), обрати tier/модель
   transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
   verify <ID> [--full]                   typecheck/lint/unit + AC traceability (+e2e з --full), записати evidence
-  record <ID> <review|codex|security|qa> <file.json>    записати звіт агента
+  record <ID> <review|codex|codex-fallback|security|qa> <file.json>    записати звіт агента (codex-fallback — резервне рев'ю тієї ж сім'ї, лише коли codex недоступний)
+  override <ID> <fast|balanced|strong> <причина...>   явне рішення користувача про tier (бали й план не змінюються; classify скидає)
   escalate <ID> <причина...>             підвищити модель developer (tier і рівень рев'ю не змінюються)
   line [ID]                              один рядок статусу (між етапами замість report)
   resume [ID]                            відновити задачу: модель за балами, наступна дія з gates, чи можна продовжувати
@@ -70,9 +71,11 @@ const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify (ко�
 function line(t, cfg) {
   const tier = core.effectiveTier(t);
   const impl = core.implementer(t);
-  const rev = tier ? core.requiredReviewModel(cfg, t) : null;
+  const rev = tier ? (core.codexReviewFallback(cfg, t) ? 'codex' : core.requiredReviewModel(cfg, t)) : null;
   const lastReview = [...t.history].reverse().find((e) => e.event === 'review' && e.model);
-  const confirmed = rev && lastReview && core.modelRank(lastReview.model) >= core.modelRank(rev);
+  const confirmed = rev && lastReview && (rev === 'codex'
+    ? lastReview.model === 'codex'
+    : core.modelRank(lastReview.model) >= core.modelRank(rev));
   const legacy = t.tier && tier && t.tier !== tier ? ` (збережений ${t.tier} — стара ескалація, на рев'ю не впливає)` : '';
   return [
     t.id, t.status,
@@ -109,8 +112,9 @@ function deriveNext(t, cfg, tree = core.treeHash(root)) {
       return `${who} продовжує реалізацію і тести на кожен AC → verify ${id}`;
     case 'REVIEWING': {
       const todo = [];
-      if (g.review.pending) todo.push(/codex/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
-      if (g.security.pending) todo.push('security (opus)');
+      const fallback = core.codexReviewFallback(cfg, t, tree);
+      if (g.review.pending) todo.push(fallback ? 'reviewer (codex)' : /друге рев'ю/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
+      if (g.security.pending) todo.push(fallback ? 'security (codex)' : 'security (opus)');
       if (todo.length) return `${todo.join(' + ')} для одного хешу${t.reviewTree ? ` ${t.reviewTree.slice(0, 10)}` : ''}, дочекайся всіх → record ${id} …`;
       const failing = ['review', 'security'].filter((k) => !g[k].ok);
       if (failing.length) return `transition ${id} IMPLEMENTING → ${who} виправляє findings (${failing.join(' + ')}) одним пакетом, потім verify ${id}`;
@@ -192,7 +196,7 @@ function metrics(t) {
   const h = t.history;
   const reworks = h.filter((e) => e.event === 'transition' && e.to === 'IMPLEMENTING' && e.from !== 'AWAITING_APPROVAL' && e.from !== 'PLANNING').length;
   const failedVerify = h.filter((e) => (e.event === 'verify' || e.event === 'tests') && e.ok === false).length;
-  const blockingReviews = h.filter((e) => ['review', 'codex', 'security', 'qa'].includes(e.event) && e.blocking > 0).length;
+  const blockingReviews = h.filter((e) => ['review', 'codex', 'codex-fallback', 'security', 'qa'].includes(e.event) && e.blocking > 0).length;
   const started = h.find((e) => e.event === 'transition' && e.to === 'DISCOVERY')?.at;
   const pr = h.find((e) => e.event === 'pr')?.at;
   const hours = started && pr ? Math.round(((new Date(pr) - new Date(started)) / 36e5) * 10) / 10 : null;
@@ -270,6 +274,7 @@ const commands = {
       const t = core.getTask(s, id);
       if (t.status !== 'PLANNING') fail(`класифікація можлива лише в PLANNING (зараз ${t.status})`);
       if (!fs.existsSync(core.planFile(root, id))) fail(`немає плану .factory/task-plans/${id}.md`);
+      delete t.tierOverride;
       Object.assign(t, { scores, tier: c.tier, model: core.TIER_MODEL[c.tier], securityRequired: c.securityRequired });
       t.lastFailure = null;
       core.pushHistory(t, { event: 'classified', note: `сума ${c.sum} → ${c.tier}` });
@@ -278,6 +283,22 @@ const commands = {
     const cfg = core.loadConfig(root);
     const t = core.getTask(core.loadState(root), id);
     console.log(JSON.stringify({ id, ...c, developerModel: core.TIER_MODEL[c.tier], reviewModel: core.requiredReviewModel(cfg, t) }, null, 2));
+    console.log(line(t, cfg));
+  },
+
+  override([id, tier, ...reason]) {
+    if (!id || !core.TIER_MODEL[tier] || !reason.join(' ').trim()) fail('override <ID> <fast|balanced|strong> <причина — рішення користувача, з його слів>');
+    withState((s) => {
+      const t = core.getTask(s, id);
+      if (t.status === 'COMPLETED') fail('задача вже завершена');
+      t.tierOverride = { tier, reason: reason.join(' ').trim(), at: new Date().toISOString() };
+      t.tier = tier; t.model = core.TIER_MODEL[tier];
+      core.pushHistory(t, { event: 'tierOverride', note: `tier → ${tier} (бали лишаються: ${core.tierFromScores(t.scores ?? {})}): ${t.tierOverride.reason}` });
+      t.nextAction = deriveNext(t, core.loadConfig(root));
+    });
+    const cfg = core.loadConfig(root);
+    const t = core.getTask(core.loadState(root), id);
+    ok(`${id}: tier ${tier} за рішенням користувача; реалізація ${core.implementer(t).who} (${core.effectiveModel(t)}), рев'ю ${core.requiredReviewModel(cfg, t)}, security ${t.securityRequired ? 'лишається обов\'язковим' : 'не потрібен'}`);
     console.log(line(t, cfg));
   },
 
@@ -342,25 +363,38 @@ const commands = {
   },
 
   record([id, kind, file]) {
-    if (!['review', 'codex', 'security', 'qa'].includes(kind)) fail('kind: review | codex | security | qa');
+    if (!['review', 'codex', 'codex-fallback', 'security', 'qa'].includes(kind)) fail('kind: review | codex | codex-fallback | security | qa');
     if (!file || !fs.existsSync(file)) fail('потрібен шлях до JSON-звіту');
     const cfg = core.loadConfig(root);
     const report = core.readJson(file);
     const errors = core.validateFindingsReport(report);
     if (errors.length) fail(`звіт невалідний:\n- ${errors.join('\n- ')}`);
     if (kind === 'codex' && report.agent !== 'codex') fail('звіт codex має мати agent: "codex"');
+    if (kind === 'codex-fallback') {
+      const fallback = cfg.crossFamilyReview?.fallback;
+      if (!fallback?.enabled) fail('резервне рев\'ю вимкнене в crossFamilyReview.fallback');
+      if (report.agent !== 'reviewer') fail('звіт codex-fallback має мати agent: "reviewer" (незалежне рев\'ю у свіжому контексті)');
+      if (typeof report.fallbackReason !== 'string' || !report.fallbackReason.trim()) fail('звіт codex-fallback потребує непорожнього "fallbackReason": чому codex недоступний (квота, auth, немає CLI) — з виводу codex, не вигадка');
+      if (core.modelRank(report.model) < core.modelRank(fallback.minModel)) fail(`резервне рев'ю має працювати щонайменше на ${fallback.minModel} (отримано ${report.model})`);
+    }
     const task = core.getTask(core.loadState(root), id);
-    if (kind === 'review') {
+    const tree = core.treeHash(root);
+    const codexFallback = core.acceptsCodexReview(cfg, task, tree, kind, report);
+    if ((kind === 'review' || kind === 'security') && report.model === 'codex' && !codexFallback) {
+      fail(`Codex не погоджено для ${kind} ${id} на поточному дереві або роль звіту не відповідає етапу`);
+    }
+    if (kind === 'review' && !codexFallback) {
       const need = core.requiredReviewModel(cfg, task);
       if (core.modelRank(report.model) < core.modelRank(need)) fail(`reviewer для tier ${core.effectiveTier(task)}${core.elevatedRisk(task) ? ' (підвищений ризик)' : ''} має працювати щонайменше на ${need} (отримано ${report.model})`);
     }
-    if (kind === 'security' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
-    const tree = core.treeHash(root);
+    if (kind === 'security' && !codexFallback && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
     if (kind !== 'qa') {
       if (task.status !== 'REVIEWING') fail(`звіт ${kind} записується лише в REVIEWING (зараз ${task.status})`);
       if (task.reviewTree && task.reviewTree !== tree) fail(`звіт ${kind} відхилено: код змінився після початку рев'ю (було ${task.reviewTree.slice(0, 10)}, зараз ${tree.slice(0, 10)}). Звіти рахуються лише для зафіксованого хешу — поверни задачу в IMPLEMENTING, перевір новий хеш (verify) і повтори рев'ю.`);
     }
-    const ev = core.writeEvidence(root, id, tree, kind, report);
+    const ev = core.writeEvidence(root, id, tree, kind, codexFallback
+      ? { ...report, fallbackReason: core.codexReviewFallback(cfg, task, tree).reason }
+      : report);
     const blocking = core.blockingFindings(report);
     let escalation = null;
     withState((s) => {

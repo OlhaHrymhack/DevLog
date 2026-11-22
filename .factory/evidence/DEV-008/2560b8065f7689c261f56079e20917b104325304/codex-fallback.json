@@ -1,0 +1,61 @@
+{
+  "taskId": "DEV-008",
+  "kind": "codex-fallback",
+  "tree": "2560b8065f7689c261f56079e20917b104325304",
+  "at": "2026-11-22T16:51:05.065Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "Резервне рев'ю DEV-008 (хеш коду 2560b8065f, diff від stage плюс нові файли). 1) Коректність і тести. Цикл runAgent відповідає плану. Ліміт 8 викликів моделі включає повтор і нагадування. Усі tool_call однієї відповіді отримують tool_result зі своїм id. Помилки tools повертаються з is_error, і цикл триває. refusal, max_tokens і end_turn мають окремі причини, для end_turn є одне нагадування. Повтор після відхилення submit_result дозволено один раз, резервний результат проходить ті самі перевірки. Скасування через abortable відкидає пізні результати моделі й tools. finishRun пишеться до єдиної фінальної події, а stream.ts додатково гарантує один фінал. Тести поведінкові й впадуть на зламаному коді: вони перевіряють кількість запитів, порядок кроків у SQLite, id у tool_result, БД після prompt injection, рядки логів, 400 у production і реальний SDK openai з підміненим fetch (maxRetries, Authorization, abort). Кожен AC-1…11 має тест із Task ID. Vitest по зачеплених модулях: 10 файлів, 72 тести, зелені. Блокерів не знайдено. Знахідки нижче: невеликий розрив гарантії «ніколи не кидає» при збої БД у finish і стилістичні дрібниці. 2) Безпека. Ключ береться лише з серверного env, у браузер не потрапляє. Модулі мають server-only, redaction покриває Authorization і apiKey. Логи на рівні info містять лише метадані, а на рівні debug — назви tools і розміри, без промптів і даних. Tools лише читають (allowlist із перевіркою на старті). submit_result проходить Zod і factCheck. Тіло запиту перевіряється strict-схемою до відкриття стріму. debug у production відхиляється з 400. SDK openai@7.62.0 не повторює запити (maxRetries: 0). Ризики DoS: розмір результату list_tasks не обмежений (усі задачі з описами), кількість tool-викликів в одній відповіді не обмежена, немає таймауту на виклик моделі й на весь запуск (дефолт SDK — 10 хв на виклик). Для локального MVP без авторизації це medium. Про minLength: напевно не знаю. Непрямий доказ: у встановленому SDK openai 7.62.0 (lib/transform.js, JSON_SCHEMA_UNSUPPORTED_SCHEMA_KEYWORDS) список непідтримуваних у strict-режимі ключових слів не містить minLength, maxLength, pattern і format. Отже, найімовірніше, API їх приймає. Перевірити це можна лише live-smoke, і його не проводили. Водночас assertStrictCompatible не відсікає справді непідтримувані ключові слова (oneOf, allOf, not, uniqueItems, patternProperties, propertyNames, prefixItems) і не перевіряє, що корінь схеми — object. Для майбутніх агентів DEV-009…012 така помилка проявиться лише в live. Ознак prompt injection у коді й коментарях не знайдено. Не перевіряв: e2e Playwright, next build, lint і typecheck, повний npm test, live-smoke з OPENAI_API_KEY, поведінку request.signal у Next.js при реальному розриві з'єднання.",
+  "fallbackReason": "Codex недоступний: акаунт вичерпав ліміт використання (повідомлення провайдера 2026-11-22, скидання о 8:40 PM); gstack-codex-probe: VERDICT unavailable, REASON quota_exhausted",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Немає обмеження розміру результату tools і кількості tool-викликів у відповіді",
+      "file": "src/server/agents/core/readTools.ts",
+      "line": 21,
+      "detail": "list_tasks повертає всі задачі разом із description без ліміту, а get_task — усі підзадачі й нотатки. runAgent виконує всі toolCalls однієї відповіді без верхньої межі. За 8 кроків вхідний контекст і вартість live-виклику ростуть необмежено: довгі описи можуть бути й навмисно роздутими недовіреними даними. Виправлення: ліміт на кількість задач і обрізання довгих полів у list_tasks, ліміт байтів на content tool-повідомлення (наприклад, 32 КБ з позначкою truncated) і ліміт tool-викликів на одну відповідь (наприклад, 8) з is_error для решти."
+    },
+    {
+      "severity": "medium",
+      "title": "Немає таймауту на виклик моделі й на весь запуск",
+      "file": "src/server/agents/core/openAIClient.ts",
+      "line": 67,
+      "detail": "new OpenAI({ apiKey, maxRetries: 0 }) без timeout: дефолт SDK — 600 с на запит. Загального дедлайну в runAgent теж немає. Завислий провайдер тримає запуск у статусі running і NDJSON-з'єднання відкритим до 8×10 хв, якщо клієнт не натисне «Зупинити». Виправлення: передати timeout (наприклад, 60 с) у SDK або AbortSignal.any([signal, AbortSignal.timeout(...)]) і задати загальний дедлайн запуску з окремою причиною fallback чи error."
+    },
+    {
+      "severity": "medium",
+      "title": "assertStrictCompatible пропускає ключові слова, які strict-режим OpenAI не підтримує",
+      "file": "src/server/agents/core/tools.ts",
+      "line": 18,
+      "detail": "Перевірка контролює лише additionalProperties:false і required. Вона не відсікає oneOf, allOf, not, uniqueItems, patternProperties і propertyNames (z.record), prefixItems чи tuple-items (z.tuple) і не перевіряє, що корінь має type: object. За даними SDK openai 7.62.0 (lib/transform.js), API такі схеми відхиляє. resultSchema агентів DEV-009…012 з z.discriminatedUnion, z.record чи z.intersection пройде demo і тести, але в live кожен запит отримає 400 і впаде в AGENT_ERROR. Щодо minLength: SDK не вважає його непідтримуваним, тож поточний get_task (z.string().min(1)), найімовірніше, коректний, але без live-smoke це не підтверджено. Виправлення: додати denylist ключових слів і перевірку кореня або перевикористати toStrictJsonSchema з SDK, а також провести live-smoke до merge (AC-7)."
+    },
+    {
+      "severity": "low",
+      "title": "Збій БД у finish порушує гарантію «ніколи не кидає»",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 133,
+      "detail": "Якщо runs.finishRun кидає (наприклад, SQLITE_BUSY), виняток ловить catch, який знову викликає finish. finishRun кидає вдруге, і runAgent відхиляє промис. stream.ts надішле error, але запис agent_runs лишиться в статусі running, а інваріант із JSDoc не виконується. createRun на рядку 112 теж стоїть поза try. Виправлення: обгорнути finishRun у try/catch з log.error і все одно надіслати фінальну подію, а для статусу running без finishedAt додати cleanup."
+    },
+    {
+      "severity": "low",
+      "title": "Текст будь-якого винятку tool іде моделі й у трасу",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 66,
+      "detail": "describeToolError повертає error.message для будь-якого Error, зокрема внутрішніх помилок SQLite чи Drizzle з фрагментами SQL і шляхами. Користувачу це не видно, але потрапляє в промпт провайдера і в agent_steps.payload. Виправлення: показувати текст лише для очікуваних помилок (ZodError, NotFoundError, AppError), а для решти — загальне «Інструмент завершився помилкою» і log.error з errorName."
+    },
+    {
+      "severity": "low",
+      "title": "Довільні рядки від моделі пишуться в трасу і debug-лог без обмеження довжини",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 193,
+      "detail": "call.name обрізано лише в detail. У payload.name, у тексті помилки «Невідомий інструмент «...»» і в log.debug назва потрапляє повністю, як і сирі невалідні аргументи. Обсяг обмежений max_completion_tokens 2048, тому ризик низький. Виправлення: обрізати name і raw arguments у payload і в лозі."
+    },
+    {
+      "severity": "low",
+      "title": "Логіка й інлайнові стилі в компоненті AgentRunDemo",
+      "file": "src/views/uiKit/ui/AgentRunDemo/index.tsx",
+      "line": 7,
+      "detail": "Константа DECIDED і перевірка статусу живуть у компоненті, класи flex gap-2 і m-0 text-sm text-fg-muted написані інлайном. Та сама перевірка «result | clarify | fallback» дублюється в useAgentRun.markApplied. За code-style.md логіку варто винести в model або lib (наприклад, isAgentRunDecided в entities/agentRun), а стилі — у styles.ts. Крім того, поза Playwright кнопка в UI Kit робить POST на неіснуючий /api/agents/prioritize і показує error. Це очікувано, але варто підписати."
+    }
+  ]
+}

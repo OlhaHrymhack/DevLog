@@ -1,0 +1,44 @@
+{
+  "taskId": "DEV-009",
+  "kind": "tests",
+  "tree": "adb2f45a8342426c0626f02a9a9a6f74a891cec1",
+  "at": "2026-11-22T19:11:27.850Z",
+  "ok": false,
+  "failed": [
+    "test(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1741,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3751,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 4696,
+      "output": "{\"level\":30,\"time\":1795374636543,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"7cdbb503-b83f-4694-a6ef-b80e0ddb1ff4\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636573,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"715e4dd4-e333-4e65-9e84-437cca3e1e0f\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636581,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"541b3938-8f82-4fa6-b595-5792331887d6\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636586,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"e0a00961-2e49-4897-83e3-0158a22d4f71\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":404,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636586,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"583e60f4-e30a-4745-913c-dbdf97cf80e7\",\"method\":\"POST\",\"path\":\"/x\",\"status\":403,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636586,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"181d0251-1436-4ea3-a816-e20a77ccc0c2\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":415,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636586,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"42f02583-767e-48fb-b619-b2e7559aa4cc\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":403,\"durationMs\":0,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636587,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"789758b7-ccaa-4fef-8bf9-b0bb01b369af\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":2,\"msg\":\"Request completed\"}\n{\"level\":50,\"time\":1795374636588,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"dec47cfd-cf7e-4ab9-a584-9bf1687f08e9\",\"path\":\"/api/dev/agent-smoke\",\"frames\":[\"    at createClient (/private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.test.ts:222:59)\",\"    at /private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.ts:99:44\",\"    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\",\"    at /private/tmp/devlog-dev008/src/server/http/handler.ts:28:16\",\"    at async Promise.all (index 5)\",\"    at /private/tmp/devlog-dev008/src/server/agents/smoke/smokeRoute.test.ts:216:23\",\"    at async file:///private/tmp/devlog-dev008/node_modules/.pnpm/vitest@5.1.1_@types+node@22.20.5_jsdom@31.0.1_vite@8.3.8_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_/node_modules/vitest/dist/chunks/run.zBhXlcZQ.js:2864:20\"],\"msg\":\"Request failed\"}\n{\"level\":30,\"time\":1795374636588,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"dec47cfd-cf7e-4ab9-a584-9bf1687f08e9\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":500,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636592,\"pid\":62327,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"80373ad6-50ea-4296-bc0d-adfb2897f466\",\"method\":\"POST\",\"path\":\"/api/dev/agent-smoke\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636807,\"pid\":62333,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"6dc9f012-c16f-4aaa-9561-a7dedbf2e32c\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":7,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636837,\"pid\":62333,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"b21a4555-9fa9-42ad-8127-d4d41a5eda4c\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795374636879,\"pid\":62333,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"9560f1c1-f8cf-468b-946a-e20d7a54aae9\",\"method\":\"POST\",\"path\":\"/api/agents/prioritize\",\"status\":200,\"durationMs\":1,\"msg\":\"Request completed\"}\n\n Test Files  1 failed | 48 passed (49)\n      Tests  1 failed | 298 passed (299)\n   Start at  21:10:33\n   Duration  4.26s (import 52%, environment 21%, tests 18%, transform 8%, worker 1%)\n\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  |node| src/server/agents/prioritize/focus.test.ts > фокус дня після плану агента > DEV-009 AC-4: термінова задача з низьким пріоритетом потрапляє в fallback першою\nAssertionError: expected 't2' to be 'vTsxRfErzHWyQX9W4Ab47' // Object.is equality\n\nExpected: \"vTsxRfErzHWyQX9W4Ab47\"\nReceived: \"t2\"\n\n ❯ src/server/agents/prioritize/focus.test.ts:58:68\n     56|       dueAt: new Date(NOW.getTime() + 3_600_000).toISOString(),\n     57|     }, NOW);\n     58|     expect(rulePlan(repository.listTasks(), NOW).items[0]?.taskId).toB…\n       |                                                                    ^\n     59|   });\n     60| });\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 49705,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nRunning 93 tests using 5 workers\n····················°········°·······°···········°········°·°·············°·····\n·············\n  7 skipped\n  86 passed (49.2s)\n::notice title=🎭 Playwright Run Summary::  7 skipped%0A  86 passed (49.2s)\n[WebServer] .env not found. Continuing without it.\n"
+    }
+  ]
+}

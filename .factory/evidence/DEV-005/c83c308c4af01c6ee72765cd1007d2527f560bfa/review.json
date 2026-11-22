@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-005",
+  "kind": "review",
+  "tree": "c83c308c4af01c6ee72765cd1007d2527f560bfa",
+  "at": "2026-11-22T13:56:14.926Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Блокерів немає. Структуру папок із правила виправлено: кожен компонент лежить у PascalCase-папці з index.tsx, а styles.ts і types.ts є там, де потрібні. Частковий збій лічильників не показує нулі: підсумок \"Не вдалося завантажити\", лічильники в кнопках фільтра приховуються. Контракт health (HealthSchema, satisfies Health) і зарезервовані прапорці DEV-006/DEV-008 відповідають плану. Ревʼю зроблено лише за diff, тести та typecheck я не запускав. Нижче лише дрібні зауваження.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Блимання скелетона при зміні фільтра, сортування чи пошуку",
+      "file": "src/entities/task/api/useTasks.ts",
+      "line": 8,
+      "detail": "Ключ запиту змінюється, а placeholderData не задано. Тому на кожну зміну query (після debounce пошуку теж) `current.isPending` стає true і список замінюється скелетоном. Це дає мерехтіння і втрату позиції скролу. Варто додати `placeholderData: keepPreviousData` для відфільтрованих запитів. Стан loading тоді лишиться лише для першого завантаження."
+    },
+    {
+      "severity": "low",
+      "title": "Значення `now` фіксується на весь час життя сторінки",
+      "file": "src/views/tasksList/ui/TasksListView/index.tsx",
+      "line": 27,
+      "detail": "`useState(() => Date.now())` не оновлюється. У довгій сесії вік задач і температура застарівають, а підсумок \"N гарячі\" може не збігатися з реальністю. Можна оновлювати `now` разом із refetch або за інтервалом."
+    },
+    {
+      "severity": "low",
+      "title": "Props DevStatesPanel оголошені в index.tsx, а не в types.ts",
+      "file": "src/widgets/devStatesPanel/ui/DevStatesPanel/index.tsx",
+      "line": 24,
+      "detail": "Решта компонентів дотримуються схеми index/types/styles. Тут, як і в DemoModeBanner, тип props описано inline. Для узгодженості з code-style.md краще винести його в types.ts."
+    },
+    {
+      "severity": "low",
+      "title": "Позиційний булевий параметр `enabled` у useTasks та useHotkeys",
+      "file": "src/shared/lib/hooks/useHotkeys.ts",
+      "line": 5,
+      "detail": "Виклики `useHotkeys(fn, onNewTask, flag)` і `useTasks(query, !defaultList)` погано читаються. Краще передавати options-обʼєкт."
+    },
+    {
+      "severity": "low",
+      "title": "Форматування Providers у layout.tsx",
+      "file": "src/app/layout.tsx",
+      "line": 35,
+      "detail": "`<Providers>` вставлено в один рядок із `<body>`. Варто перенести на окремі рядки, як в іншому коді."
+    },
+    {
+      "severity": "low",
+      "title": "Playwright: reuseExistingServer: false та хардкод порту 3100",
+      "file": "playwright.config.ts",
+      "line": 26,
+      "detail": "Якщо порт зайнятий (локально або сусідній запуск), webServer впаде з незрозумілою помилкою. Це свідомий компроміс заради ізольованої БД, але його варто описати коментарем. Також `Promise.withResolvers` в e2e потребує Node ≥ 22. Варто зафіксувати це в engines."
+    }
+  ]
+}

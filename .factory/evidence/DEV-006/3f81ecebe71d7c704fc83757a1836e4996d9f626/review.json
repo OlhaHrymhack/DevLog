@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-006",
+  "kind": "review",
+  "tree": "3f81ecebe71d7c704fc83757a1836e4996d9f626",
+  "at": "2026-11-22T14:56:36.845Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Блокерів (critical/high) не знайшов. Реалізація відповідає плану й AC-1…AC-7. Є спільна TaskForm на Zod-схемі, PATCH лише зі змінених полів, захист від подвійного сабміту через ref, а видалення блокується, доки деталі не завантажено й не оновлено. Інструменти читання репозиторію (Grep, Glob) мені заборонені, тому я не зміг перевірити реалізацію `ApiError` і самі тести не запускав. Висновки спираються лише на diff. Нижче medium- і low-зауваження.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Неузгоджений формат details між unit-тестом і e2e-моком",
+      "file": "src/features/taskForm/model/validation.test.ts",
+      "line": 17,
+      "detail": "Unit-тест створює `new ApiError(..., 400, {title:[...]})`, тобто fieldErrors передано напряму. E2E-мок повертає `details: { fieldErrors: { title: [...] } }`. Обидва варіанти зелені лише якщо конструктор приймає fieldErrors, а парсер відповіді витягує `details.fieldErrors`. Перевірте цей парсинг у `shared/api/http`. Краще додати unit-тест на реальний парсинг відповіді сервера (формат `error.details.fieldErrors`), бо інакше AC-3 перевіряється лише через мок."
+    },
+    {
+      "severity": "medium",
+      "title": "Patch порівнює обрізані значення з необрізаними початковими",
+      "file": "src/features/taskEdit/model/taskPatch.ts",
+      "line": 6,
+      "detail": "`validateTaskForm` обрізає пробіли, а `dialog.task.title/description` береться як є. Якщо в БД зберігся текст із пробілами по краях, відкриття й збереження без змін надішле PATCH і покаже тост «Зміни збережено». Нормалізуйте `before` тією ж схемою або порівнюйте обрізані значення."
+    },
+    {
+      "severity": "low",
+      "title": "Редагування працює зі знімком рядка на момент відкриття",
+      "file": "src/views/tasksList/ui/TaskDialogs/index.tsx",
+      "line": 24,
+      "detail": "`dialog.task` — знімок. Якщо задачу змінили деінде, тост про «гарячу» задачу (`getHeat(before)`) і diff ґрунтуються на застарілих даних. Для MVP прийнятно, але це варто задокументувати."
+    },
+    {
+      "severity": "low",
+      "title": "Фокус після видалення залежить від tabindex у #main",
+      "file": "src/views/tasksList/ui/TaskDialogs/index.tsx",
+      "line": 9,
+      "detail": "`focusTaskList` повертає `#main`. Фокус працює, лише якщо в `main` є `tabIndex={-1}`. E2E це покриває, але залежність неявна: додайте коментар або константу біля розмітки main."
+    },
+    {
+      "severity": "low",
+      "title": "Неточний коментар про e2e-проєкт",
+      "file": "playwright.config.ts",
+      "line": 47,
+      "detail": "Проєкт `crud` залежить від трьох інших проєктів. Якщо хоч один із них упаде, CRUD-тести пропустяться без явного сигналу. Це лише ризик для діагностики, а не помилка."
+    }
+  ]
+}

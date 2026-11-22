@@ -81,7 +81,7 @@ const eslintConfig = defineConfig([
             },
             {
               from: { file: { categories: "instrumentation" } },
-              allow: [TO_SHARED],
+              allow: [TO_SHARED, { to: { element: { type: "server", fileInternalPath: "db/client.ts" } } }],
             },
             {
               from: { element: { type: "api" } },

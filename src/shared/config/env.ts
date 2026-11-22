@@ -5,6 +5,10 @@ const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace", "silent"
 
 const aiModeSchema = z.enum(["live", "demo"]);
 
+/** Межі лімітів збігаються з продуктовими значеннями D-029 (`MAX_AGENT_STEPS`, `MAX_COMPLETION_TOKENS`); тест їх звіряє. */
+export const AGENT_MAX_STEPS_BOUNDS = { min: 1, max: 8 } as const;
+export const OPENAI_MAX_OUTPUT_TOKENS_BOUNDS = { min: 64, max: 2048 } as const;
+
 export type AiMode = z.infer<typeof aiModeSchema>;
 
 const emptyToUndefined = (value: unknown): unknown => {
@@ -12,16 +16,22 @@ const emptyToUndefined = (value: unknown): unknown => {
 };
 
 export const serverEnvSchema = z.object({
-  ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  ANTHROPIC_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
+  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  OPENAI_MODEL: z.preprocess(emptyToUndefined, z.string().default("gpt-4.1-mini")),
   DATABASE_URL: z.preprocess(emptyToUndefined, z.string().default("file:./data/devlog.db")),
   LOG_LEVEL: z.preprocess(emptyToUndefined, z.enum(LOG_LEVELS).default("info")),
   AI_MODE: z.preprocess(emptyToUndefined, aiModeSchema.optional()),
+  AGENT_MAX_STEPS: z.preprocess(emptyToUndefined, z.coerce.number().int()
+    .min(AGENT_MAX_STEPS_BOUNDS.min).max(AGENT_MAX_STEPS_BOUNDS.max).default(AGENT_MAX_STEPS_BOUNDS.max)),
+  OPENAI_MAX_OUTPUT_TOKENS: z.preprocess(emptyToUndefined, z.coerce.number().int()
+    .min(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.min).max(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.max).default(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.max)),
+  /** `1` вмикає dev-only маршрут платного smoke-запиту; у production маршрут завжди 404. */
+  AI_SMOKE: z.preprocess(emptyToUndefined, z.enum(["0", "1"]).optional()),
 }).superRefine((env, ctx) => {
-  if (env.AI_MODE === "live" && !env.ANTHROPIC_API_KEY) {
+  if (env.AI_MODE === "live" && !env.OPENAI_API_KEY) {
     ctx.addIssue({
       code: "custom",
-      path: ["ANTHROPIC_API_KEY"],
+      path: ["OPENAI_API_KEY"],
       message: "required when AI_MODE forces live mode",
     });
   }
@@ -38,7 +48,7 @@ export const parseServerEnv = (source: Record<string, string | undefined>): Serv
     throw new Error(`Invalid server env: ${problems}`);
   }
   const env = result.data;
-  const aiMode: AiMode = env.AI_MODE ?? (env.ANTHROPIC_API_KEY ? "live" : "demo");
+  const aiMode: AiMode = env.AI_MODE ?? (env.OPENAI_API_KEY ? "live" : "demo");
   return { ...env, aiMode };
 };
 

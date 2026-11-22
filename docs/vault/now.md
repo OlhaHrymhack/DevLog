@@ -3,33 +3,25 @@ tags: [now]
 ---
 # Зараз (короткий зріз, ≤ 40 рядків, перезаписується)
 
-Оновлено: 2026-11-22.
+Оновлено: 2026-11-23.
 
 ## Стан
-- Код застосунку є: Next.js App Router + TS strict, Tailwind v4 + shadcn, Vitest, Playwright, стайл-гайд D-013 / D-023 — [[architecture/factory]].
-- **DEV-001 Каркас** — PR #9 (стан фабрики: READY_FOR_PR, запис переходу в COMPLETED відсутній — уточнити).
-- **DEV-002 UI Kit** — COMPLETED. Токени, shadcn-компоненти, `entities/task` і `entities/agentRun`, `themeToggle`, `/ui-kit` (404 у production) — [[features/ui-kit]].
-- **DEV-014 Конвенції коду** — COMPLETED, PR #12. Стрілкові `const`, shadcn у PascalCase-папках — D-023.
-- Метрики DEV-002: reworkCycles 1, failedVerify 0, blockingReviews 0, ~0.4 год до PR (`factory metrics DEV-002`).
+- Фабрика готова: PR-only workflow, guard-log — [[architecture/factory]], [[decisions]] D-011, D-012, D-027, D-028.
+- **Продукт — [[product]]:** скоуп MVP, R-01…21, TC-01…75. Специфікації — [[specs/README]].
+- Змерджено задачі застосунку, зокрема DEV-008 (ядро агентів, D-029), DEV-015 (ліміти й dev-smoke, D-030) і DEV-009 (агент A «План на день», D-031).
+- DEV-002 UI Kit і DEV-014 Конвенції коду увійшли в PR #12. Токени, тема й сторінка `/ui-kit` описані в [[features/ui-kit]], рішення про шрифти, тему й tooltip — D-025.
+- Агент A описаний у [[features/dayPlan]].
 
 ## PR
-- Змерджено: #9 (DEV-001), #12 (DEV-014, разом з DEV-002 за словами користувачки), #13 (повторне рев'ю фабрики, D-024).
-- DEV-002 увійшов у змерджений PR #12 (разом з DEV-014); PR #11 лишається відкритим — його можна закрити без merge.
-
-## Рішення останнього часу
-- D-022: Tailwind v4 CSS-тема, власна `Button`, `sonner` без `next-themes` (DEV-002).
-- D-023: стрілкові `const`, shadcn-компоненти в `PascalCase/index.tsx` (DEV-014).
-- D-024: повторне рев'ю після ребейзу, `COMPLETED → REVIEWING` лише при зміні коду.
-- D-025: Inter 700 за специфікацією, тема інлайн-скриптом у `<head>`, тач-tooltip у контрольованому режимі (DEV-002).
+- Змерджено в `stage`: #24 (DEV-015), #25–29 (функції агентів і документація DEV-009), #30 (DEV-013, README і перевірка з чистого клону).
+- Документація DEV-002: PR #14.
 
 ## Далі
-1. `/factory DEV-003` «Шар даних» (BACKLOG) від актуального `stage` — спека [[specs/DEV-003]], план → `APPROVE DEV-003`.
-2. Потім DEV-004 «API задач» (спека [[specs/DEV-004]]).
+1. Для здачі авторка готує `AGENT_LOG.md` і розділ README «Рішення і компроміси».
 
 ## Відкрите
-- DEV-001: стан фабрики READY_FOR_PR, перехід у COMPLETED не записано. Звірити з GitHub і виправити стан через CLI.
-- Закрити застарілий PR #11 (рішення користувачки).
-- Ручна QA DEV-002: AA-контраст і звірка з прототипом (AC-7), tooltip на тач на 375. Автотестів на це немає.
-- `next build` потребує мережі для Google Fonts. CI має мати доступ.
-- Хибне спрацювання guard на слово «secrets» — рішення за користувачкою (`errors/2026-11-21-guard-false-positive-word-secrets.md`).
-- Текст ТЗ (PDF) лежить поза репо; субагенти бачать його через [[product]].
+- Рішення користувачки: порядок fallback (urgent-first) розходиться зі спекою DEV-009 і копією в UI.
+- Follow-up DEV-009: CSRF/Origin на `/api/agents/*`, `FACTOR_PATTERN` (підрядки), `list_active_tasks` без `truncated`, текст fallback не залежить від причини.
+- Кандидат на маленьку задачу: зрозуміле повідомлення smoke на порожній БД ([[errors/2026-11-22-dev009-fallback-invalid]]).
+- Хибне спрацювання guard на слово «secrets» (`errors/2026-11-21-guard-false-positive-word-secrets.md`).
+- Живий smoke (TC-28) виконує користувачка вручну.

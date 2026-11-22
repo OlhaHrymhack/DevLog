@@ -1,0 +1,18 @@
+{
+  "taskId": "DEV-015",
+  "kind": "security",
+  "tree": "8ca187285d2b7d25baacaf1bcace2e1aca41e0db",
+  "at": "2026-11-22T18:40:16.336Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Підтверджувальний прохід DEV-015 (дерево 8ca187285d), статичний аналіз вручну. /cso не запускався, Docker немає, платних запитів не було. git status і git diff --cached --stat: pnpm-lock.yaml і pnpm-workspace.yaml прибрано, .gitignore без змін, шаблон data/*.db* на місці (рядок 21). git check-ignore покриває і data/smoke-token.db-secret, і *.tmp. У staged лише файли DEV-015 (19 файлів), unstaged — лише .factory/*. Копій попереднього дерева в мене немає, тож порівняння було змістовне, не побайтове. Ключові місця smokeRoute.ts, smokeToken.ts, runSmokeCli.ts, env.ts і package.json (лише скрипт smoke:ai, без нових залежностей) збігаються з тим, що я перевіряв у попередньому проході: перевірки Host/Origin/Sec-Fetch-Site і токена перед тілом запиту, формат токена з обох боків перед timingSafeEqual, O_NOFOLLOW і fstat, атомарне створення через link, синхронний busy, валідація PORT, обмеження env. Блокерів немає. Лишається одна некритична low з попереднього проходу.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Запис і видалення тимчасового файлу на кожен запит, що пройшов перевірку Host, до перевірки токена (без змін з попереднього проходу)",
+      "file": "src/server/agents/smoke/smokeToken.ts",
+      "line": 57,
+      "detail": "ensureSmokeToken щоразу викликає createTokenFile, навіть якщо файл уже існує. Маршрут викликає expectedToken() до порівняння токена, тож клієнт із LAN із підміненим Host (за AI_SMOKE=1) без токена спричиняє дрібні записи на диск. Обходу і витоку немає. Виправлення: спершу читати файл і створювати лише на ENOENT. Інформаційно, як і раніше: аварійне завершення між link і rm лишає .tmp-hardlink на токен (права 0600, під .gitignore); на ФС без hardlink smoke завершується з 500 (fail closed)."
+    }
+  ]
+}

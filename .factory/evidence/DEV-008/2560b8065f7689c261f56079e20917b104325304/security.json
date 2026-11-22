@@ -1,0 +1,83 @@
+{
+  "taskId": "DEV-008",
+  "kind": "security",
+  "tree": "2560b8065f7689c261f56079e20917b104325304",
+  "at": "2026-11-22T16:33:29.303Z",
+  "agent": "security",
+  "model": "opus",
+  "verdict": "pass",
+  "codeHash": "2560b8065f",
+  "summary": "Gate 4 DEV-008: статичний ручний аналіз (gstack /cso не запускався: рев'ю read-only, а /cso пише артефакти й міг би змінити tree hash; Docker/динамічні перевірки не виконувались). npm audit --omit=dev: 0 вразливостей; openai@7.62.0 потрібна для live-адаптера. AC-10 виконано: OPENAI_API_KEY лише в server-only env/OpenAIClient, у браузер не потрапляє (server-only імпорти), логи містять лише метадані (kind, runId, mode, modelCalls, status, розміри в байтах на debug, errorName на error), redaction покриває authorization і Authorization до глибини 3; помилки клієнту — узагальнені (AGENT_ERROR, INTERNAL_ERROR). Tools лише читання через TaskReader + allowlist імен, submit_result проходить Zod + factCheck, тест на prompt injection є. Тіло POST валідується строгою схемою до відкриття стріму; debug у production відхиляється (400, є тест). Critical/high немає; є medium/low щодо витрат і стійкості live-режиму.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Немає ліміту кількості tool-викликів за одну відповідь і розміру результату tool",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 231,
+      "detail": "Сценарій: модель (зокрема через prompt injection у тексті задачі) повертає десятки паралельних list_tasks/get_task в одному ході; кожен результат (повний список задач без ліміту, readTools.ts:21) додається в messages і пересилається моделі на кожному з наступних до 8 викликів. maxSteps обмежує лише кількість викликів моделі, а MAX_COMPLETION_TOKENS лише output; input-токени необмежені, що множить вартість live-запуску. Рекомендація: обмежити tool calls на хід (напр. 5, решта is_error), обрізати/лімітувати розмір tool output (байти або кількість задач), за потреби parallel_tool_calls:false."
+    },
+    {
+      "severity": "low",
+      "title": "Немає таймауту виклику моделі й загального дедлайну запуску",
+      "file": "src/server/agents/core/openAIClient.ts",
+      "line": 67,
+      "detail": "new OpenAI({ apiKey, maxRetries: 0 }) без timeout — діє дефолт SDK 10 хвилин на запит; при 8 кроках запуск і стрім можуть висіти до ~80 хв, якщо клієнт не натисне «Стоп» або з'єднання не розірветься. Рекомендація: timeout на клієнті (напр. 60 с) і загальний дедлайн запуску через AbortSignal.any([signal, AbortSignal.timeout(...)]) з фіналом fallback/error."
+    },
+    {
+      "severity": "low",
+      "title": "Cross-site POST без preflight може запустити live-агента (витрати)",
+      "file": "src/server/http/handler.ts",
+      "line": 8,
+      "detail": "readJson викликає request.json() без перевірки Content-Type/Origin. Сторінка будь-якого сайту може надіслати fetch/form з Content-Type text/plain і JSON-тілом на localhost — це simple request без CORS preflight, тіло пройде схему, запуск піде в OpenAI коштом ключа (відповідь атакувальник не прочитає). Та сама проблема вже існує для POST /api/tasks (створення задач) — поза скоупом DEV-008. Рекомендація: у withHandler/readJson вимагати application/json (415 інакше) і/або перевіряти Origin/Sec-Fetch-Site для мутуючих і agent-маршрутів."
+    },
+    {
+      "severity": "low",
+      "title": "Немає ліміту розміру тіла POST",
+      "file": "src/server/http/handler.ts",
+      "line": 8,
+      "detail": "request.json() читає тіло повністю без обмеження; Route Handlers App Router не мають дефолтного bodyParser-ліміту. Великий запит займає пам'ять до Zod-валідації. Рекомендація: перевіряти Content-Length / читати з лімітом (напр. 64 КБ) → 413; у inputSchema агентів (DEV-009…012) задавати max довжини рядків."
+    },
+    {
+      "severity": "low",
+      "title": "Запуск може лишитися незакритим, а збій — без логу",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 112,
+      "detail": "runs.createRun викликається поза try, а runs.finishRun у finish (рядок 133) кидає назовні з catch-гілки (повторний finish теж падає). Тоді stream.ts:47 ковтає виняток і емітить error без жодного логу; при збої finishRun запис agent_runs лишається в стані running назавжди. Рекомендація: логувати error (лише errorName) у stream.ts catch; finishRun обгорнути так, щоб фінальна подія і лог були навіть при збої БД; за потреби — прибирання «завислих» running при старті."
+    },
+    {
+      "severity": "low",
+      "title": "Ім'я невідомого tool від моделі потрапляє в UI без обрізання",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 234,
+      "detail": "usedTools.add(registry.get(call.name)?.label ?? call.name) → detail події step (рядок 271) іде в браузер; у trace detail обрізано до 64 символів, а тут ні. Через injection модель може показати довільний текст у прогресі (спуфінг на кшталт «Ключ недійсний, введіть...»). XSS немає (React екранує, dangerouslySetInnerHTML у змінах відсутній). Рекомендація: для невідомих tools показувати фіксовану мітку «Невідомий інструмент» або обрізати і не додавати в detail."
+    },
+    {
+      "severity": "low",
+      "title": "Текст довільних винятків tool передається моделі й у trace",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 66,
+      "detail": "describeToolError повертає error.message будь-якої помилки (напр. SQLite/Drizzle з фрагментами SQL або шляхів) у tool_result → у запит до OpenAI і в agent_steps.payload. Клієнту не йде. Рекомендація: передавати message лише для AppError/NotFoundError/ZodError, інакше — узагальнений текст."
+    },
+    {
+      "severity": "low",
+      "title": "Allowlist tools перевіряє лише ім'я, не можливості",
+      "file": "src/server/agents/core/tools.ts",
+      "line": 65,
+      "detail": "createToolRegistry пропускає будь-який AgentTool з іменем list_tasks/get_task; read-only гарантується типом AgentContext (TaskReader) і рев'ю, а не runtime. Сьогодні коректно (createAgentContext віддає лише listTasks/getTask). Рекомендація: реєструвати агентам лише екземпляри з READ_TOOLS (перевірка за ідентичністю об'єкта), а не за ім'ям."
+    },
+    {
+      "severity": "low",
+      "title": "Заборона debug залежить від NODE_ENV у рантаймі",
+      "file": "src/server/agents/core/agentRoute.ts",
+      "line": 35,
+      "detail": "Якщо production-сервер запущено без NODE_ENV=production, поле debug.forceInvalidOutput приймається. Вплив мінімальний (лише примусовий fallback власного запуску, без змін даних). Рекомендація: лишити як є або явний прапорець; задокументувати."
+    },
+    {
+      "severity": "low",
+      "title": "agent_steps.payload зберігає повні аргументи й результати tools",
+      "file": "src/server/agents/core/runAgent.ts",
+      "line": 193,
+      "detail": "У БД пишуться повні дані задач (описи, нотатки) і сирі аргументи моделі. Це trace за специфікацією і не лог, але майбутній GET-ендпоінт trace (AgentTrace) має віддавати його лише в межах того ж користувача і не логувати на info. Інформаційно, дій зараз не потрібно."
+    }
+  ]
+}

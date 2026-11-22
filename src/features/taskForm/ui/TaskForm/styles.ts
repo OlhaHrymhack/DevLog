@@ -1,0 +1,10 @@
+export const formStyles = "grid gap-4";
+export const fieldStyles = "grid min-w-0 gap-1.5";
+export const labelStyles = "text-sm font-medium text-fg-strong";
+export const inputStyles = "min-h-11 border-border bg-bg/40 md:min-h-10";
+export const descriptionStyles = "min-h-[100px] resize-y border-border bg-bg/40";
+export const errorStyles = "text-sm text-danger-text";
+export const hintStyles = "text-xs text-ai";
+export const noteStyles = "text-xs text-fg-muted";
+export const groupStyles = "flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-border bg-bg/30 p-1 aria-invalid:border-danger";
+export const optionStyles = "inline-flex min-h-11 cursor-pointer items-center rounded-md px-3 text-sm text-fg-muted hover:bg-surface-raised peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-focus peer-disabled:cursor-not-allowed md:min-h-9";

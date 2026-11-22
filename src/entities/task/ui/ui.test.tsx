@@ -19,8 +19,9 @@ const makeTask = (overrides: Partial<TaskRowData> = {}): TaskRowData => {
     description: "RSS воркера росте на 40 МБ/год.",
     status: "in-progress",
     priority: "high",
-    createdAt: NOW - 6 * DAY,
-    updatedAt: NOW - 5 * DAY,
+    createdAt: new Date(NOW - 6 * DAY).toISOString(),
+    updatedAt: new Date(NOW - 5 * DAY).toISOString(),
+    dueAt: null,
     ...overrides,
   };
 };
@@ -130,7 +131,7 @@ describe("TaskRow", () => {
     expect(screen.getByRole("link").className).toContain("line-through");
     expect(container.querySelector("[data-slot=task-row]")?.getAttribute("data-heat")).toBe("done");
 
-    rerender(<TaskRow task={makeTask({ dueAt: NOW + 20 * 3_600_000 })} now={NOW} onEdit={vi.fn()} onDelete={vi.fn()} />);
+    rerender(<TaskRow task={makeTask({ dueAt: new Date(NOW + 20 * 3_600_000).toISOString() })} now={NOW} onEdit={vi.fn()} onDelete={vi.fn()} />);
     expect(container.querySelector("[data-slot=task-row]")?.getAttribute("data-heat")).toBe("alarm");
   });
 

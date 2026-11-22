@@ -52,7 +52,10 @@ export function tierFromScores(scores) {
  * Tier ризику — завжди з балів classify. Стара фабрика підвищувала task.tier після провалів;
  * таке підвищення не має визначати рівень рев'ю, QA чи codex (D-017).
  */
-export function effectiveTier(task) { return task.scores ? tierFromScores(task.scores) : task.tier; }
+export function effectiveTier(task) {
+  if (task.tierOverride?.tier) return task.tierOverride.tier;
+  return task.scores ? tierFromScores(task.scores) : task.tier;
+}
 
 /** Підвищений ризик усередині balanced: security/integrations ≥ 1 або criticality = 2. */
 export function elevatedRisk(task) {
@@ -64,8 +67,21 @@ export function elevatedRisk(task) {
 export function requiredReviewModel(cfg, task) {
   const tier = task ? effectiveTier(task) : 'strong';
   const m = cfg.reviewModel ?? {};
+  if (task?.tierOverride) return m[tier] ?? 'opus';
   if (tier === 'balanced' && elevatedRisk(task)) return m.balancedElevated ?? 'opus';
   return m[tier] ?? 'opus';
+}
+
+export function codexReviewFallback(cfg, task, tree = task.reviewTree) {
+  const cross = cfg.crossFamilyReview;
+  if (cross?.enabled && cross.tiers.includes(effectiveTier(task))) return null;
+  const fallback = cfg.codexReviewFallbacks?.[task.id];
+  return tree && fallback?.tree === tree && fallback.reason?.trim() ? fallback : null;
+}
+
+export function acceptsCodexReview(cfg, task, tree, kind, report) {
+  const agent = { review: 'reviewer', security: 'security' }[kind];
+  return Boolean(agent && report.agent === agent && report.model === 'codex' && codexReviewFallback(cfg, task, tree));
 }
 
 /**
@@ -361,12 +377,24 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       if (gate === 'security' && !task.securityRequired) return { ok: true, detail: 'не потрібен за оцінкою ризику' };
       const ev = readEvidence(root, task.id, tree, gate);
       if (!ev) return { ok: false, pending: true, detail: `${gate} не проведено для поточного коду` + stale(gate) };
+      if ((gate === 'review' || gate === 'security') && ev.model === 'codex' && !acceptsCodexReview(cfg, task, tree, gate, ev)) {
+        return { ok: false, pending: true, detail: `${gate}: Codex не погоджено для поточного дерева` };
+      }
       const b = blockingFindings(ev);
       if (b.length) return { ok: false, detail: `${b.length} блокувальних findings (${b.map((f) => f.severity).join(', ')})` };
       const cross = cfg.crossFamilyReview;
       if (gate === 'review' && cross?.enabled && cross.tiers.includes(effectiveTier(task))) {
         const cx = readEvidence(root, task.id, tree, 'codex');
-        if (!cx) return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}` + stale('codex') };
+        if (!cx) {
+          const fb = cross.fallback?.enabled ? readEvidence(root, task.id, tree, 'codex-fallback') : null;
+          if (fb) {
+            const fbBlocking = blockingFindings(fb);
+            if (fbBlocking.length) return { ok: false, detail: `codex-fallback: ${fbBlocking.length} блокувальних findings` };
+            return { ok: true, detail: `reviewer (${ev.model}) + резервне рев'ю тієї ж сім'ї (${fb.model}; codex недоступний: ${fb.fallbackReason}): блокувальних немає` };
+          }
+          const hint = cross.fallback?.enabled ? '; якщо codex недоступний (квота, auth, немає CLI) — резервне рев\'ю: record <ID> codex-fallback' : '';
+          return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}${hint}` + stale('codex') };
+        }
         const cb = blockingFindings(cx);
         if (cb.length) return { ok: false, detail: `codex: ${cb.length} блокувальних findings` };
         return { ok: true, detail: `reviewer (${ev.model}) + codex (${cx.model}): блокувальних немає` };

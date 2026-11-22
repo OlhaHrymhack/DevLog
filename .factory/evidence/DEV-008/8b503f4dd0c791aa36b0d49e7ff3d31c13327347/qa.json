@@ -1,0 +1,32 @@
+{
+  "taskId": "DEV-008",
+  "kind": "qa",
+  "tree": "8b503f4dd0c791aa36b0d49e7ff3d31c13327347",
+  "at": "2026-11-22T17:05:50.291Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "npx playwright test e2e/agentRun.spec.ts: 6/6 passed (desktop-1280, tablet-768, mobile-375). Окремий Playwright-скрипт test-results/dev008-qa/qa.mjs (fetch підмінено на керований ReadableStream; dev-сервер AI_MODE=demo на :3100) на desktop 1280 і mobile 375, усі перевірки пройшли: прогрес 0% -> 33% і стани кроків done/run/pending послідовно; «Зупинити» -> idle, AbortSignal спрацював, пізня подія після зупинки не рендериться; NDJSON, розрізаний між 5 чанками -> результат; бейдж «Демо · Агент A» і підсумок «3 кроки · 0,3 с · мок-відповідь»; «Застосувати» -> «Застосовано»; «Відхилити» -> тост «Відхилено» і idle; fallback-алерт (role=alert); реальний 404 -> «Агент недоступний» + «Спробувати ще раз» (повторює запуск); запуск з клавіатури (Enter), фокус-кільце 2px solid. Скріншоти (18 шт.) у /private/tmp/devlog-dev008/test-results/dev008-qa/. Прототип: структура збігається (прогрес-бар, список кроків із spinner/check/pending, деталь під кроком, кнопка зупинки зі Square, підсумок 'N кроки · час · мок-відповідь'); розбіжностей, що блокують, не виявлено. Візуальне порівняння з прототипом було оглядом скріншотів і стилів, а не піксельним diff. Не перевірено: світла тема (контраст алерту виміряно лише в темній: rgb(254,202,202) на rgba(248,113,113,.1) поверх темної поверхні, читається добре), screen reader, реальна відповідь live-режиму, pixel-порівняння відступів із docs/design/prototype.html, анімації (breathe/pop) і prefers-reduced-motion. Нижче лише дрібні зауваження.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "У стані fallback демо-панель пропонує «Застосувати» для базового правила без AI",
+      "file": "src/views/uiKit/ui/AgentRunDemo/index.tsx",
+      "line": 16,
+      "detail": "Кроки: запуск -> потік із step fail + fallback. Фактично: показано алерт «Агент не зміг відповісти» і водночас кнопки «Застосувати»/«Відхилити» (isAgentRunDecided включає fallback). Імовірно це задум (fallback-результат теж можна підтвердити), але варто підтвердити; це лише UI Kit-демо."
+    },
+    {
+      "severity": "low",
+      "title": "Текст помилки 404 неінформативний",
+      "file": "src/entities/agentRun/ui/AgentRunPanel/index.tsx",
+      "line": 38,
+      "detail": "Без перехоплення POST /api/agents/prioritize -> 404, алерт «Агент недоступний: Запит агента завершився помилкою» без коду/статусу. Для демо прийнятно."
+    },
+    {
+      "severity": "low",
+      "title": "Кнопка «Зупинити» і скелетон відрізняються від прототипу",
+      "file": "src/entities/agentRun/ui/AgentRunPanel/styles.ts",
+      "line": 2,
+      "detail": "У docs/design/prototype.html (рядки 672, 725) кнопка зупинки btn-ghost btn-block (на всю ширину), а під кроками показано skeleton-рядки результату. У реалізації кнопка self-start (за вмістом), скелетона немає. На mobile 375 різниця помітна (див. mobile-2-mid.png). Косметика."
+    }
+  ]
+}

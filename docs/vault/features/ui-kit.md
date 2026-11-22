@@ -1,7 +1,7 @@
 ---
 tags: [feature]
 task: DEV-002
-pr: https://github.com/OlhaHrymhack/DevLog/pull/11
+pr: https://github.com/OlhaHrymhack/DevLog/pull/12
 ---
 # UI Kit і токени (DEV-002)
 

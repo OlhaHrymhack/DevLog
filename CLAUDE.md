@@ -20,7 +20,7 @@
 - БД: SQLite (`better-sqlite3`) + Drizzle ORM
 - Валідація: Zod — одна схема на сутність, спільна для API, форм і tools агентів
 - UI: Tailwind CSS + shadcn/ui, серверний стан — TanStack Query
-- AI: `@anthropic-ai/sdk`, модель з `ANTHROPIC_MODEL` (default `claude-opus-5-5`)
+- AI: `openai` (Chat Completions), модель з `OPENAI_MODEL` (default `gpt-4.1-mini`)
 - Логи: `pino`
 - Тести: Vitest
 
@@ -47,12 +47,12 @@ src/
 - Без закоментованого коду і `console.log` — тільки `logger`.
 
 ## Правила AI-агентів (in-product)
-- Агент = власний loop у `server/agents/core/runAgent.ts`: виклик моделі → виконання tools → повтор, поки `stop_reason === "tool_use"`.
+- Агент = власний loop у `server/agents/core/runAgent.ts`: виклик моделі → виконання tools → повтор, поки нормалізована зупинка моделі — `tool_use` (`ModelClient` провайдер-незалежний; для OpenAI `finish_reason: "tool_calls"`).
 - Обов'язково: ліміт кроків, обробка `is_error` у tool_result, обробка `refusal` / `max_tokens`.
 - Кожен крок пишеться в `agent_steps`, кожен запуск — в `agent_runs` (це наш trace для UI і дебагу).
 - Фінальний результат — через tool `submit_result` зі strict-схемою, потім Zod-валідація + перевірка фактів (напр. що `taskId` існує).
 - Агент не змінює дані без підтвердження користувача (створення підзадач, злиття задач — тільки після «Confirm» в UI).
-- Режим AI — `AI_MODE=live|demo` (без значення: `live`, якщо є `ANTHROPIC_API_KEY`, інакше `demo`). `demo` — детерміновані відповіді без API-ключа; кожен агент повинен мати mock.
+- Режим AI — `AI_MODE=live|demo` (без значення: `live`, якщо є `OPENAI_API_KEY`, інакше `demo`). `demo` — детерміновані відповіді без API-ключа; кожен агент повинен мати mock.
 - Ніколи не логувати API-ключ і повні промпти з даними користувача на рівні `info`.
 
 ## Команди
