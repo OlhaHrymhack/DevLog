@@ -138,6 +138,13 @@ function applyTransition(t, to, cfg, opt = {}) {
   const id = t.id;
   if (t.status === 'BLOCKED') return 'задача BLOCKED — спершу unblock';
   if (!core.TRANSITIONS[t.status].includes(to)) return `перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`;
+  if (t.status === 'COMPLETED') {
+    // Повторне рев'ю після завершення: PR ще не злитий, а код змінився (ребейз на stage). Без зміни коду фінальне погодження чинне.
+    const tree = core.treeHash(root);
+    if (core.evaluateGates(root, cfg, t, tree, ['final']).every((g) => g.ok)) return 'код не змінився після APPROVE-FINAL — повторне рев\'ю не потрібне';
+    const failed = core.evaluateGates(root, cfg, t, tree, core.REQUIRED_GATES.REVIEWING).filter((g) => !g.ok);
+    if (failed.length) return `gates не пройдені для ${to}:\n${failed.map(gateLine).join('\n')}`;
+  }
   if (to === 'IMPLEMENTING' && !t.tier) return 'спершу classify';
   if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && core.effectiveTier(t) !== 'fast') return 'задача не Fast → спершу AWAITING_APPROVAL';
   if (t.status === 'REVIEWING' && to === 'AWAITING_FINAL_APPROVAL' && core.qaRequired(t)) return 'UI-задача balanced/strong → спершу QA';
