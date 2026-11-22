@@ -2126,7 +2126,7 @@
     "DEV-013": {
       "id": "DEV-013",
       "title": "README і перевірка з нуля",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -2150,8 +2150,8 @@
         "tests failed: код змінився під час перевірки"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-013 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-013",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/30",
       "history": [
         {
           "at": "2026-11-21T17:47:24.156Z",
@@ -2267,10 +2267,21 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T22:51:59.581Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/30"
+        },
+        {
+          "at": "2026-11-22T22:51:59.962Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.155Z",
-      "updatedAt": "2026-11-22T22:51:27.699Z",
+      "updatedAt": "2026-11-22T22:51:59.962Z",
       "lastFailure": null,
       "reviewTree": "d962dc8cc989f45f81e056d02dc8af96785952bd"
     },
