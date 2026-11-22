@@ -331,6 +331,26 @@ factory('verify', 'DEV-088', '--full');
 r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
 check('15g. E2E зелений → фінальне погодження без ручного QA', r.status === 0 && !state().tasks['DEV-088'].history.some((e) => e.event === 'qa'), r.stderr);
 
+console.log('\n[16] resume: чинне погодження → наступний дозволений етап без повторного запиту');
+factory('add', 'DEV-089', 'Approval при відновленні'); factory('start', 'DEV-089'); factory('transition', 'DEV-089', 'PLANNING');
+w('.factory/task-plans/DEV-089.md', '# DEV-089\n- AC-1: x\n');
+factory('classify', 'DEV-089', ...allScores(1, { security: 0, integrations: 0 }));
+factory('transition', 'DEV-089', 'AWAITING_APPROVAL');
+r = factory('resume', 'DEV-089');
+check('16a. AWAITING_APPROVAL без APPROVE → лишається, просить APPROVE', state().tasks['DEV-089'].status === 'AWAITING_APPROVAL' && /Продовжувати без питань: ні — потрібне погодження користувача: APPROVE DEV-089/.test(r.stdout), r.stdout);
+user('APPROVE DEV-089');
+r = factory('resume', 'DEV-089');
+check('16b. APPROVE уже чинний → resume сам переходить у IMPLEMENTING і продовжує', state().tasks['DEV-089'].status === 'IMPLEMENTING' && /погодження вже чинне: AWAITING_APPROVAL → IMPLEMENTING/.test(r.stdout) && /Продовжувати без питань: так/.test(r.stdout), r.stdout);
+r = factory('resume', 'DEV-088');
+check('16c. AWAITING_FINAL_APPROVAL без APPROVE-FINAL → лишається, просить APPROVE-FINAL', state().tasks['DEV-088'].status === 'AWAITING_FINAL_APPROVAL' && /APPROVE-FINAL DEV-088/.test(r.stdout) && /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+user('APPROVE-FINAL DEV-088');
+w('src/DEV-088.ts', 'export const late = 1;\n');
+r = factory('resume', 'DEV-088');
+check('16d. APPROVE-FINAL для старого коду (tree змінився) → не продовжує', state().tasks['DEV-088'].status === 'AWAITING_FINAL_APPROVAL' && /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+fs.rmSync(path.join(tmp, 'src/DEV-088.ts'));
+r = factory('resume', 'DEV-088');
+check('16e. APPROVE-FINAL чинний для поточного коду → resume сам переходить у READY_FOR_PR', state().tasks['DEV-088'].status === 'READY_FOR_PR' && /погодження вже чинне: AWAITING_FINAL_APPROVAL → READY_FOR_PR/.test(r.stdout) && /Продовжувати без питань: так/.test(r.stdout) && /далі: коміт, push/.test(r.stdout), r.stdout);
+
 console.log('\n[+] Git staging записів фабрики');
 check('git add state → allow', guard('Bash', { command: 'git add .factory/workflow-state.json' }) === 'allow');
 check('git diff state → allow', guard('Bash', { command: 'git diff .factory/workflow-state.json' }) === 'allow');

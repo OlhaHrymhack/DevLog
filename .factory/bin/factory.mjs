@@ -130,10 +130,40 @@ function deriveNext(t, cfg, tree = core.treeHash(root)) {
   }
 }
 
+/**
+ * Перехід із перевіркою правил і gates (спільний для transition і resume).
+ * Повертає текст помилки або null; при успіху змінює t.
+ */
+function applyTransition(t, to, cfg, opt = {}) {
+  const id = t.id;
+  if (t.status === 'BLOCKED') return 'задача BLOCKED — спершу unblock';
+  if (!core.TRANSITIONS[t.status].includes(to)) return `перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`;
+  if (to === 'IMPLEMENTING' && !t.tier) return 'спершу classify';
+  if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && core.effectiveTier(t) !== 'fast') return 'задача не Fast → спершу AWAITING_APPROVAL';
+  if (t.status === 'REVIEWING' && to === 'AWAITING_FINAL_APPROVAL' && core.qaRequired(t)) return 'UI-задача balanced/strong → спершу QA';
+  if (to === 'COMPLETED' && !t.pr) return 'немає PR reference (factory pr <ID> <url>)';
+  const required = core.REQUIRED_GATES[to] ?? [];
+  // Повернення назад (на доопрацювання) gates не вимагає.
+  const forward = core.STATUSES.indexOf(to) > core.STATUSES.indexOf(t.status);
+  if (forward && required.length) {
+    const failed = core.evaluateGates(root, cfg, t, core.treeHash(root), required).filter((g) => !g.ok);
+    if (failed.length) return `gates не пройдені для ${to}:\n${failed.map(gateLine).join('\n')}`;
+  }
+  core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
+  t.status = to;
+  if (opt.agent) t.agent = opt.agent;
+  t.nextAction = deriveNext(t, cfg);
+  return null;
+}
+
+/** Етап, на який resume переходить сам, якщо погодження користувача вже чинне. */
+const AFTER_APPROVAL = { AWAITING_APPROVAL: 'IMPLEMENTING', AWAITING_FINAL_APPROVAL: 'READY_FOR_PR' };
+
 /** Чи може orchestrator продовжувати без питань до користувача. */
 function canContinue(t, cfg, tree) {
   if (t.status === 'BLOCKED') return { ok: false, why: 'задача BLOCKED' };
-  if (['AWAITING_APPROVAL', 'AWAITING_FINAL_APPROVAL'].includes(t.status)) return { ok: false, why: 'потрібне погодження користувача' };
+  if (t.status === 'AWAITING_APPROVAL') return { ok: false, why: `потрібне погодження користувача: APPROVE ${t.id}` };
+  if (t.status === 'AWAITING_FINAL_APPROVAL') return { ok: false, why: `потрібне погодження користувача: APPROVE-FINAL ${t.id} (для поточного коду)` };
   if (['IMPLEMENTING', 'REVIEWING', 'QA', 'READY_FOR_PR'].includes(t.status)) {
     const a = core.approvalStatus(root, t);
     if (!a.ok) return { ok: false, why: a.detail };
@@ -240,24 +270,8 @@ const commands = {
     const cfg = core.loadConfig(root);
     withState((s) => {
       const t = core.getTask(s, id);
-      if (t.status === 'BLOCKED') fail('задача BLOCKED — спершу unblock');
-      if (!core.TRANSITIONS[t.status].includes(to)) fail(`перехід ${t.status} → ${to} заборонений. Дозволено: ${core.TRANSITIONS[t.status].join(', ') || '—'}`);
-      if (to === 'IMPLEMENTING' && !t.tier) fail('спершу classify');
-      if (to === 'IMPLEMENTING' && t.status === 'PLANNING' && core.effectiveTier(t) !== 'fast') fail('задача не Fast → спершу AWAITING_APPROVAL');
-      if (t.status === 'REVIEWING' && to === 'AWAITING_FINAL_APPROVAL' && core.qaRequired(t)) fail('UI-задача balanced/strong → спершу QA');
-      if (to === 'COMPLETED' && !t.pr) fail('немає PR reference (factory pr <ID> <url>)');
-      const required = core.REQUIRED_GATES[to] ?? [];
-      // Повернення назад (на доопрацювання) gates не вимагає.
-      const forward = core.STATUSES.indexOf(to) > core.STATUSES.indexOf(t.status);
-      if (forward && required.length) {
-        const tree = core.treeHash(root);
-        const failed = core.evaluateGates(root, cfg, t, tree, required).filter((g) => !g.ok);
-        if (failed.length) fail(`gates не пройдені для ${to}:\n${failed.map(gateLine).join('\n')}`);
-      }
-      core.pushHistory(t, { event: 'transition', from: t.status, to, agent: opt.agent, note: opt.note });
-      t.status = to;
-      if (opt.agent) t.agent = opt.agent;
-      t.nextAction = deriveNext(t, cfg);
+      const err = applyTransition(t, to, cfg, opt);
+      if (err) fail(err);
       s.currentTask = id;
     });
     ok(`${id} → ${to}`);
@@ -388,6 +402,12 @@ const commands = {
         notes.push(`відновлено за балами: tier ${t.tier} → ${tier}, модель ${t.model ?? '—'} → ${model}`);
         core.pushHistory(t, { event: 'restored', note: notes.at(-1) });
         t.tier = tier; t.model = model;
+      }
+      // Погодження вже чинне (APPROVE для плану / APPROVE-FINAL для поточного tree) → наступний дозволений етап без повторного запиту.
+      const to = AFTER_APPROVAL[t.status];
+      if (to) {
+        const from = t.status;
+        if (!applyTransition(t, to, cfg, { note: 'resume: погодження вже чинне' })) notes.push(`погодження вже чинне: ${from} → ${to}`);
       }
       t.nextAction = deriveNext(t, cfg, tree);
       s.currentTask = taskId;
