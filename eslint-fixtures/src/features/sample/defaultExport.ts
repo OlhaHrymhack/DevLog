@@ -1,3 +1,5 @@
-export default function sampleAction() {
+const sampleAction = () => {
   return "action";
-}
+};
+
+export default sampleAction;

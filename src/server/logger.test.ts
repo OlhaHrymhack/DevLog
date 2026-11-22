@@ -3,7 +3,7 @@ import { createLogger } from "./logger";
 
 const KEY_MARKER = "dl-test-key-marker-91c4";
 
-function captureLogger() {
+const captureLogger = () => {
   const lines: string[] = [];
   const logger = createLogger({
     level: "info",
@@ -14,7 +14,7 @@ function captureLogger() {
     },
   });
   return { logger, lines };
-}
+};
 
 describe("logger redact", () => {
   it("DEV-001 AC-5: logger редагує apiKey, headers.authorization і ANTHROPIC_API_KEY", () => {

@@ -3,8 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 3100;
 const BASE_URL = `http://localhost:${PORT}`;
 
-// API contract does not depend on the viewport: run it once, in desktop-1280 only.
-const API_SPECS = /health\.spec\.ts/;
+// API contract and theme persistence do not depend on the viewport: run them once, in desktop-1280 only.
+const SINGLE_VIEWPORT_SPECS = /(health|theme)\.spec\.ts/;
 
 export default defineConfig({
   testDir: "e2e",
@@ -25,12 +25,12 @@ export default defineConfig({
   projects: [
     {
       name: "mobile-375",
-      testIgnore: API_SPECS,
+      testIgnore: SINGLE_VIEWPORT_SPECS,
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
     },
     {
       name: "tablet-768",
-      testIgnore: API_SPECS,
+      testIgnore: SINGLE_VIEWPORT_SPECS,
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
     },
     {

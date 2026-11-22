@@ -5,7 +5,7 @@ import { parseServerEnv, serverEnvSchema } from "./env";
 
 const KEY_MARKER = "dl-test-key-marker-7f3a";
 
-function errorMessageOf(source: Record<string, string | undefined>): string {
+const errorMessageOf = (source: Record<string, string | undefined>): string => {
   try {
     parseServerEnv(source);
   } catch (error) {
@@ -15,7 +15,7 @@ function errorMessageOf(source: Record<string, string | undefined>): string {
     throw error;
   }
   throw new Error("parseServerEnv did not throw");
-}
+};
 
 describe("parseServerEnv: aiMode", () => {
   it("DEV-001 AC-3: без ключа → demo", () => {
@@ -78,7 +78,7 @@ describe("parseServerEnv: invalid env", () => {
   });
 });
 
-function parseEnvExample(content: string) {
+const parseEnvExample = (content: string) => {
   const lines = content.split(/\r?\n/);
   const entries: { key: string; value: string; commentAbove: boolean }[] = [];
   lines.forEach((line, index) => {
@@ -90,7 +90,7 @@ function parseEnvExample(content: string) {
     entries.push({ key: match[1] ?? "", value: match[2] ?? "", commentAbove: previous.startsWith("#") });
   });
   return entries;
-}
+};
 
 describe(".env.example", () => {
   it("DEV-001 AC-7: .env.example містить рівно ключі serverEnvSchema з порожніми значеннями і коментарями", () => {

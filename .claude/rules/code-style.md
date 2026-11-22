@@ -25,11 +25,12 @@ src/
 - **Контракти** (Zod-схеми сутностей) — у `entities/<entity>/model/`; ними користуються і клієнт, і сервер.
 
 ## Компоненти
-- Лише **function declaration** з іменованим експортом:
+- Компоненти й усі функції — **стрілкові `const`** з іменованим експортом:
   ```tsx
-  export function TaskCard({ task, onStatusChange }: TaskCardProps) { … }
+  export const TaskCard = ({ task, onStatusChange }: TaskCardProps) => { … };
   ```
-  Не `const TaskCard = () => …`, не `export default`. Виняток — файли Next.js (`page.tsx`, `layout.tsx`, `route.ts` тощо), які вимагають `export default`.
+  Не `function TaskCard() {}` (ESLint `func-style: expression`), не `export default`. Виняток — файли Next.js (`page.tsx`, `layout.tsx`, `route.ts` тощо), які вимагають `export default`: `const Page = () => …; export default Page;`.
+- **Хуки** (функції, що викликають інші хуки React) називаються з префікса `use` (`useMediaQuery`); файл хука — `useX.ts` (імена файлів у `shared/lib/hooks` перевіряє `test/conventions.test.ts`). `react-hooks/rules-of-hooks` (з `eslint-config-next`) забороняє викликати хуки поза компонентами й функціями `use*`, але не перевіряє імена функцій, що хуки не викликають.
 - **Структура компонента — папка в PascalCase:**
   ```
   TaskCard/
@@ -40,12 +41,12 @@ src/
   `types.ts` / `styles.ts` створюються, лише коли є що туди покласти (KISS) — порожніх файлів не робимо.
 - Стилі не пишемо інлайном у розмітці, якщо їх більше одного-двох утилітарних класів — виносимо в `styles.ts`.
 - Логіка (запити, мутації, обчислення) — у `model/` (хуки) або `lib/`, не в компоненті.
-- **Виняток:** згенеровані shadcn-компоненти в `src/shared/ui/` лишаються в оригінальній формі (щоб оновлювати їх без конфліктів).
+- **shadcn** (`src/shared/ui/`) не виняток: `shadcn add` створює плоский `alert.tsx` — переносимо в `Alert/index.tsx`, виправляємо імпорти на `@/shared/ui/Alert` і функції на стрілкові `const`. Файл із кількома частинами (`Dialog`, `Select`, `Tabs`…) лишається одним `index.tsx` з кількома іменованими експортами. Оверрайд `consistent-type-assertions` у `eslint.config.mjs` перелічує згенеровані папки вручну — новий shadcn-компонент додайте до списку. Плоскі `*.tsx` у `shared/ui` і function declaration у `src`, `test`, `e2e` та кореневих конфігах ловлять `func-style` і `test/conventions.test.ts`.
 
 ## Найменування
 | Що | Стиль | Приклад |
 |---|---|---|
-| Папка компонента | PascalCase | `TaskCard/` |
+| Папка компонента (і shadcn) | PascalCase | `TaskCard/`, `Alert/` |
 | Файли всередині компонента | `index.tsx`, `types.ts`, `styles.ts` | — |
 | Slice (папка в шарі FSD) | camelCase | `features/decomposeTask/` |
 | Хуки | camelCase з `use` | `useTasks.ts` |

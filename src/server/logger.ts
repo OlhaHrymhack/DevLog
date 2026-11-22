@@ -15,7 +15,7 @@ type LoggerOptions = {
   destination?: DestinationStream;
 };
 
-export function createLogger({ level, destination }: LoggerOptions = {}): Logger {
+export const createLogger = ({ level, destination }: LoggerOptions = {}): Logger => {
   const options = {
     level: level ?? getServerEnv().LOG_LEVEL,
     redact: { paths: REDACT_PATHS, censor: "[Redacted]" },
@@ -27,6 +27,6 @@ export function createLogger({ level, destination }: LoggerOptions = {}): Logger
     return pino({ ...options, transport: { target: "pino-pretty" } });
   }
   return pino(options);
-}
+};
 
 export const logger = createLogger();

@@ -1,0 +1,29 @@
+{
+  "taskId": "DEV-014",
+  "kind": "review",
+  "tree": "2f49cbecd5fd74b23a75dac9efc94dcf4c86487d",
+  "at": "2026-11-22T10:24:33.278Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Повторне review DEV-014 (хеш 2f49cbecd5): func-style охоплює src/test/e2e/конфіги без зайвого, тест AC-5 не флейкий, документи узгоджені щодо правила. Блокерів немає.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Розбіжність у переліку винятків: D-023 .claude/hooks, конфіг і CLAUDE.md .claude",
+      "file": "docs/vault/decisions.md",
+      "line": 128
+    },
+    {
+      "severity": "low",
+      "title": "Ігнорування фікстур працює завдяки cwd у тесті, неявно",
+      "file": "eslint.config.mjs",
+      "line": 33
+    },
+    {
+      "severity": "low",
+      "title": "ROOT_CONFIGS у тесті AC-5 захардкоджений",
+      "file": "test/conventions.test.ts",
+      "line": 10
+    }
+  ]
+}

@@ -5,9 +5,9 @@ import boundaries from "eslint-plugin-boundaries";
 
 const SLICE_ENTRY = "index.{ts,tsx}";
 
-function sliceLayers(...types) {
+const sliceLayers = (...types) => {
   return { to: { element: { type: types, fileInternalPath: SLICE_ENTRY } } };
-}
+};
 
 const TO_SHARED = { to: { element: { type: "shared" } } };
 
@@ -30,6 +30,13 @@ const eslintConfig = defineConfig([
     "eslint-fixtures/**",
   ]),
   {
+    // Стрілкові const у всьому коді застосунку: src, test, e2e і кореневі конфіги (не `.factory`, `.claude`, `docs` — вони в globalIgnores).
+    files: ["**/*.{ts,tsx,mts,mjs}"],
+    rules: {
+      "func-style": ["error", "expression", { allowArrowFunctions: true }],
+    },
+  },
+  {
     files: ["src/**/*.{ts,tsx}"],
     plugins: { boundaries },
     settings: {
@@ -48,7 +55,6 @@ const eslintConfig = defineConfig([
       "boundaries/elements-single-match": true,
     },
     rules: {
-      "func-style": ["error", "declaration"],
       "no-restricted-syntax": [
         "error",
         {
@@ -121,9 +127,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/shared/ui/**/*.{ts,tsx}"],
+    // Згенерований shadcn (`shared/ui/<Name>/index.tsx`) містить `as` (напр. CSSProperties); власні Button, EmptyState, ResponsiveDialog — без винятків.
+    files: [
+      "src/shared/ui/{Alert,Badge,Card,Checkbox,Dialog,Input,Progress,Select,Sheet,Skeleton,Sonner,Switch,Tabs,Textarea,Toggle,ToggleGroup,Tooltip}/index.tsx",
+    ],
     rules: {
-      "func-style": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
     },
   },
 ]);

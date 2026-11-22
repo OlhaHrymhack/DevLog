@@ -7,9 +7,9 @@ const aiModeSchema = z.enum(["live", "demo"]);
 
 export type AiMode = z.infer<typeof aiModeSchema>;
 
-function emptyToUndefined(value: unknown): unknown {
+const emptyToUndefined = (value: unknown): unknown => {
   return value === "" ? undefined : value;
-}
+};
 
 export const serverEnvSchema = z.object({
   ANTHROPIC_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -29,7 +29,7 @@ export const serverEnvSchema = z.object({
 
 export type ServerEnv = z.infer<typeof serverEnvSchema> & { aiMode: AiMode };
 
-export function parseServerEnv(source: Record<string, string | undefined>): ServerEnv {
+export const parseServerEnv = (source: Record<string, string | undefined>): ServerEnv => {
   const result = serverEnvSchema.safeParse(source);
   if (!result.success) {
     const problems = result.error.issues
@@ -40,11 +40,11 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
   const env = result.data;
   const aiMode: AiMode = env.AI_MODE ?? (env.ANTHROPIC_API_KEY ? "live" : "demo");
   return { ...env, aiMode };
-}
+};
 
 let cachedEnv: ServerEnv | undefined;
 
-export function getServerEnv(): ServerEnv {
+export const getServerEnv = (): ServerEnv => {
   cachedEnv ??= parseServerEnv(process.env);
   return cachedEnv;
-}
+};
