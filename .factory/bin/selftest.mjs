@@ -120,6 +120,27 @@ check('4a4. те саме для security', r.status !== 0 && /змінився/
 check('4a5. відхилений звіт не потрапляє в історію', !state().tasks['DEV-001'].history.some((e) => e.event === 'review' || e.event === 'security'));
 w('src/app.ts', 'export const a = 2;\n');
 
+console.log('\n[4f] Погоджена заміна Claude на Codex для одного дерева');
+const codexReview = findings('rev-codex', 'reviewer', 'codex', []);
+const codexSecurity = findings('sec-codex', 'security', 'codex', []);
+const originalConfig = JSON.stringify(cfg, null, 2);
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f1. без погодження Codex не зараховується', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+const allowedFallback = { tree: state().tasks['DEV-001'].reviewTree, reason: 'Claude quota exhausted' };
+w('.factory/project.config.json', JSON.stringify({ ...cfg, codexReviewFallbacks: { 'DEV-001': allowedFallback } }));
+r = factory('record', 'DEV-001', 'security', codexReview);
+check('4f2. звіт reviewer не зараховується як security', r.status !== 0 && /роль звіту/.test(r.stderr), r.stderr);
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f3. погоджений reviewer зберігає фактичну модель', r.status === 0 && /підтверджено звітом codex/.test(factory('line', 'DEV-001').stdout), r.stderr);
+r = factory('record', 'DEV-001', 'security', codexSecurity);
+check('4f4. погоджений security проходить gate', r.status === 0 && /security\/codex/.test(factory('report', 'DEV-001').stdout), r.stderr);
+w('src/app.ts', 'export const a = 3;\n');
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f5. погодження Codex не переноситься на новий хеш', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+w('src/app.ts', 'export const a = 2;\n');
+w('.factory/project.config.json', originalConfig);
+check('4f6. після відкликання погодження звіт Codex не зараховується', /Codex не погоджено/.test(factory('report', 'DEV-001').stdout));
+
 console.log('\n[4] Review gate');
 r = factory('record', 'DEV-001', 'review', findings('rev-bad', 'reviewer', 'opus', [{ severity: 'high', title: 'SQL injection' }, { severity: 'low', title: 'naming' }]));
 check('4a. High finding → record exit 1', r.status === 1);
@@ -191,6 +212,12 @@ factory('classify', 'DEV-092', ...allScores(0, { security: 2 }));
 factory('transition', 'DEV-092', 'AWAITING_APPROVAL'); user('APPROVE DEV-092');
 factory('transition', 'DEV-092', 'IMPLEMENTING'); factory('verify', 'DEV-092');
 factory('transition', 'DEV-092', 'REVIEWING');
+w('.factory/project.config.json', JSON.stringify({ ...cfg, codexReviewFallbacks: {
+  'DEV-092': { ...allowedFallback, tree: state().tasks['DEV-092'].reviewTree },
+} }));
+r = factory('record', 'DEV-092', 'review', codexReview);
+check('4f7. задача з вимогою іншої сімʼї не може замінити основне ревʼю на Codex', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+w('.factory/project.config.json', originalConfig);
 factory('record', 'DEV-092', 'review', findings('rev-s', 'reviewer', 'opus', []));
 factory('record', 'DEV-092', 'security', findings('sec-s', 'security', 'opus', []));
 r = factory('transition', 'DEV-092', 'AWAITING_FINAL_APPROVAL');

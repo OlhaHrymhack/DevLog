@@ -72,6 +72,18 @@ export function requiredReviewModel(cfg, task) {
   return m[tier] ?? 'opus';
 }
 
+export function codexReviewFallback(cfg, task, tree = task.reviewTree) {
+  const cross = cfg.crossFamilyReview;
+  if (cross?.enabled && cross.tiers.includes(effectiveTier(task))) return null;
+  const fallback = cfg.codexReviewFallbacks?.[task.id];
+  return tree && fallback?.tree === tree && fallback.reason?.trim() ? fallback : null;
+}
+
+export function acceptsCodexReview(cfg, task, tree, kind, report) {
+  const agent = { review: 'reviewer', security: 'security' }[kind];
+  return Boolean(agent && report.agent === agent && report.model === 'codex' && codexReviewFallback(cfg, task, tree));
+}
+
 /**
  * Модель реалізації: базова за tier з балів + лише **ручні** підвищення після останнього classify
  * (події escalation з моделлю в `to`). Стара автоескалація писала в `to` tier (`strong`) — її ігноруємо (D-018).
@@ -365,6 +377,9 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       if (gate === 'security' && !task.securityRequired) return { ok: true, detail: 'не потрібен за оцінкою ризику' };
       const ev = readEvidence(root, task.id, tree, gate);
       if (!ev) return { ok: false, pending: true, detail: `${gate} не проведено для поточного коду` + stale(gate) };
+      if ((gate === 'review' || gate === 'security') && ev.model === 'codex' && !acceptsCodexReview(cfg, task, tree, gate, ev)) {
+        return { ok: false, pending: true, detail: `${gate}: Codex не погоджено для поточного дерева` };
+      }
       const b = blockingFindings(ev);
       if (b.length) return { ok: false, detail: `${b.length} блокувальних findings (${b.map((f) => f.severity).join(', ')})` };
       const cross = cfg.crossFamilyReview;
