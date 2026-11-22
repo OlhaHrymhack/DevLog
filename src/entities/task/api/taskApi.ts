@@ -4,7 +4,7 @@ import {
   NoteSchema, SubtaskSchema, TaskCreateInputSchema, TaskListItemSchema, TaskListQuerySchema, TaskSchema,
 } from "../model/schemas";
 import type { NoteCreateInput, TaskListQuery, TaskUpdateInput } from "../model/types";
-import { FocusAssignmentSchema, type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput } from "./contracts";
+import { FocusAssignmentSchema, TaskPageQuerySchema, TaskPageSchema, type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput, type TaskPageQuery } from "./contracts";
 
 const BASE = "/api/tasks";
 const taskUrl = (id: string) => `${BASE}/${encodeURIComponent(id)}`;
@@ -23,21 +23,27 @@ const json = (method: string, input: unknown): RequestInit => ({
 
 const listQuery = (query: Partial<TaskListQuery>) => TaskListQuerySchema.parse(query);
 
+const listUrl = (query: Partial<TaskPageQuery>) => {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) params.set(key, String(value));
+  }
+  return `${BASE}?${params}`;
+};
+
 export const taskQueryKeys = {
   all: ["tasks"] as const,
   lists: () => ["tasks", "list"] as const,
   list: (query: Partial<TaskListQuery> = {}) => ["tasks", "list", listQuery(query)] as const,
+  page: (query: Partial<TaskPageQuery>) => ["tasks", "list", TaskPageQuerySchema.parse(query)] as const,
   detail: (id: string) => ["tasks", "detail", id] as const,
 };
 
 export const taskApi = {
-  list: (query: Partial<TaskListQuery> = {}, signal?: AbortSignal) => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(listQuery(query))) {
-      if (value !== undefined) params.set(key, value);
-    }
-    return fetchData(`${BASE}?${params}`, z.array(TaskListItemSchema), { signal });
-  },
+  list: (query: Partial<TaskListQuery> = {}, signal?: AbortSignal) =>
+    fetchData(listUrl(listQuery(query)), z.array(TaskListItemSchema), { signal }),
+  listPage: (query: Partial<TaskPageQuery>, signal?: AbortSignal) =>
+    fetchJson(listUrl(TaskPageQuerySchema.parse(query)), TaskPageSchema, { signal }),
   get: (id: string, signal?: AbortSignal) => fetchData(taskUrl(id), TaskSchema, { signal }),
   create: (input: z.input<typeof TaskCreateInputSchema>) => fetchData(BASE, TaskSchema, json("POST", input)),
   update: (id: string, input: TaskUpdateInput) => fetchData(taskUrl(id), TaskSchema, json("PATCH", input)),

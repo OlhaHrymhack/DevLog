@@ -50,7 +50,10 @@ export { StatusBadge } from "./ui/StatusBadge";
 export { TaskRow } from "./ui/TaskRow";
 export type { TaskRowData, TaskRowProps } from "./ui/TaskRow/types";
 export {
-  AddSubtasksInputSchema, SetFocusInputSchema, SetSubtaskStatusInputSchema,
+  AddSubtasksInputSchema, SetFocusInputSchema, SetSubtaskStatusInputSchema, TaskPageQuerySchema, TaskPageSchema,
   type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput,
+  type TaskPage, type TaskPageQuery, type TaskSummary,
 } from "./api/contracts";
 export { taskApi, taskQueryKeys } from "./api/taskApi";
+export { useTaskPage } from "./api/useTaskPage";
+export { TASK_TABLE_COLUMNS } from "./ui/TaskRow/styles";

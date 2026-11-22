@@ -1,0 +1,67 @@
+{
+  "taskId": "DEV-005",
+  "kind": "review",
+  "tree": "3ca98f70266261c77884befac5d34a7b6e2dabc2",
+  "at": "2026-11-22T13:48:30.293Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Рев'ю виконано лише за наданим diff. Інструменти перегляду репозиторію (Glob/Grep) були недоступні, тестів я не запускав, тому факти поза diff (контракт `/api/health`, класи `ageCellStyles`, `actionsCellStyles`, `heatCellStyles`, сигнатури `fetchJson` і `taskApi.list`) не перевірені. Основні AC-1…AC-12 загалом покриті реалізацією та e2e/unit-тестами. Серйозний режим і панель станів у production вимкнені, а скидання фільтрів і окремі стани loading/error/empty/no-match реалізовані. Блокер один: нові компоненти порушують обов'язкову конвенцію «компонент = папка з index.tsx». Решта зауважень — medium/low: мигання skeleton при зміні фільтрів, неперевірений діапазон 1024–1279 px, вічно вимкнені кнопки без пояснення, мертвий перемикач у dev-панелі та неузгоджені лічильники при частковій помилці.",
+  "findings": [
+    {
+      "severity": "high",
+      "title": "Нові компоненти порушують конвенцію «компонент = папка PascalCase з index.tsx»",
+      "file": "src/widgets/appHeader/ui/AppHeader.tsx",
+      "line": 1,
+      "detail": "CLAUDE.md і code-style вимагають, щоб кожен компонент був папкою `Name/index.tsx` (+ `types.ts`, `styles.ts`). Тут плоскими файлами додано AppHeader, DemoModeBanner, DevStatesPanel, TaskList, TaskListSkeleton, HeatLegendDialog, TaskFilter, TaskSearch і TaskSort. Лише TasksListView оформлено правильно. Стилі лежать окремо (`widgets/appHeader/ui/styles.ts`, `widgets/taskList/ui/styles.ts`). Це суперечить існуючому `entities/task/ui/TaskRow/index.tsx` і створює борг для DEV-014. Виправлення: перенести кожен компонент у `ui/<Name>/index.tsx` зі своїми `styles.ts` і `types.ts` та оновити експорти й імпорти у тестах."
+    },
+    {
+      "severity": "medium",
+      "title": "Skeleton на кожну зміну фільтра чи пошуку (немає placeholderData)",
+      "file": "src/entities/task/api/useTasks.ts",
+      "line": 6,
+      "detail": "Для нового `queryKey` `current.isPending === true`, тому список замінюється skeleton-ом при кожному кліку по статусу, зміні сортування та після debounce пошуку. Це мигання і втрата контексту. Передайте `placeholderData: keepPreviousData` (опційно) і показуйте skeleton лише для першого завантаження. Для цього відокремте `isPending` від `isFetching`."
+    },
+    {
+      "severity": "medium",
+      "title": "Діапазон 1024–1279 px (lg) змінено, але не перевірено",
+      "file": "src/entities/task/ui/TaskRow/styles.ts",
+      "line": 4,
+      "detail": "Колонки на lg звужено до `88/76/52/52/76px`. Heat-колонка 52 px має вмістити `HeatBadge` (наприклад `🏚️🔥🚒` як кнопку з tooltip), а колонка дій 76 px — дві кнопки `lg:size-9` (72 px) плюс gap. Є ризик переповнення або горизонтального скролу. E2E перевіряє лише 1280, 768 і 375 px. Додайте перевірку на 1024 px або вирівняйте ширини з прототипом."
+    },
+    {
+      "severity": "medium",
+      "title": "Кнопки «Нова задача», «Редагувати», «Видалити» завжди вимкнені, без пояснення",
+      "file": "src/views/tasksList/ui/TasksListView/index.tsx",
+      "line": 131,
+      "detail": "`Home` рендерить `<TasksListView />` без обробників, тому на екрані постійно видно disabled-кнопки: FAB, кнопка в шапці, кнопка в EmptyState, edit/delete у кожному рядку, а гаряча клавіша N нічого не робить. Це відповідає плану (точки підключення DEV-006), але користувач не бачить причини. Додайте `title` або `aria-describedby` з нейтральним поясненням або приховайте кнопки до DEV-006. Також AC-9 в e2e не перевіряє виклик N у браузері, лише відсутність дії в полі пошуку. Виклик покрито unit-тестом."
+    },
+    {
+      "severity": "medium",
+      "title": "Лічильники й підсумок не узгоджені при помилці лише одного з двох запитів",
+      "file": "src/views/tasksList/ui/TasksListView/index.tsx",
+      "line": 58,
+      "detail": "Лічильники й підсумок беруться із `all`, а список — із `current`. Якщо `all` завершився помилкою, а відфільтрований запит успішний, фільтри показують «Всі 0 / 0 / 0», а підсумок — «0 задач» при непорожньому списку. Якщо фільтр активний, а `all` ще завантажується, лічильники теж нульові. Обробіть `all.isError` і `all.isPending` окремо: приховуйте або заміняйте лічильники та підсумок на плейсхолдер."
+    },
+    {
+      "severity": "low",
+      "title": "Перемикач «Зламати відповідь агента» не має жодного ефекту",
+      "file": "src/widgets/devStatesPanel/ui/DevStatesPanel.tsx",
+      "line": 60,
+      "detail": "Стан `invalidOutput` зберігається у view, але ніде не використовується. У dev-панелі є контрол, який нічого не робить. Приберіть його до задач з агентами або позначте як недоступний і поясніть чому."
+    },
+    {
+      "severity": "low",
+      "title": "Тест AC-11 викликає компонент як функцію",
+      "file": "src/widgets/devStatesPanel/ui/DevStatesPanel.test.tsx",
+      "line": 12,
+      "detail": "`DevStatesPanel({...})` викликається напряму, поза React. Це працює лише поки перед ранім return немає хуків: додавання `useState` зламає тест із нерелевантною помилкою. Краще `render()` з `@testing-library/react` і перевірка відсутності діалогу. Додайте також dev-гілку для контрасту."
+    },
+    {
+      "severity": "low",
+      "title": "Дрібні зауваження щодо архітектури, a11y і продуктивності",
+      "file": "src/views/tasksList/ui/TasksListView/index.tsx",
+      "line": 24,
+      "detail": "(1) Схема `HEALTH` і запит `/api/health` живуть у view; їх варто винести в `shared/api` або `entities` разом із ключем запиту, а не дублювати серверний контракт. (2) `TASK_TABLE_COLUMNS` (стильова константа) експортується з публічного API `entities/task`. (3) `useHotkeys(() => ...)` отримує нову функцію щоразу, тому listener перереєстровується на кожен рендер; використайте `useCallback` або ref. (4) `title` на віці задачі недоступний із клавіатури. (5) `TaskSort` і `TaskSearch` дають ім'я через `<label>` з вкладеним `<select>`; надійніше `aria-label`. (6) `setSerious` не обробляє виняток `localStorage` у приватному режимі. (7) Компонент `TasksListView` вже ~150 рядків і змішує dev-оверрайди з основною логікою; варто виділити `useDevOverrides`."
+    }
+  ]
+}

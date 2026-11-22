@@ -1,0 +1,42 @@
+{
+  "taskId": "DEV-005",
+  "kind": "tests",
+  "tree": "c83c308c4af01c6ee72765cd1007d2527f560bfa",
+  "at": "2026-11-22T13:55:24.355Z",
+  "ok": true,
+  "failed": [],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2245,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2874,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2537,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev005\n\n\n Test Files  27 passed (27)\n      Tests  127 passed (127)\n   Start at  15:55:09\n   Duration  2.13s (import 39%, environment 33%, tests 18%, transform 9%, worker 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 13030,
+      "output": "> devlog@0.1.0 test:e2e\n> playwright test\n\n\nRunning 51 tests using 5 workers\n·····°°·····························°·°·°······°···\n  6 skipped\n  45 passed (12.6s)\n::notice title=🎭 Playwright Run Summary::  6 skipped%0A  45 passed (12.6s)\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n[WebServer] (node:53745) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:53764) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:53765) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:53767) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:53772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53771) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53769) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53773) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:53765) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:53794) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53795) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53802) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:53805) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { THEME_INIT_SCRIPT } from "@/features/themeToggle";
+import { Providers } from "./Providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,7 +32,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col"><Providers>{children}</Providers></body>
     </html>
   );
 };
