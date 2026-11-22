@@ -23,11 +23,11 @@ describe("parseServerEnv: aiMode", () => {
   });
 
   it("DEV-001 AC-3: з ключем → live", () => {
-    expect(parseServerEnv({ ANTHROPIC_API_KEY: KEY_MARKER }).aiMode).toBe("live");
+    expect(parseServerEnv({ OPENAI_API_KEY: KEY_MARKER }).aiMode).toBe("live");
   });
 
   it("DEV-001 AC-3: AI_MODE=demo з ключем → demo", () => {
-    expect(parseServerEnv({ ANTHROPIC_API_KEY: KEY_MARKER, AI_MODE: "demo" }).aiMode).toBe("demo");
+    expect(parseServerEnv({ OPENAI_API_KEY: KEY_MARKER, AI_MODE: "demo" }).aiMode).toBe("demo");
   });
 
   it("DEV-001 AC-3: AI_MODE=foo → помилка", () => {
@@ -36,22 +36,22 @@ describe("parseServerEnv: aiMode", () => {
     expect(message).not.toContain("foo");
   });
 
-  it("DEV-001 AC-3: порожній ANTHROPIC_API_KEY → demo", () => {
-    const env = parseServerEnv({ ANTHROPIC_API_KEY: "", AI_MODE: "" });
+  it("DEV-001 AC-3: порожній OPENAI_API_KEY → demo", () => {
+    const env = parseServerEnv({ OPENAI_API_KEY: "", AI_MODE: "" });
     expect(env.aiMode).toBe("demo");
-    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
   it("DEV-001 AC-3: AI_MODE=live без ключа → помилка", () => {
-    const message = errorMessageOf({ AI_MODE: "live", ANTHROPIC_API_KEY: "" });
+    const message = errorMessageOf({ AI_MODE: "live", OPENAI_API_KEY: "" });
     expect(message).toContain("AI_MODE");
-    expect(message).toContain("ANTHROPIC_API_KEY");
+    expect(message).toContain("OPENAI_API_KEY");
   });
 
   it("DEV-001 AC-3: AI_MODE=live з ключем → live, дефолти застосовано", () => {
-    const env = parseServerEnv({ AI_MODE: "live", ANTHROPIC_API_KEY: KEY_MARKER });
+    const env = parseServerEnv({ AI_MODE: "live", OPENAI_API_KEY: KEY_MARKER });
     expect(env.aiMode).toBe("live");
-    expect(env.ANTHROPIC_MODEL).toBe("claude-opus-5-5");
+    expect(env.OPENAI_MODEL).toBe("gpt-4.1-mini");
     expect(env.DATABASE_URL).toBe("file:./data/devlog.db");
     expect(env.LOG_LEVEL).toBe("info");
   });
@@ -59,7 +59,7 @@ describe("parseServerEnv: aiMode", () => {
 
 describe("parseServerEnv: invalid env", () => {
   it("DEV-001 AC-4: LOG_LEVEL=loud → помилка з назвою змінної без значень", () => {
-    const message = errorMessageOf({ LOG_LEVEL: "loud", ANTHROPIC_API_KEY: KEY_MARKER });
+    const message = errorMessageOf({ LOG_LEVEL: "loud", OPENAI_API_KEY: KEY_MARKER });
     expect(message).toContain("LOG_LEVEL");
     expect(message).not.toContain("loud");
     expect(message).not.toContain(KEY_MARKER);
@@ -67,7 +67,7 @@ describe("parseServerEnv: invalid env", () => {
 
   it("DEV-001 AC-4: помилка не несе значень у cause", () => {
     try {
-      parseServerEnv({ LOG_LEVEL: "loud", ANTHROPIC_API_KEY: KEY_MARKER });
+      parseServerEnv({ LOG_LEVEL: "loud", OPENAI_API_KEY: KEY_MARKER });
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect(JSON.stringify(error, Object.getOwnPropertyNames(error))).not.toContain(KEY_MARKER);

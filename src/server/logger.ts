@@ -3,8 +3,9 @@ import { getServerEnv } from "@/shared/config/env";
 
 // pino: `*` покриває рівно один рівень, тому кожен секрет перелічено для вкладеності 0–3
 // (напр. `err.request.headers`). Глибші структури не логуємо — лише вибрані поля.
-// `x-api-key` — заголовок, яким @anthropic-ai/sdk передає ключ.
-const SECRET_KEYS = ["apiKey", "ANTHROPIC_API_KEY", "authorization", 'headers["x-api-key"]'];
+// SDK `openai` передає ключ заголовком `Authorization: Bearer …` (з великої літери — pino чутливий до регістру).
+// `x-api-key` лишається як загальний захист для інших провайдерів.
+const SECRET_KEYS = ["apiKey", "OPENAI_API_KEY", "authorization", "Authorization", 'headers["x-api-key"]'];
 const NESTING_PREFIXES = ["", "*.", "*.*.", "*.*.*."];
 const REDACT_PATHS = NESTING_PREFIXES.flatMap((prefix) =>
   SECRET_KEYS.map((key) => `${prefix}${key}`),

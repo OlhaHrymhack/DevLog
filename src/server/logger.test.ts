@@ -17,7 +17,7 @@ const captureLogger = () => {
 };
 
 describe("logger redact", () => {
-  it("DEV-001 AC-5: logger редагує apiKey, headers.authorization і ANTHROPIC_API_KEY", () => {
+  it("DEV-001 AC-5: logger редагує apiKey, headers.authorization і OPENAI_API_KEY", () => {
     const { logger, lines } = captureLogger();
 
     logger.info(
@@ -26,8 +26,8 @@ describe("logger redact", () => {
         client: { apiKey: KEY_MARKER },
         headers: { authorization: `Bearer ${KEY_MARKER}` },
         request: { headers: { authorization: `Bearer ${KEY_MARKER}` } },
-        ANTHROPIC_API_KEY: KEY_MARKER,
-        env: { ANTHROPIC_API_KEY: KEY_MARKER },
+        OPENAI_API_KEY: KEY_MARKER,
+        env: { OPENAI_API_KEY: KEY_MARKER },
       },
       "request sent",
     );
@@ -41,8 +41,8 @@ describe("logger redact", () => {
       client: { apiKey: "[Redacted]" },
       headers: { authorization: "[Redacted]" },
       request: { headers: { authorization: "[Redacted]" } },
-      ANTHROPIC_API_KEY: "[Redacted]",
-      env: { ANTHROPIC_API_KEY: "[Redacted]" },
+      OPENAI_API_KEY: "[Redacted]",
+      env: { OPENAI_API_KEY: "[Redacted]" },
     });
   });
 
@@ -68,6 +68,23 @@ describe("logger redact", () => {
       err: { request: { headers: { authorization: "[Redacted]" } } },
       sdk: { options: { apiKey: "[Redacted]" } },
       taskId: "task-1",
+    });
+  });
+
+  it("DEV-008 AC-10: logger редагує заголовок Authorization (SDK openai) і OPENAI_API_KEY", () => {
+    const { logger, lines } = captureLogger();
+    const bearer = ["Bearer", KEY_MARKER].join(" ");
+    logger.info({
+      headers: { Authorization: bearer },
+      err: { request: { headers: { Authorization: bearer } } },
+      OPENAI_API_KEY: KEY_MARKER,
+    }, "openai call");
+    const line = lines[0] ?? "";
+    expect(line).not.toContain(KEY_MARKER);
+    expect(JSON.parse(line)).toMatchObject({
+      headers: { Authorization: "[Redacted]" },
+      err: { request: { headers: { Authorization: "[Redacted]" } } },
+      OPENAI_API_KEY: "[Redacted]",
     });
   });
 

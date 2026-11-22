@@ -112,7 +112,7 @@ test("DEV-005 AC-13: navigation fetches the next server page and filters reset i
 test("DEV-005 AC-6 AC-8 AC-9 AC-12: heat legend, demo mode, skip link and keyboard", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Демо-режим AI.")).toBeVisible();
-  await expect(page.getByText(/Без ANTHROPIC_API_KEY/)).toBeVisible();
+  await expect(page.getByText(/Без OPENAI_API_KEY/)).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Перейти до вмісту" })).toBeFocused();
   await page.keyboard.press("Enter");
