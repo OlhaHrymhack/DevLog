@@ -15,7 +15,7 @@ const HELP = `Команди:
                                          оцінити складність (потрібен task-plans/<ID>.md), обрати tier/модель
   transition <ID> <STATUS> [--agent A] [--note "..."]   перехід з перевіркою gates
   verify <ID> [--full]                   typecheck/lint/unit + AC traceability (+e2e з --full), записати evidence
-  record <ID> <review|codex|security|qa> <file.json>    записати звіт агента
+  record <ID> <review|codex|codex-fallback|security|qa> <file.json>    записати звіт агента (codex-fallback — резервне рев'ю тієї ж сім'ї, лише коли codex недоступний)
   escalate <ID> <причина...>             підвищити модель developer (tier і рівень рев'ю не змінюються)
   line [ID]                              один рядок статусу (між етапами замість report)
   resume [ID]                            відновити задачу: модель за балами, наступна дія з gates, чи можна продовжувати
@@ -192,7 +192,7 @@ function metrics(t) {
   const h = t.history;
   const reworks = h.filter((e) => e.event === 'transition' && e.to === 'IMPLEMENTING' && e.from !== 'AWAITING_APPROVAL' && e.from !== 'PLANNING').length;
   const failedVerify = h.filter((e) => (e.event === 'verify' || e.event === 'tests') && e.ok === false).length;
-  const blockingReviews = h.filter((e) => ['review', 'codex', 'security', 'qa'].includes(e.event) && e.blocking > 0).length;
+  const blockingReviews = h.filter((e) => ['review', 'codex', 'codex-fallback', 'security', 'qa'].includes(e.event) && e.blocking > 0).length;
   const started = h.find((e) => e.event === 'transition' && e.to === 'DISCOVERY')?.at;
   const pr = h.find((e) => e.event === 'pr')?.at;
   const hours = started && pr ? Math.round(((new Date(pr) - new Date(started)) / 36e5) * 10) / 10 : null;
@@ -342,13 +342,20 @@ const commands = {
   },
 
   record([id, kind, file]) {
-    if (!['review', 'codex', 'security', 'qa'].includes(kind)) fail('kind: review | codex | security | qa');
+    if (!['review', 'codex', 'codex-fallback', 'security', 'qa'].includes(kind)) fail('kind: review | codex | codex-fallback | security | qa');
     if (!file || !fs.existsSync(file)) fail('потрібен шлях до JSON-звіту');
     const cfg = core.loadConfig(root);
     const report = core.readJson(file);
     const errors = core.validateFindingsReport(report);
     if (errors.length) fail(`звіт невалідний:\n- ${errors.join('\n- ')}`);
     if (kind === 'codex' && report.agent !== 'codex') fail('звіт codex має мати agent: "codex"');
+    if (kind === 'codex-fallback') {
+      const fallback = cfg.crossFamilyReview?.fallback;
+      if (!fallback?.enabled) fail('резервне рев\'ю вимкнене в crossFamilyReview.fallback');
+      if (report.agent !== 'reviewer') fail('звіт codex-fallback має мати agent: "reviewer" (незалежне рев\'ю у свіжому контексті)');
+      if (typeof report.fallbackReason !== 'string' || !report.fallbackReason.trim()) fail('звіт codex-fallback потребує непорожнього "fallbackReason": чому codex недоступний (квота, auth, немає CLI) — з виводу codex, не вигадка');
+      if (core.modelRank(report.model) < core.modelRank(fallback.minModel)) fail(`резервне рев'ю має працювати щонайменше на ${fallback.minModel} (отримано ${report.model})`);
+    }
     const task = core.getTask(core.loadState(root), id);
     if (kind === 'review') {
       const need = core.requiredReviewModel(cfg, task);

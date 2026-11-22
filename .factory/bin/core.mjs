@@ -366,7 +366,16 @@ export function evaluateGate(root, cfg, task, tree, gate) {
       const cross = cfg.crossFamilyReview;
       if (gate === 'review' && cross?.enabled && cross.tiers.includes(effectiveTier(task))) {
         const cx = readEvidence(root, task.id, tree, 'codex');
-        if (!cx) return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}` + stale('codex') };
+        if (!cx) {
+          const fb = cross.fallback?.enabled ? readEvidence(root, task.id, tree, 'codex-fallback') : null;
+          if (fb) {
+            const fbBlocking = blockingFindings(fb);
+            if (fbBlocking.length) return { ok: false, detail: `codex-fallback: ${fbBlocking.length} блокувальних findings` };
+            return { ok: true, detail: `reviewer (${ev.model}) + резервне рев'ю тієї ж сім'ї (${fb.model}; codex недоступний: ${fb.fallbackReason}): блокувальних немає` };
+          }
+          const hint = cross.fallback?.enabled ? '; якщо codex недоступний (квота, auth, немає CLI) — резервне рев\'ю: record <ID> codex-fallback' : '';
+          return { ok: false, pending: true, detail: `Claude-review ок; потрібне друге рев'ю іншою модельною сім'єю (codex) для tier ${effectiveTier(task)}${hint}` + stale('codex') };
+        }
         const cb = blockingFindings(cx);
         if (cb.length) return { ok: false, detail: `codex: ${cb.length} блокувальних findings` };
         return { ok: true, detail: `reviewer (${ev.model}) + codex (${cx.model}): блокувальних немає` };
