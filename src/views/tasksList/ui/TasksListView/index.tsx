@@ -17,6 +17,7 @@ import { Pagination } from "@/shared/ui/Pagination";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { AppHeader } from "@/widgets/appHeader";
 import { DayPlanPanel } from "@/widgets/dayPlanPanel";
+import { StuckRadarPanel } from "@/widgets/stuckRadarPanel";
 import { DemoModeBanner } from "@/widgets/demoModeBanner";
 import { DevStatesPanel, type ModeOverride, type ScreenOverride } from "@/widgets/devStatesPanel";
 import { TaskDialogs, type TaskDialog } from "@/widgets/taskDialogs";
@@ -87,7 +88,7 @@ export const TasksListView = () => {
           </div>
           <aside aria-label="AI-агенти" className="space-y-5 [grid-area:aside] lg:sticky lg:top-[84px]">
             <DayPlanPanel serious={serious} demo={aiMode === "demo"} />
-            <div id="agent-d" />
+            <StuckRadarPanel serious={serious} demo={aiMode === "demo"} />
           </aside>
 
           <div className="min-w-0 space-y-5 [grid-area:tasks]">

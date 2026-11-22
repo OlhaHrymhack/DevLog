@@ -58,7 +58,8 @@ export type AgentDefinition<Input extends z.ZodType, Result extends z.ZodType> =
   systemPrompt: string;
   inputSchema: Input;
   buildUserMessage: (input: z.infer<Input>) => string;
-  tools: readonly AgentTool[];
+  /** Tools агента; функція від входу — коли набір залежить від запуску (напр. відкладені задачі радара). */
+  tools: readonly AgentTool[] | ((input: z.infer<Input>) => readonly AgentTool[]);
   /** Схема `submit_result`; сумісна зі strict-режимом tools: усі поля required, замість optional — `nullable`. */
   resultSchema: Result;
   /** Перевірка фактів (напр. що `taskId` існує); `input` — вхід запуску (напр. наявне уточнення). Порожній масив — порушень немає. */

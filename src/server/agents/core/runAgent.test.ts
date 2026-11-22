@@ -282,7 +282,7 @@ describe("runAgent: fault injection", () => {
 
 describe("runAgent: безпека", () => {
   it("DEV-008 AC-10: реєстр приймає лише read-only tools з allowlist", () => {
-    expect([...READ_TOOL_NAMES]).toEqual([...READ_TOOLS.map((tool) => tool.name), "list_active_tasks", "assess_clarity", "get_task_context", "suggest_tone"]);
+    expect([...READ_TOOL_NAMES]).toEqual([...READ_TOOLS.map((tool) => tool.name), "list_active_tasks", "assess_clarity", "get_task_context", "suggest_tone", "find_stale_tasks", "diagnose_hint"]);
     expect(READ_TOOL_NAMES.some((name) => /create|update|delete|set|add|write|remove/i.test(name))).toBe(false);
     const writer = defineTool({ name: "delete_task", label: "x", description: "x", inputSchema: z.object({ id: z.string() }), run: () => null });
     expect(() => createToolRegistry([writer])).toThrow(/allowlist/);

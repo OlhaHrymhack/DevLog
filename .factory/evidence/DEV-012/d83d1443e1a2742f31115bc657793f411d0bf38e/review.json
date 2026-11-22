@@ -1,0 +1,95 @@
+{
+  "taskId": "DEV-012",
+  "kind": "review",
+  "tree": "d83d1443e1a2742f31115bc657793f411d0bf38e",
+  "at": "2026-11-22T22:10:34.359Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "DEV-012 загалом відповідає плану й спеці. TriageSchema strict-сумісна: усі поля required, draft nullable, без oneOf. Зміна ядра коректна: tools(input) обчислюється один раз у try, реєстр і ToolSpec будуються з того самого набору, інших споживачів def.tools немає. find_stale_tasks рахує повні доби (floor), бере лише in-progress, виключає snoozed, має ліміт 20 і порядок «найдавніші першими». Порядок правил diagnose і плюралізація правильні. Mock: 4 виклики, до 3 tool calls за хід, порожній випадок обробляється. Fallback (cause=no-activity, open, draft null) завжди проходить factCheck. invalidResult з GHOST id дає fallback. Клієнт ховає відкладені й змінені задачі. Імпорти FSD ідуть через index.ts, any/as/console.log немає. Перевірено локально: vitest (153 у server/agents і stuckRadarPanel), typecheck і lint зелені; E2E не запускав. Critical/high немає. Головні зауваження (medium): factCheck не ловить посилань і PR-номерів в інших формах (план обіцяє «жодних посилань»); unit-тест AC-8 вакуумний; E2E AC-7/AC-8 не перевіряють передачу snoozedIds на сервер; поки список задач не завантажився або впав, панель показує хибне «Нічого не застрягло».",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "factCheck не перевіряє посилань і PR-номерів поза форматом «PR #N»",
+      "file": "src/server/agents/stuckRadar/checkTriage.ts",
+      "line": 6,
+      "detail": "У плані (рішення 3) сказано: «жодних вигаданих PR-номерів і посилань». Насправді PR_NUMBER=/\\bPR\\s*#\\d+/ ловить лише «PR #N». Модель (або prompt injection з нотатки) може пропустити в чернетку «#999», «PR-999», «PR 999», «pull request #999», «PR №999» або URL на кшталт https://evil.example/pr/1, і перевірка це прийме. BROADCAST посилань теж не ловить. Як виправити: відхиляти http(s):// і <...|...> у why і draft; номери рахувати ширше (/(?:\\bPR|pull request|#|№)\\s*-?\\s*#?\\d+/i) і зіставляти лише числа з нотаток і назви. Додати unit-кейси на URL і «#999»."
+    },
+    {
+      "severity": "medium",
+      "title": "Unit-тест AC-8 вакуумний: assertion ніколи не впаде",
+      "file": "src/server/agents/stuckRadar/stuckRadarAgent.test.ts",
+      "line": 136,
+      "detail": "step.detail містить label tool-а («Визначити ймовірну причину»), а не його name: runAgent додає в detail usedTools.add(registry.get(...).label). Тому expect(...).not.toContain(\"diagnose_hint\") проходить завжди, навіть якщо mock викликає diagnose_hint чи get_task_context. «Кроки 3–4 не виконувались» тест теж не перевіряє. Як виправити: перевіряти agent_steps у БД (payload.name tool-кроків лише find_stale_tasks) або відсутність label «Визначити ймовірну причину» у detail."
+    },
+    {
+      "severity": "medium",
+      "title": "E2E AC-7/AC-8 не перевіряють, що snoozedIds доходять до агента",
+      "file": "e2e/stuckRadar.spec.ts",
+      "line": 78,
+      "detail": "resolveCards і так фільтрує snoozedIds на клієнті. Тому після «Сканувати ще раз» перевірки «t12 немає» і «Нічого не застрягло» пройдуть, навіть якщо StuckRadarPanel передає snoozedIds: [] або сервер їх ігнорує. Серверну частину покриває лише unit staleIds([\"t12\"]), зв'язку клієнт → вхід агента не перевіряє ніхто. Як виправити: в E2E через page.waitForRequest перехопити POST /api/agents/stuck-radar і перевірити body.input.snoozedIds; або перевірити підсумок/кроки результату (напр. detail «Знайшов 2…»), або agent_runs."
+    },
+    {
+      "severity": "medium",
+      "title": "Хибне «Нічого не застрягло», поки список задач не завантажився або впав",
+      "file": "src/widgets/stuckRadarPanel/ui/StuckRadarPanel/index.tsx",
+      "line": 27,
+      "detail": "resolveCards(run.data, list.data ?? [], ...): якщо taskApi.list ще в польоті, впав або повернув застарілий кеш, усі items відкидаються. Тоді показується 🧘 «Нічого не застрягло…» і підсумок «Нічого не застрягло», хоча агент знайшов задачі. Як виправити: поки list.isPending, показувати стан завантаження; при list.isError — помилку з «Спробувати ще раз»; empty-стан показувати лише за list.isSuccess (або коли run.data.items порожні)."
+    },
+    {
+      "severity": "low",
+      "title": "Порожній результат: кроки 3–4 позначаються done, а не «не виконувались»",
+      "file": "src/server/agents/stuckRadar/stuckRadarAgent.ts",
+      "line": 42,
+      "detail": "Спека й план (рішення 5) кажуть: «0 знайдено → зупинка після кроку 2», кроки 3–4 не виконуються. runAgent при submit позначає done усі кроки до validationIndex, тож UI показує 4/4 done (E2E scan() навіть чекає 4 done). Ядро не підтримує pending/skip для кроків без clarify, і це відомо з DEV-010. Відхилення прийнятне для MVP, бо результат і дані коректні, але його треба явно зафіксувати в плані/README як відоме обмеження і не формулювати AC-8 як виконаний повністю. Альтернатива: окремий стан кроку skipped у ядрі (окрема задача)."
+    },
+    {
+      "severity": "low",
+      "title": "Немає detail кроків зі спеки («Знайшов 3 застряглі задачі», перелік причин, «Агент запропонував змінити задачу, якої немає»)",
+      "file": "src/server/agents/stuckRadar/stuckRadarAgent.ts",
+      "line": 54,
+      "detail": "Кроки показують лише label tool-ів і загальну причину fallback. Причина та сама: ядро не дає агенту задавати detail. Відхилення від спеки варто задокументувати разом з попереднім пунктом."
+    },
+    {
+      "severity": "low",
+      "title": "Fallback показує діагноз «Немає активності» для всіх задач",
+      "file": "src/server/agents/stuckRadar/drafts.ts",
+      "line": 38,
+      "detail": "Спека для fallback: «без порад». Картка ж рендерить «Немає активності. Задача давно не оновлювалась.», зокрема для t1, у якої PR чекає ревʼю. Технічно cause=no-activity потрібен, щоб пройти factCheck (дія open), але для користувача це хибне твердження. Як виправити: у fallback-стані на клієнті не показувати мітку причини (або показувати нейтральне «Без змін N днів»)."
+    },
+    {
+      "severity": "low",
+      "title": "neutralizeMentions не замкнена: «@@here», «<!!here» і «<mailto:» з назви валять mock",
+      "file": "src/server/agents/core/slackSafety.ts",
+      "line": 7,
+      "detail": "\"@@here\".replace(/@(here)\\b/gi,\"$1\") дає \"@here\", а \"<!!here\" після заміни <[!@] дає \"<!here\". <mailto: не нейтралізується взагалі. Чернетка з такою назвою не проходить BROADCAST у checkTriage, тож детермінований demo падає у fallback з alert. Безпеку тримає factCheck, тому це не вразливість. Як виправити: застосовувати заміну до стабілізації (цикл, поки рядок змінюється), прибирати '<' перед mailto/!/@, додати кейси в тест. Заодно statusUpdate/buildUpdate.ts і checkStatusUpdate.ts досі мають власні копії BROADCAST: варто перевести їх на core/slackSafety."
+    },
+    {
+      "severity": "low",
+      "title": "Обрізання назви може розрізати «PR #4242» на «PR #4…» і дати хибне порушення",
+      "file": "src/server/agents/stuckRadar/drafts.ts",
+      "line": 10,
+      "detail": "Якщо в назві довше 120 символів «PR #N» стоїть біля межі, titleOf лишає «PR #4…». checkTriage бачить PR #4, якого немає серед відомих (є PR#4242), і mock падає у fallback. Як виправити: обрізати назву за межею слова/токена PR або перевіряти номери за повною назвою з урахуванням обрізаного суфікса; додати тест з «PR #4242» на межі."
+    },
+    {
+      "severity": "low",
+      "title": "Дублювання пошуку застряглих: repository.findStale існує, але не використовується",
+      "file": "src/server/agents/stuckRadar/staleTasks.ts",
+      "line": 12,
+      "detail": "У repository.ts:167 вже є findStale({minDays, now}) з тим самим фільтром і тестом. Агент реалізує пошук наново через listTasks + getTask (N+1, до 20 запитів). Як виправити: або використати findStale (додавши його в AgentContext.tasks), або видалити невикористаний метод, щоб не було двох джерел правди."
+    },
+    {
+      "severity": "low",
+      "title": "Unit AC-3 не перевіряє послідовність tools; E2E AC-6 не перевіряє tab=decompose",
+      "file": "src/server/agents/stuckRadar/stuckRadarAgent.test.ts",
+      "line": 87,
+      "detail": "Спека AC-3: find_stale_tasks → get_task_context×3 → submit_result, а тест перевіряє лише фінальні дані. В e2e/stuckRadar.spec.ts:66 регекс /\\/tasks\\/t3\\?.*autorun=1/ пропустить URL без tab=decompose. Як виправити: перевірити payload.name кроків у agent_steps; регекс замінити на /\\/tasks\\/t3\\?(?=.*tab=decompose)(?=.*autorun=1)/."
+    },
+    {
+      "severity": "low",
+      "title": "snoozedIds клієнта потрапляють у user-повідомлення моделі як довільний текст",
+      "file": "src/server/agents/stuckRadar/stuckRadarAgent.ts",
+      "line": 33,
+      "detail": "StuckRadarInputSchema приймає будь-які рядки до 100 символів (×100), і buildUserMessage вставляє їх у промпт без перевірки. Ризик малий: це власний ввід користувача, але канал для інструкцій зайвий. Як виправити: обмежити формат id (напр. /^[A-Za-z0-9_-]{1,64}$/) або не вставляти snoozedIds у промпт, бо tool і так їх виключає."
+    }
+  ]
+}
