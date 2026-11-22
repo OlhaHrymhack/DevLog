@@ -1,24 +1,42 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { PRIORITY_LABELS, STATUS_LABELS, TaskPrioritySchema, TaskStatusSchema } from "@/entities/task";
 import { formatDate } from "@/shared/lib/formatDate";
 import { Button } from "@/shared/ui/Button";
 import { Input } from "@/shared/ui/Input";
 import { ResponsiveDialog } from "@/shared/ui/ResponsiveDialog";
 import { Textarea } from "@/shared/ui/Textarea";
+import { fromLocalDateTime, toLocalDateTime } from "../../model/localDateTime";
+import { useVoiceTaskDraft } from "../../model/useVoiceTaskDraft";
+import { VoiceDraftControls } from "../VoiceDraftControls";
 import { useTaskForm } from "../../model/useTaskForm";
 import { EMPTY_TASK_FORM } from "../../model/validation";
 import { descriptionStyles, errorStyles, fieldStyles, formStyles, groupStyles, hintStyles, inputStyles, labelStyles, noteStyles, optionStyles } from "./styles";
 import type { TaskFormProps } from "./types";
 
-export const TaskForm = ({ task, onSave, onClose, fallbackFocus }: TaskFormProps) => {
+export const TaskForm = ({ task, voiceMode, onSave, onClose, fallbackFocus }: TaskFormProps) => {
   const id = useId();
   const titleInput = useRef<HTMLInputElement>(null);
+  const deadlineInput = useRef<HTMLInputElement>(null);
+  const [invalidDeadline, setInvalidDeadline] = useState<string>();
   const initialValues = task
-    ? { title: task.title, description: task.description, status: task.status, priority: task.priority }
+    ? { title: task.title, description: task.description, status: task.status, priority: task.priority, dueAt: task.dueAt ?? undefined }
     : EMPTY_TASK_FORM;
-  const { form, values, errors, pending, change, submit } = useTaskForm(initialValues, onSave);
+  const { form, values, errors, pending, change, applyDraft, submit } = useTaskForm(initialValues, onSave);
+  const voice = useVoiceTaskDraft(({ title, description, priority, dueAtLocal }) => {
+    const dueAt = dueAtLocal ? fromLocalDateTime(dueAtLocal) : undefined;
+    setInvalidDeadline(dueAtLocal && !dueAt ? dueAtLocal : undefined);
+    applyDraft({ title, description, priority, dueAt });
+  });
+  const voiceBusy = voice.phase !== "idle";
+  const deadlineValue = invalidDeadline ?? (values.dueAt ? toLocalDateTime(new Date(values.dueAt)) : "");
+  const deadlineError = invalidDeadline ? "Вкажіть дійсні дату й час для свого часового поясу." : errors.dueAt;
+  const changeDeadline = (value: string) => {
+    const dueAt = fromLocalDateTime(value);
+    setInvalidDeadline(value && !dueAt ? value : undefined);
+    change("dueAt", dueAt);
+  };
   const hasShortDescription = values.description.trim().length > 0 && values.description.trim().length < 40;
   const descriptionReferences = [
     errors.description && `${id}-description-error`,
@@ -34,11 +52,19 @@ export const TaskForm = ({ task, onSave, onClose, fallbackFocus }: TaskFormProps
       fallbackFocus={fallbackFocus}
       actions={<>
         <Button variant="ghost" onClick={close} disabled={pending}>Скасувати</Button>
-        <Button type="submit" form={formId} disabled={pending}>{task ? "Зберегти" : "Створити"}</Button>
+        <Button type="submit" form={formId} disabled={pending || voiceBusy}>{task ? "Зберегти" : "Створити"}</Button>
       </>}
     >
-      <form ref={form} id={formId} onSubmit={(event) => void submit(event)} noValidate aria-busy={pending}>
-        <fieldset className={formStyles} disabled={pending} aria-label="Дані задачі">
+      <form ref={form} id={formId} onSubmit={(event) => {
+        if (voiceBusy || invalidDeadline) {
+          event.preventDefault();
+          if (invalidDeadline) deadlineInput.current?.focus();
+          return;
+        }
+        void submit(event);
+      }} noValidate aria-busy={pending}>
+        {!task && <VoiceDraftControls {...voice} id={id + "-voice-guide"} mode={voiceMode} disabled={pending} />}
+        <fieldset className={formStyles} disabled={pending || voiceBusy} aria-label="Дані задачі">
           <div className={fieldStyles}>
             <label htmlFor={`${id}-title`} className={labelStyles}>Назва *</label>
             <Input id={`${id}-title`} ref={titleInput} name="title" required className={inputStyles}
@@ -86,6 +112,14 @@ export const TaskForm = ({ task, onSave, onClose, fallbackFocus }: TaskFormProps
               ))}
             </div>
             {errors.priority && <p id={`${id}-priority-error`} className={errorStyles}>{errors.priority}</p>}
+          </div>
+          <div className={fieldStyles}>
+            <label htmlFor={id + "-dueAt"} className={labelStyles}>Дедлайн</label>
+            <Input id={id + "-dueAt"} ref={deadlineInput} name="dueAt" type="datetime-local" className={inputStyles}
+              value={deadlineValue} onChange={({ currentTarget }) => changeDeadline(currentTarget.value)}
+              aria-invalid={Boolean(deadlineError)} aria-describedby={deadlineError ? id + "-dueAt-error" : undefined}
+            />
+            {deadlineError && <p id={id + "-dueAt-error"} className={errorStyles}>{deadlineError}</p>}
           </div>
           <p className={noteStyles}>{task ? `Створено ${formatDate(task.createdAt)}. Дата створення не редагується.` : "Дата створення проставляється автоматично."}</p>
         </fieldset>

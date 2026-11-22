@@ -16,9 +16,9 @@ describe("task form validation", () => {
 
   it("DEV-006 AC-3: maps errors from 400 to known fields and ignores unrelated responses", () => {
     expect(getTaskFieldErrors(new ApiError("VALIDATION_ERROR", "Помилка", 400, {
-      title: ["Така назва вже є", "Інша помилка"], dueAt: ["Невідома помилка форми"],
+      title: ["Така назва вже є", "Інша помилка"], createdAt: ["Невідома помилка форми"],
     }))).toEqual({ title: "Така назва вже є" });
     expect(getTaskFieldErrors(new ApiError("INTERNAL_ERROR", "Помилка", 500))).toBeUndefined();
-    expect(getTaskFieldErrors(new ApiError("VALIDATION_ERROR", "Помилка", 400, { dueAt: ["Помилка"] }))).toBeUndefined();
+    expect(getTaskFieldErrors(new ApiError("VALIDATION_ERROR", "Помилка", 400, { dueAt: ["Помилка"] }))).toEqual({ dueAt: "Помилка" });
   });
 });

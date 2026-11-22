@@ -2,7 +2,7 @@ import { TaskCreateInputSchema } from "@/entities/task";
 import { ApiError } from "@/shared/api/http";
 import type { TaskFieldErrors, TaskFormValues } from "./types";
 
-export const TASK_FIELDS = ["title", "description", "status", "priority"] as const;
+export const TASK_FIELDS = ["title", "description", "status", "priority", "dueAt"] as const;
 
 export const EMPTY_TASK_FORM: TaskFormValues = {
   title: "", description: "", status: "todo", priority: "medium",
@@ -20,6 +20,8 @@ export const validateTaskForm = (values: TaskFormValues) => {
       errors[field] = issue.code === "too_big" ? "Назва має містити не більше 120 символів." : "Назва обовʼязкова, щонайменше 3 символи.";
     } else if (field === "description") {
       errors[field] = issue.code === "too_big" ? "Опис має містити не більше 2000 символів." : "Опишіть задачу хоча б одним реченням.";
+    } else if (field === "dueAt") {
+      errors[field] = "Вкажіть дійсну дату й час.";
     } else {
       errors[field] = "Виберіть одне зі значень.";
     }

@@ -1,5 +1,18 @@
 import { z } from "zod";
-import { SubtaskCreateInputSchema, SubtaskStatusSchema, TaskListItemSchema, TaskListQuerySchema } from "../model/schemas";
+import {
+  SubtaskCreateInputSchema, SubtaskStatusSchema, TaskDescriptionSchema, TaskListItemSchema, TaskListQuerySchema,
+  TaskPrioritySchema, TaskTitleSchema,
+} from "../model/schemas";
+
+export const VoiceTaskDraftSchema = z.strictObject({
+  title: TaskTitleSchema,
+  description: TaskDescriptionSchema,
+  priority: TaskPrioritySchema,
+  dueAtLocal: z.iso.datetime({ local: true, precision: -1 }).refine((value) => !value.endsWith("Z")).nullable(),
+});
+
+export const VoiceTaskDraftResponseSchema = z.object({ data: VoiceTaskDraftSchema });
+export type VoiceTaskDraft = z.infer<typeof VoiceTaskDraftSchema>;
 
 export const AddSubtasksInputSchema = z.strictObject({
   items: z.array(SubtaskCreateInputSchema.strict()).min(1).max(6),

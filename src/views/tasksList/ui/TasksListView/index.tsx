@@ -136,7 +136,7 @@ export const TasksListView = () => {
         <Plus aria-hidden="true" className="size-6" />
       </Button>
       {taskDialog && (
-        <TaskDialogs dialog={taskDialog} serious={serious} onClose={() => setTaskDialog(undefined)}
+        <TaskDialogs dialog={taskDialog} serious={serious} voiceMode={health.data?.aiMode} onClose={() => setTaskDialog(undefined)}
           onCreated={() => { if (screen === "empty") setScreen("real"); }}
         />
       )}

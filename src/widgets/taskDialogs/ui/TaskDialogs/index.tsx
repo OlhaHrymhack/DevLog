@@ -9,7 +9,7 @@ import type { TaskDialogsProps } from "./types";
 
 const focusTaskList = () => document.getElementById("main");
 
-export const TaskDialogs = ({ dialog, serious, onClose, onCreated, onDeleted }: TaskDialogsProps) => {
+export const TaskDialogs = ({ dialog, serious, voiceMode, onClose, onCreated, onDeleted }: TaskDialogsProps) => {
   const create = useCreateTask();
   const update = useUpdateTask();
 
@@ -28,7 +28,7 @@ export const TaskDialogs = ({ dialog, serious, onClose, onCreated, onDeleted }: 
     }} />;
   }
 
-  return <TaskForm onClose={onClose} fallbackFocus={focusTaskList} onSave={async (values) => {
+  return <TaskForm voiceMode={voiceMode} onClose={onClose} fallbackFocus={focusTaskList} onSave={async (values) => {
     await create.mutateAsync(values);
     toast.success(serious ? "Задачу створено" : "✨ Задачу створено. Поки що вона 🥒 свіжа");
     onCreated?.();

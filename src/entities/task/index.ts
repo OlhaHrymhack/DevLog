@@ -52,7 +52,8 @@ export { TaskRow } from "./ui/TaskRow";
 export type { TaskRowData, TaskRowProps } from "./ui/TaskRow/types";
 export {
   AddSubtasksInputSchema, SetFocusInputSchema, SetSubtaskStatusInputSchema, TaskPageQuerySchema, TaskPageSchema,
-  type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput,
+  VoiceTaskDraftResponseSchema, VoiceTaskDraftSchema,
+  type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput, type VoiceTaskDraft,
   type TaskPage, type TaskPageQuery, type TaskSummary,
 } from "./api/contracts";
 export { taskApi, taskQueryKeys } from "./api/taskApi";
