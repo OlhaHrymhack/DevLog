@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-012",
+  "currentTask": "DEV-013",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -1989,7 +1989,7 @@
     "DEV-012": {
       "id": "DEV-012",
       "title": "Агент D Радар застряглих",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -2008,8 +2008,8 @@
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-012 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-012",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/29",
       "history": [
         {
           "at": "2026-11-21T17:47:24.091Z",
@@ -2105,27 +2105,53 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T22:17:15.938Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/29"
+        },
+        {
+          "at": "2026-11-22T22:17:16.182Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.090Z",
-      "updatedAt": "2026-11-22T22:16:59.875Z",
+      "updatedAt": "2026-11-22T22:17:16.183Z",
       "lastFailure": null,
       "reviewTree": "d83d1443e1a2742f31115bc657793f411d0bf38e"
     },
     "DEV-013": {
       "id": "DEV-013",
       "title": "README і перевірка з нуля",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
-      "securityRequired": false,
-      "agent": null,
-      "attempts": {},
-      "issues": [],
+      "status": "COMPLETED",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 1,
+        "architecture": 0,
+        "criticality": 1,
+        "security": 0,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 0,
+        "uncertainty": 1,
+        "ui": 0
+      },
+      "securityRequired": true,
+      "agent": "reviewer",
+      "attempts": {
+        "sonnet": 2
+      },
+      "issues": [
+        "review: 1 блокувальних findings",
+        "tests failed: код змінився під час перевірки"
+      ],
       "blockers": [],
-      "nextAction": "start",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-013",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/30",
       "history": [
         {
           "at": "2026-11-21T17:47:24.156Z",
@@ -2135,10 +2161,129 @@
           "at": "2026-11-21T19:54:45.152Z",
           "event": "retitled",
           "note": "README і env.example → README і перевірка з нуля"
+        },
+        {
+          "at": "2026-11-22T22:18:24.530Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T22:18:24.810Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T22:18:54.693Z",
+          "event": "classified",
+          "note": "сума 4 → balanced"
+        },
+        {
+          "at": "2026-11-22T22:18:55.138Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T22:19:17.026Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-22T22:25:02.028Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-013/cca906125aad3be9124187a866b2f317a7b8ea73/tests.json"
+        },
+        {
+          "at": "2026-11-22T22:25:14.503Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "cca906125a"
+        },
+        {
+          "at": "2026-11-22T22:29:07.381Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 14,
+          "blocking": 1,
+          "evidence": ".factory/evidence/DEV-013/cca906125aad3be9124187a866b2f317a7b8ea73/review.json"
+        },
+        {
+          "at": "2026-11-22T22:34:58.476Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING",
+          "note": "Відновлено після зміни дерева під час попереднього рев’ю"
+        },
+        {
+          "at": "2026-11-22T22:37:45.560Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-013/d85ef664c347b62fdbcc9ca37752e8f883578a21/tests.json"
+        },
+        {
+          "at": "2026-11-22T22:40:17.149Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-013/d962dc8cc989f45f81e056d02dc8af96785952bd/tests.json"
+        },
+        {
+          "at": "2026-11-22T22:40:34.624Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "d962dc8cc9"
+        },
+        {
+          "at": "2026-11-22T22:47:42.219Z",
+          "event": "review",
+          "model": "codex",
+          "findings": 0,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-013/d962dc8cc989f45f81e056d02dc8af96785952bd/review.json"
+        },
+        {
+          "at": "2026-11-22T22:47:43.269Z",
+          "event": "security",
+          "model": "codex",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-013/d962dc8cc989f45f81e056d02dc8af96785952bd/security.json"
+        },
+        {
+          "at": "2026-11-22T22:47:44.091Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T22:51:27.698Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-22T22:51:59.581Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/30"
+        },
+        {
+          "at": "2026-11-22T22:51:59.962Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:24.155Z",
-      "updatedAt": "2026-11-21T19:54:45.152Z"
+      "updatedAt": "2026-11-22T22:51:59.962Z",
+      "lastFailure": null,
+      "reviewTree": "d962dc8cc989f45f81e056d02dc8af96785952bd"
     },
     "DEV-014": {
       "id": "DEV-014",

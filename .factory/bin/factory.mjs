@@ -71,9 +71,11 @@ const GATE_TITLES = { approval: 'Gate 1 Approval', verify: 'Gate 2 Verify (ко�
 function line(t, cfg) {
   const tier = core.effectiveTier(t);
   const impl = core.implementer(t);
-  const rev = tier ? core.requiredReviewModel(cfg, t) : null;
+  const rev = tier ? (core.codexReviewFallback(cfg, t) ? 'codex' : core.requiredReviewModel(cfg, t)) : null;
   const lastReview = [...t.history].reverse().find((e) => e.event === 'review' && e.model);
-  const confirmed = rev && lastReview && core.modelRank(lastReview.model) >= core.modelRank(rev);
+  const confirmed = rev && lastReview && (rev === 'codex'
+    ? lastReview.model === 'codex'
+    : core.modelRank(lastReview.model) >= core.modelRank(rev));
   const legacy = t.tier && tier && t.tier !== tier ? ` (збережений ${t.tier} — стара ескалація, на рев'ю не впливає)` : '';
   return [
     t.id, t.status,
@@ -110,8 +112,9 @@ function deriveNext(t, cfg, tree = core.treeHash(root)) {
       return `${who} продовжує реалізацію і тести на кожен AC → verify ${id}`;
     case 'REVIEWING': {
       const todo = [];
-      if (g.review.pending) todo.push(/codex/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
-      if (g.security.pending) todo.push('security (opus)');
+      const fallback = core.codexReviewFallback(cfg, t, tree);
+      if (g.review.pending) todo.push(fallback ? 'reviewer (codex)' : /друге рев'ю/.test(g.review.detail) ? 'codex review' : `reviewer (${core.requiredReviewModel(cfg, t)})`);
+      if (g.security.pending) todo.push(fallback ? 'security (codex)' : 'security (opus)');
       if (todo.length) return `${todo.join(' + ')} для одного хешу${t.reviewTree ? ` ${t.reviewTree.slice(0, 10)}` : ''}, дочекайся всіх → record ${id} …`;
       const failing = ['review', 'security'].filter((k) => !g[k].ok);
       if (failing.length) return `transition ${id} IMPLEMENTING → ${who} виправляє findings (${failing.join(' + ')}) одним пакетом, потім verify ${id}`;
@@ -375,17 +378,23 @@ const commands = {
       if (core.modelRank(report.model) < core.modelRank(fallback.minModel)) fail(`резервне рев'ю має працювати щонайменше на ${fallback.minModel} (отримано ${report.model})`);
     }
     const task = core.getTask(core.loadState(root), id);
-    if (kind === 'review') {
+    const tree = core.treeHash(root);
+    const codexFallback = core.acceptsCodexReview(cfg, task, tree, kind, report);
+    if ((kind === 'review' || kind === 'security') && report.model === 'codex' && !codexFallback) {
+      fail(`Codex не погоджено для ${kind} ${id} на поточному дереві або роль звіту не відповідає етапу`);
+    }
+    if (kind === 'review' && !codexFallback) {
       const need = core.requiredReviewModel(cfg, task);
       if (core.modelRank(report.model) < core.modelRank(need)) fail(`reviewer для tier ${core.effectiveTier(task)}${core.elevatedRisk(task) ? ' (підвищений ризик)' : ''} має працювати щонайменше на ${need} (отримано ${report.model})`);
     }
-    if (kind === 'security' && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
-    const tree = core.treeHash(root);
+    if (kind === 'security' && !codexFallback && cfg.pinnedStrongAgents.includes(report.agent) && report.model !== 'opus') fail(`${report.agent} має працювати на opus (отримано ${report.model})`);
     if (kind !== 'qa') {
       if (task.status !== 'REVIEWING') fail(`звіт ${kind} записується лише в REVIEWING (зараз ${task.status})`);
       if (task.reviewTree && task.reviewTree !== tree) fail(`звіт ${kind} відхилено: код змінився після початку рев'ю (було ${task.reviewTree.slice(0, 10)}, зараз ${tree.slice(0, 10)}). Звіти рахуються лише для зафіксованого хешу — поверни задачу в IMPLEMENTING, перевір новий хеш (verify) і повтори рев'ю.`);
     }
-    const ev = core.writeEvidence(root, id, tree, kind, report);
+    const ev = core.writeEvidence(root, id, tree, kind, codexFallback
+      ? { ...report, fallbackReason: core.codexReviewFallback(cfg, task, tree).reason }
+      : report);
     const blocking = core.blockingFindings(report);
     let escalation = null;
     withState((s) => {
