@@ -3,7 +3,7 @@ import {
   NoteCreateInputSchema, SubtaskCreateInputSchema, SubtaskUpdateInputSchema,
   TaskCreateInputSchema, TaskUpdateInputSchema,
 } from "@/entities/task";
-import type { DevLogDb } from "../db/client";
+import { getDb, type DevLogDb } from "../db/client";
 import { createTaskRepository } from "./repository";
 
 export const createTaskService = ({ db, clock = () => new Date() }: { db: DevLogDb; clock?: () => Date }) => {
@@ -34,3 +34,5 @@ export const createTaskService = ({ db, clock = () => new Date() }: { db: DevLog
     addNote: (taskId: string, input: unknown) => repository.addNote(taskId, NoteCreateInputSchema.parse(input), clock()),
   };
 };
+
+export const getTaskService = () => createTaskService({ db: getDb().db });

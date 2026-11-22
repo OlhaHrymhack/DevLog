@@ -49,3 +49,8 @@ export { PriorityLabel } from "./ui/PriorityLabel";
 export { StatusBadge } from "./ui/StatusBadge";
 export { TaskRow } from "./ui/TaskRow";
 export type { TaskRowData, TaskRowProps } from "./ui/TaskRow/types";
+export {
+  AddSubtasksInputSchema, SetFocusInputSchema, SetSubtaskStatusInputSchema,
+  type AddSubtasksInput, type SetFocusInput, type SetSubtaskStatusInput,
+} from "./api/contracts";
+export { taskApi, taskQueryKeys } from "./api/taskApi";
