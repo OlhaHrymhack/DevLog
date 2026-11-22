@@ -126,6 +126,12 @@
 - Причина: на DEV-001 правки після першого звіту (security) зробили застарілими evidence решти рев'ю і змусили повторювати їх, а звіти приходили для різних станів коду. Погоджено користувачкою.
 - Ризик: рев'ю доводиться чекати повністю навіть при очевидному блокері в першому звіті; компенсація — паралельний запуск, тож час майже не росте.
 
+## D-022 DEV-002: Tailwind v4 CSS-тема, власна кнопка замість shadcn `button.tsx`, `sonner` без `next-themes`
+- Дата: 2026-11-22
+- Рішення: (1) Токени з `docs/design/tokens.css` лежать у `globals.css` дослівно (в `@layer base`), а мапінг у Tailwind і змінні shadcn (`--color-background`, `--color-ring` …) — через `@theme inline` з посиланнями на токени; `tailwind.config.ts` із DESIGN §2.6 не потрібен (Tailwind v4 конфігурується CSS). (2) Згенерований shadcn `button.tsx` не лишаємо: на регістронезалежній ФС (macOS) він збігається з папкою `shared/ui/Button/` зі специфікації (TS1261, імпорт `@/shared/ui/Button` резолвився у файл). Єдина кнопка — `shared/ui/Button` з варіантами primary · ghost · danger · danger-ghost · ai; у `dialog.tsx` змінено лише імпорт і `outline` → `ghost`. (3) `sonner.tsx` без `next-themes` (тему веде `features/themeToggle` через `data-theme`); `next-themes` і випадковий пакет `cn`, який поставив `shadcn add`, з залежностей прибрано, імпорти `from "cn"` виправлено на `@/shared/lib/cn`. (4) Оверрайд ESLint для `src/shared/ui/**`: вимкнено `consistent-type-assertions` (згенерований код містить `as`). (5) `@testing-library/react` (+ `@testing-library/dom`) — dev-залежність для компонентних тестів AC-5; jsdom-стаби `matchMedia`/`ResizeObserver` — `test/setup/jsdom.ts`. (6) `/ui-kit` — `notFound()` у production; `next build` лишає сторінку статичною, `next start` віддає 404.
+- Причина: специфікація DEV-002 і DESIGN §2.6 писались для Tailwind v3; shadcn CLI на alias `@/shared/lib/cn` генерує хибний імпорт.
+- Ризик: нові shadcn-компоненти, що імпортують `@/shared/ui/button`, треба правити так само (змінити імпорт і варіанти).
+
 ## D-024 Повторне рев'ю після завершення задачі: `COMPLETED → REVIEWING` після ребейзу
 - Дата: 2026-11-22
 - Доповнює: D-016, D-021.
