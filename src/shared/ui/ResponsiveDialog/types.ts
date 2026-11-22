@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
 export type ResponsiveDialogProps = {
   open: boolean;
@@ -8,6 +8,8 @@ export type ResponsiveDialogProps = {
   children: ReactNode;
   /** Кнопки дій: у діалозі — внизу праворуч, у bottom sheet — липкі внизу. */
   actions?: ReactNode;
+  initialFocus?: RefObject<HTMLElement | null>;
+  fallbackFocus?: () => HTMLElement | null;
   /** Широкий варіант (легенда температури, 760px). */
   wide?: boolean;
 };

@@ -8,6 +8,7 @@ const BASE_URL = `http://localhost:${PORT}`;
 const databaseDir = process.env.DEVLOG_PLAYWRIGHT_DB_DIR ??= mkdtempSync(join(tmpdir(), "devlog-playwright-"));
 
 // API contract and theme persistence do not depend on the viewport: run them once, in desktop-1280 only.
+const CRUD_SPEC = /taskCrud\.spec\.ts/;
 const SINGLE_VIEWPORT_SPECS = /(health|theme|tasksList)\.spec\.ts/;
 
 export default defineConfig({
@@ -33,16 +34,24 @@ export default defineConfig({
   projects: [
     {
       name: "mobile-375",
-      testIgnore: SINGLE_VIEWPORT_SPECS,
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
     },
     {
       name: "tablet-768",
-      testIgnore: SINGLE_VIEWPORT_SPECS,
+      testIgnore: [SINGLE_VIEWPORT_SPECS, CRUD_SPEC],
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
     },
     {
       name: "desktop-1280",
+      testIgnore: CRUD_SPEC,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
+    {
+      // Mutations run after suites that assert exact counts for the original seed.
+      name: "crud",
+      dependencies: ["mobile-375", "tablet-768", "desktop-1280"],
+      testMatch: CRUD_SPEC,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
     },
   ],

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-005",
+  "currentTask": "DEV-006",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -841,17 +841,27 @@
     "DEV-006": {
       "id": "DEV-006",
       "title": "Створення редагування видалення",
-      "status": "BACKLOG",
-      "tier": null,
-      "model": null,
-      "scores": null,
+      "status": "COMPLETED",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 1,
+        "criticality": 1,
+        "security": 0,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 2,
+        "uncertainty": 0,
+        "ui": 1
+      },
       "securityRequired": false,
-      "agent": null,
+      "agent": "qa",
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "start",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-006",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/19",
       "history": [
         {
           "at": "2026-11-21T17:47:23.705Z",
@@ -861,10 +871,103 @@
           "at": "2026-11-21T19:54:44.695Z",
           "event": "retitled",
           "note": "UI CRUD і сторінка задачі → Створення редагування видалення"
+        },
+        {
+          "at": "2026-11-22T14:42:29.908Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T14:42:30.111Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T14:42:30.320Z",
+          "event": "classified",
+          "note": "сума 6 → balanced"
+        },
+        {
+          "at": "2026-11-22T14:42:30.583Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T14:45:18.265Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T14:55:54.879Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-006/3f81ecebe71d7c704fc83757a1836e4996d9f626/tests.json"
+        },
+        {
+          "at": "2026-11-22T14:55:55.103Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "3f81ecebe7"
+        },
+        {
+          "at": "2026-11-22T14:56:36.946Z",
+          "event": "review",
+          "model": "sonnet",
+          "findings": 5,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-006/3f81ecebe71d7c704fc83757a1836e4996d9f626/review.json"
+        },
+        {
+          "at": "2026-11-22T14:56:37.234Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T14:56:54.659Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-006/3f81ecebe71d7c704fc83757a1836e4996d9f626/qa.json"
+        },
+        {
+          "at": "2026-11-22T14:56:54.889Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T15:09:46.349Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T15:09:54.302Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/19"
+        },
+        {
+          "at": "2026-11-22T15:09:54.452Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-21T17:47:23.704Z",
-      "updatedAt": "2026-11-21T19:54:44.696Z"
+      "updatedAt": "2026-11-22T15:09:54.452Z",
+      "lastFailure": null,
+      "reviewTree": "3f81ecebe71d7c704fc83757a1836e4996d9f626"
     },
     "DEV-007": {
       "id": "DEV-007",

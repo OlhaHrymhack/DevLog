@@ -3,7 +3,7 @@
 import { CircleHelp, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { STATUS_LABELS, useTaskPage } from "@/entities/task";
+import { STATUS_LABELS, useTaskPage, type TaskRowData } from "@/entities/task";
 import { HeatLegendDialog } from "@/features/heatLegend";
 import { setSerious, useSerious } from "@/features/seriousMode";
 import { TaskFilter } from "@/features/taskFilter";
@@ -22,13 +22,14 @@ import { t } from "../../model/copy.uk";
 import { formatTaskSummary } from "../../model/formatTaskSummary";
 import { isSortOption, SORT_OPTIONS, useTaskListParams } from "../../model/useTaskListParams";
 import { fabStyles, filtersStyles, layoutStyles, mainStyles, skipLinkStyles, titleStyles } from "./styles";
-import type { TasksListViewProps } from "./types";
+import { TaskDialogs } from "../TaskDialogs";
+import type { TaskDialog } from "../TaskDialogs/types";
 
 const sortOptions = Object.entries(SORT_OPTIONS).map(([value, { label }]) => ({ value, label }));
 const EMPTY_SUMMARY = { all: 0, todo: 0, "in-progress": 0, done: 0, hot: 0 };
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-export const TasksListView = ({ onNewTask, onEdit, onDelete }: TasksListViewProps) => {
+export const TasksListView = () => {
   const filters = useTaskListParams();
   const search = useRef<HTMLInputElement>(null);
   const [now] = useState(() => Date.now());
@@ -38,8 +39,12 @@ export const TasksListView = ({ onNewTask, onEdit, onDelete }: TasksListViewProp
   const [mode, setMode] = useState<ModeOverride>("auto");
   const [invalidOutput, setInvalidOutput] = useState(false);
   const serious = useSerious();
+  const [taskDialog, setTaskDialog] = useState<TaskDialog>();
+  const onNewTask = () => setTaskDialog({ kind: "create" });
+  const onEdit = (task: TaskRowData) => setTaskDialog({ kind: "edit", task });
+  const onDelete = (task: TaskRowData) => setTaskDialog({ kind: "delete", task });
 
-  useHotkeys(() => search.current?.focus(), onNewTask, legendOpen || devOpen);
+  useHotkeys(() => search.current?.focus(), onNewTask, legendOpen || devOpen || Boolean(taskDialog));
 
   const current = useTaskPage({ ...filters.query, page: filters.page });
   const health = useHealth();
@@ -111,7 +116,7 @@ export const TasksListView = ({ onNewTask, onEdit, onDelete }: TasksListViewProp
             {showEmpty && !filteredBy && (
               <EmptyState tone={serious ? "neutral" : "humor"} emoji={serious ? "📋" : "🧘"}
                 title={t("emptyTitle", serious)} description={t("emptyDescription", serious)}
-                action={<Button onClick={onNewTask} disabled={!onNewTask}>Нова задача</Button>}
+                action={<Button onClick={onNewTask}>Нова задача</Button>}
               />
             )}
             {!loading && !error && tasks.length > 0 && (
@@ -125,9 +130,14 @@ export const TasksListView = ({ onNewTask, onEdit, onDelete }: TasksListViewProp
         </div>
       </main>
 
-      <Button size="icon" className={fabStyles} aria-label="Нова задача" disabled={!onNewTask} onClick={onNewTask}>
+      <Button size="icon" className={fabStyles} aria-label="Нова задача" onClick={onNewTask}>
         <Plus aria-hidden="true" className="size-6" />
       </Button>
+      {taskDialog && (
+        <TaskDialogs dialog={taskDialog} serious={serious} onClose={() => setTaskDialog(undefined)}
+          onCreated={() => { if (screen === "empty") setScreen("real"); }}
+        />
+      )}
       <HeatLegendDialog open={legendOpen} onOpenChange={setLegendOpen} serious={serious} />
       <DevStatesPanel open={devOpen} onOpenChange={setDevOpen} screen={screen} onScreenChange={setScreen}
         mode={mode} onModeChange={setMode} serious={serious} onSeriousChange={setSerious}
