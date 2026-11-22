@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test, vi } from "vitest";
 import { createDb } from "./client";
-import { DB_ENUMS } from "./schema";
+import { AGENT_RUN_DB_ENUMS } from "../agentRuns/schema";
+import { TASK_DB_ENUMS } from "../tasks/schema";
 import {
   AgentRunKindSchema, AgentRunModeSchema, AgentRunStatusSchema, AgentStepRecordStateSchema, AgentStepTypeSchema,
 } from "@/entities/agentRun";
@@ -45,7 +46,7 @@ test("DEV-003 AC-1: SQLite creates and reopens a migrated file, and getDb reuses
 });
 
 test("DEV-003 AC-3: SQLite enums match the Zod contracts and reject unknown statuses", () => {
-  expect(DB_ENUMS).toEqual({
+  expect({ ...TASK_DB_ENUMS, ...AGENT_RUN_DB_ENUMS }).toEqual({
     taskStatus: TaskStatusSchema.options, priority: TaskPrioritySchema.options,
     source: SubtaskSourceSchema.options, runKind: AgentRunKindSchema.options,
     runStatus: AgentRunStatusSchema.options, mode: AgentRunModeSchema.options,

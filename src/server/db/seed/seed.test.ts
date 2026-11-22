@@ -1,17 +1,19 @@
 import { expect, test } from "vitest";
 import { getHeat, HEAT_ORDER } from "@/entities/task";
-import { createTaskRepository } from "../tasks/repository";
-import { createDb } from "./client";
-import { seedDatabase } from "./seed";
+import { createAgentRunRepository } from "../../agentRuns/repository";
+import { createTaskRepository } from "../../tasks/repository";
+import { createDb } from "../client";
+import { seedDatabase } from "./index";
 
 test("DEV-003 AC-9: seed covers all heat levels and replaces fixtures without duplicates", () => {
   const connection = createDb(":memory:");
   const now = new Date("2026-11-21T12:00:00Z");
   try {
     const repository = createTaskRepository(connection.db);
+    const agentRuns = createAgentRunRepository(connection.db);
     expect(seedDatabase(connection.db, now)).toBe(12);
-    const run = repository.createRun({ kind: "prioritize", mode: "demo", taskId: "t1" }, now);
-    repository.appendStep(run.id, { type: "model", label: "Plan", state: "done" }, now);
+    const run = agentRuns.createRun({ kind: "prioritize", mode: "demo", taskId: "t1" }, now);
+    agentRuns.appendStep(run.id, { type: "model", label: "Plan", state: "done" }, now);
     expect(seedDatabase(connection.db, now)).toBe(12);
     const seeded = repository.listTasks();
     expect(seeded).toHaveLength(12);
@@ -25,7 +27,7 @@ test("DEV-003 AC-9: seed covers all heat levels and replaces fixtures without du
     }
     for (const id of ["t1", "t6", "t9"]) expect(repository.getTask(id)?.notes).toHaveLength(1);
     expect(connection.sqlite.prepare("select count(*) from agent_runs").pluck().get()).toBe(0);
-    expect(repository.listRunSteps(run.id)).toEqual([]);
+    expect(agentRuns.listRunSteps(run.id)).toEqual([]);
   } finally {
     connection.close();
   }

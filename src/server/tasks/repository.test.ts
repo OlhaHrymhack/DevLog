@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { TaskCreateInputSchema } from "@/entities/task";
+import { createAgentRunRepository } from "../agentRuns/repository";
 import { createDb } from "../db/client";
 import { seedDatabase } from "../db/seed";
 import { createTaskRepository } from "./repository";
@@ -62,14 +63,15 @@ test("DEV-003 AC-5: priority and date sorting are stable; search handles Unicode
 });
 
 test("DEV-003 AC-6: deleting a task cascades to subtasks and notes and preserves run history", () => {
-  const run = repository.createRun({ kind: "status-update", mode: "demo", taskId: "t1" }, NOW);
+  const agentRuns = createAgentRunRepository(connection.db);
+  const run = agentRuns.createRun({ kind: "status-update", mode: "demo", taskId: "t1" }, NOW);
   expect(repository.deleteTask("t1")).toBe(true);
   expect(repository.getTask("t1")).toBeNull();
   expect(repository.listTasks()).toHaveLength(11);
   for (const table of ["subtasks", "notes"]) {
     expect(connection.sqlite.prepare(`select count(*) from ${table} where task_id = ?`).pluck().get("t1")).toBe(0);
   }
-  expect(repository.finishRun(run.id, { status: "result" }, NOW)?.taskId).toBeNull();
+  expect(agentRuns.finishRun(run.id, { status: "result" }, NOW)?.taskId).toBeNull();
 });
 
 test("DEV-003 AC-7: focus is replaced atomically, including on invalid input", () => {
@@ -90,17 +92,4 @@ test("DEV-003 AC-8: stale tasks are in progress and include the exact age bounda
     new Date("2026-11-18T12:00:00Z"),
   );
   expect(repository.findStale({ minDays: 3, now: NOW }).at(-1)?.id).toBe(task.id);
-});
-
-test("DEV-003 AC-10: agent traces keep step order, JSON payloads, and completion status", () => {
-  const run = repository.createRun({ kind: "prioritize", mode: "demo" }, NOW);
-  expect(run).toMatchObject({ status: "running", finishedAt: null, taskId: null });
-  repository.appendStep(run.id, { type: "model", label: "Plan", state: "done", payload: { round: 1 } }, NOW);
-  repository.appendStep(run.id, { type: "tool", label: "Load tasks", state: "fail", detail: "No tasks" }, NOW);
-  repository.appendStep(run.id, { type: "validation", label: "Validate", state: "done" }, NOW);
-  const result = { taskIds: ["t1"] };
-  expect(repository.finishRun(run.id, { status: "result", result }, NOW))
-    .toMatchObject({ status: "result", finishedAt: NOW.toISOString(), result });
-  expect(repository.listRunSteps(run.id).map((step) => step.index)).toEqual([0, 1, 2]);
-  expect(repository.listRunSteps(run.id)[0]?.payload).toEqual({ round: 1 });
 });

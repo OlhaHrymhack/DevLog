@@ -1,6 +1,6 @@
-import { logger } from "../logger";
-import { getDb } from "./client";
-import { seedDatabase } from "./seed";
+import { logger } from "../../logger";
+import { getDb } from "../client";
+import { seedDatabase } from "./index";
 
 const connection = getDb();
 try {

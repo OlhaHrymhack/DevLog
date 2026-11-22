@@ -1,10 +1,6 @@
 import "server-only";
 import { and, asc, count, desc, eq, inArray, lte, max, sql } from "drizzle-orm";
 import {
-  AgentRunCreateInputSchema, AgentRunFinishInputSchema, AgentStepAppendInputSchema,
-  type AgentRun, type AgentStepRecord,
-} from "@/entities/agentRun";
-import {
   TaskListQuerySchema,
   type Note, type NoteCreateInput, type Subtask, type SubtaskCreateInput,
   type SubtaskUpdateInput, type Task, type TaskCreateInput, type TaskListItem,
@@ -12,25 +8,14 @@ import {
 } from "@/entities/task";
 import { MS_PER_DAY } from "@/shared/lib/timestamp";
 import type { DevLogDb } from "../db/client";
-import { agentRuns, agentSteps, notes, subtasks, tasks } from "../db/schema";
-import { createId } from "./ids";
+import { createId } from "../ids";
+import { notes, subtasks, tasks } from "./schema";
 
 type TaskRow = typeof tasks.$inferSelect;
-type CreateRunInput = Pick<AgentRun, "kind" | "mode"> & { taskId?: string | null };
-type AppendStepInput = Pick<AgentStepRecord, "type" | "label" | "state"> & { detail?: string | null; payload?: unknown };
-type FinishRunInput = { status: Exclude<AgentRun["status"], "running">; result?: unknown; error?: unknown };
 
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, "\\$&");
 
 const normalizeDueAt = (value: string | null) => value === null ? null : new Date(value).toISOString();
-
-const toAgentRun = ({ resultJson, errorJson, ...row }: typeof agentRuns.$inferSelect): AgentRun => ({
-  ...row, result: resultJson, error: errorJson,
-});
-
-const toAgentStep = ({ payloadJson, ...row }: typeof agentSteps.$inferSelect): AgentStepRecord => ({
-  ...row, payload: payloadJson,
-});
 
 export const createTaskRepository = (db: DevLogDb) => {
   const getTaskRow = (id: string): TaskRow | null =>
@@ -155,36 +140,8 @@ export const createTaskRepository = (db: DevLogDb) => {
       lte(tasks.updatedAt, new Date(now.getTime() - minDays * MS_PER_DAY).toISOString()),
     )).orderBy(asc(tasks.updatedAt), asc(tasks.id)).all();
 
-  const createRun = (input: CreateRunInput, now = new Date()): AgentRun =>
-    toAgentRun(db.insert(agentRuns).values({
-      ...AgentRunCreateInputSchema.parse(input), id: createId(), status: "running", startedAt: now.toISOString(),
-    }).returning().get());
-
-  const appendStep = (runId: string, input: AppendStepInput, now = new Date()): AgentStepRecord =>
-    db.transaction(() => {
-      const { type, label, state, detail, payload } = AgentStepAppendInputSchema.parse(input);
-      const index = db.$count(agentSteps, eq(agentSteps.runId, runId));
-      return toAgentStep(db.insert(agentSteps).values({
-        id: createId(), runId, index, type, label, state,
-        detail, payloadJson: payload, createdAt: now.toISOString(),
-      }).returning().get());
-    }, { behavior: "immediate" });
-
-  const finishRun = (id: string, input: FinishRunInput, now = new Date()): AgentRun | null => {
-    const { status, result, error } = AgentRunFinishInputSchema.parse(input);
-    const row = db.update(agentRuns).set({
-      status, resultJson: result ?? null, errorJson: error ?? null,
-      finishedAt: now.toISOString(),
-    }).where(and(eq(agentRuns.id, id), eq(agentRuns.status, "running"))).returning().get();
-    return row ? toAgentRun(row) : null;
-  };
-
-  const listRunSteps = (runId: string): AgentStepRecord[] =>
-    db.select().from(agentSteps).where(eq(agentSteps.runId, runId)).orderBy(asc(agentSteps.index)).all().map(toAgentStep);
-
   return {
     listTasks, getTask, getTaskRow, createTask, updateTask, deleteTask, addSubtasks,
-    updateSubtask, deleteSubtask, addNote, setFocus, findStale, createRun, appendStep,
-    finishRun, listRunSteps,
+    updateSubtask, deleteSubtask, addNote, setFocus, findStale,
   };
 };
