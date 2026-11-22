@@ -22,6 +22,8 @@ export type ChatCompletionsApi = {
 type OpenAIClientOptions = {
   apiKey: string;
   model: string;
+  /** Ліміт output-токенів на виклик; за замовчуванням `MAX_COMPLETION_TOKENS`. */
+  maxOutputTokens?: number;
   completions?: ChatCompletionsApi;
 };
 
@@ -38,7 +40,11 @@ const toOpenAIMessage = (message: ModelMessage): ChatCompletionMessageParam => {
   };
 };
 
-export const toOpenAIRequest = (model: string, { system, messages, tools }: ModelRequest): ChatCompletionCreateParamsNonStreaming => ({
+export const toOpenAIRequest = (
+  model: string,
+  { system, messages, tools }: ModelRequest,
+  maxOutputTokens: number = MAX_COMPLETION_TOKENS,
+): ChatCompletionCreateParamsNonStreaming => ({
   model,
   messages: [{ role: "system", content: system }, ...messages.map(toOpenAIMessage)],
   tools: tools.map(({ name, description, parameters }) => ({
@@ -46,7 +52,7 @@ export const toOpenAIRequest = (model: string, { system, messages, tools }: Mode
     function: { name, description, parameters, strict: true },
   })),
   tool_choice: "auto",
-  max_completion_tokens: MAX_COMPLETION_TOKENS,
+  max_completion_tokens: maxOutputTokens,
 });
 
 /** `finish_reason` → внутрішня зупинка: tool_calls → tool_use, stop → end, length → max_tokens, content_filter / refusal → refusal. */
@@ -66,12 +72,12 @@ export const fromOpenAICompletion = (completion: ChatCompletion): ModelResponse 
 };
 
 /** Live-адаптер Chat Completions. Неявні повтори SDK вимкнено: циклом і бюджетом керує `runAgent`. */
-export const createOpenAIClient = ({ apiKey, model, completions }: OpenAIClientOptions): ModelClient => {
+export const createOpenAIClient = ({ apiKey, model, completions, maxOutputTokens }: OpenAIClientOptions): ModelClient => {
   const api: ChatCompletionsApi = completions ?? new OpenAI({ apiKey, maxRetries: 0, timeout: MODEL_TIMEOUT_MS }).chat.completions;
   return {
     provider: "openai",
     create: async (request) => {
-      const completion = await api.create(toOpenAIRequest(model, request), { signal: request.signal, maxRetries: 0, timeout: MODEL_TIMEOUT_MS });
+      const completion = await api.create(toOpenAIRequest(model, request, maxOutputTokens), { signal: request.signal, maxRetries: 0, timeout: MODEL_TIMEOUT_MS });
       return fromOpenAICompletion(completion);
     },
   };

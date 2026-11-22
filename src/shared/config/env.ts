@@ -5,6 +5,10 @@ const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace", "silent"
 
 const aiModeSchema = z.enum(["live", "demo"]);
 
+/** Межі лімітів збігаються з продуктовими значеннями D-029 (`MAX_AGENT_STEPS`, `MAX_COMPLETION_TOKENS`); тест їх звіряє. */
+export const AGENT_MAX_STEPS_BOUNDS = { min: 1, max: 8 } as const;
+export const OPENAI_MAX_OUTPUT_TOKENS_BOUNDS = { min: 64, max: 2048 } as const;
+
 export type AiMode = z.infer<typeof aiModeSchema>;
 
 const emptyToUndefined = (value: unknown): unknown => {
@@ -17,6 +21,12 @@ export const serverEnvSchema = z.object({
   DATABASE_URL: z.preprocess(emptyToUndefined, z.string().default("file:./data/devlog.db")),
   LOG_LEVEL: z.preprocess(emptyToUndefined, z.enum(LOG_LEVELS).default("info")),
   AI_MODE: z.preprocess(emptyToUndefined, aiModeSchema.optional()),
+  AGENT_MAX_STEPS: z.preprocess(emptyToUndefined, z.coerce.number().int()
+    .min(AGENT_MAX_STEPS_BOUNDS.min).max(AGENT_MAX_STEPS_BOUNDS.max).default(AGENT_MAX_STEPS_BOUNDS.max)),
+  OPENAI_MAX_OUTPUT_TOKENS: z.preprocess(emptyToUndefined, z.coerce.number().int()
+    .min(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.min).max(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.max).default(OPENAI_MAX_OUTPUT_TOKENS_BOUNDS.max)),
+  /** `1` вмикає dev-only маршрут платного smoke-запиту; у production маршрут завжди 404. */
+  AI_SMOKE: z.preprocess(emptyToUndefined, z.enum(["0", "1"]).optional()),
 }).superRefine((env, ctx) => {
   if (env.AI_MODE === "live" && !env.OPENAI_API_KEY) {
     ctx.addIssue({

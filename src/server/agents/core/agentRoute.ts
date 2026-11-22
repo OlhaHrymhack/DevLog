@@ -1,7 +1,7 @@
 import "server-only";
 import type { Logger } from "pino";
 import type { z } from "zod";
-import { createAgentRequestSchema } from "@/entities/agentRun";
+import { createAgentRequestSchema, MAX_AGENT_STEPS } from "@/entities/agentRun";
 import { getServerEnv, type ServerEnv } from "@/shared/config/env";
 import { createAgentRunRepository } from "../../agentRuns/repository";
 import { getDb, type DevLogDb } from "../../db/client";
@@ -12,7 +12,7 @@ import { runAgent } from "./runAgent";
 import { createNdjsonResponse } from "./stream";
 import type { AgentDefinition, ModelClient, ScriptedTurn } from "./types";
 
-type AgentEnv = Pick<ServerEnv, "aiMode" | "OPENAI_API_KEY" | "OPENAI_MODEL">;
+type AgentEnv = Pick<ServerEnv, "aiMode" | "OPENAI_API_KEY" | "OPENAI_MODEL"> & Partial<Pick<ServerEnv, "AGENT_MAX_STEPS" | "OPENAI_MAX_OUTPUT_TOKENS">>;
 
 export type AgentRouteDeps = {
   getDb?: () => DevLogDb;
@@ -47,7 +47,7 @@ export const createAgentRoute = <Input extends z.ZodType, Result extends z.ZodTy
     onEvent: emit,
     context,
     runs: createAgentRunRepository(db),
-    maxSteps: deps.maxSteps,
+    maxSteps: Math.min(deps.maxSteps ?? env.AGENT_MAX_STEPS ?? MAX_AGENT_STEPS, MAX_AGENT_STEPS),
     forceInvalidOutput: body.debug?.forceInvalidOutput ?? false,
     logger: deps.logger,
   }), request.signal);

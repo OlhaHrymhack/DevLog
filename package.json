@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "smoke:ai": "node --import tsx src/server/agents/smoke/cli.ts",
     "db:generate": "drizzle-kit generate",
     "db:seed": "node --import tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local src/server/db/seed/cli.ts",
     "prepare": "git config core.hooksPath .githooks || exit 0"
