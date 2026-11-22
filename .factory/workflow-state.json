@@ -2488,7 +2488,7 @@
     "DEV-016": {
       "id": "DEV-016",
       "title": "Створення задачі голосом",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -2507,8 +2507,8 @@
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-016 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-016",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/31",
       "history": [
         {
           "at": "2026-11-22T23:12:47.063Z",
@@ -2601,10 +2601,21 @@
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR",
           "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T23:22:38.496Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/31"
+        },
+        {
+          "at": "2026-11-22T23:22:38.814Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-22T23:12:47.063Z",
-      "updatedAt": "2026-11-22T23:21:49.872Z",
+      "updatedAt": "2026-11-22T23:22:38.814Z",
       "lastFailure": null,
       "reviewTree": "005d46538610e950a5f14b5b2730f94470f3cbb0"
     }
