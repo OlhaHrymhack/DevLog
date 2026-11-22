@@ -11,7 +11,7 @@ const ALARM_WINDOW_MS = 24 * MS_PER_HOUR;
  */
 export const getHeat = (task: HeatInput, now: Timestamp): HeatLevel => {
   if (task.status === "done") return HEAT_LEVELS.done;
-  if (task.dueAt !== undefined && toMillis(task.dueAt) - toMillis(now) < ALARM_WINDOW_MS) {
+  if (task.dueAt != null && toMillis(task.dueAt) - toMillis(now) < ALARM_WINDOW_MS) {
     return HEAT_LEVELS.alarm;
   }
   if (task.priority === "low") return HEAT_LEVELS.calm;
