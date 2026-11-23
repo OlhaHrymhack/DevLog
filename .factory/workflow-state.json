@@ -3004,7 +3004,7 @@
     "DEV-019": {
       "id": "DEV-019",
       "title": "Спільна квота AI і підзадачі в production",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -3023,8 +3023,8 @@
       "attempts": {},
       "issues": [],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-019 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-019",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/38",
       "history": [
         {
           "at": "2026-11-23T18:43:49.355Z",
@@ -3121,10 +3121,21 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-23T18:57:37.014Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/38"
+        },
+        {
+          "at": "2026-11-23T18:57:37.400Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-23T18:43:49.355Z",
-      "updatedAt": "2026-11-23T18:55:41.341Z",
+      "updatedAt": "2026-11-23T18:57:37.401Z",
       "lastFailure": null,
       "reviewTree": "50fa9ed8fe2e727b956a20d6e012d8d6a3baea13"
     }
