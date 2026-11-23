@@ -1,5 +1,6 @@
 import { Mic, Square } from "lucide-react";
 import { Button } from "@/shared/ui/Button";
+import { VOICE_RECORDING_MAX_MS } from "@/shared/lib/voiceTaskRecording";
 import type { useVoiceTaskDraft } from "../../model/useVoiceTaskDraft";
 import { errorStyles, guideStyles, panelStyles, statusStyles } from "./styles";
 
@@ -16,6 +17,7 @@ export const VoiceDraftControls = ({ id, mode, disabled, phase, message, error, 
   const idleText = mode === "demo" ? "Спробувати приклад" : "Продиктувати задачу";
   const buttonText = requesting ? "Скасувати запит" : recording ? "Зупинити запис" : idleText;
   const onClick = requesting ? cancel : recording ? stop : () => void begin(mode === "demo");
+  const maxSeconds = VOICE_RECORDING_MAX_MS / 1_000;
 
   return (
     <section className={panelStyles} aria-label="Голосове введення">
@@ -29,12 +31,13 @@ export const VoiceDraftControls = ({ id, mode, disabled, phase, message, error, 
       </Button>
       <div id={id} className={guideStyles}>
         <p>Скажіть, що зробити, і додайте контекст. За потреби назвіть пріоритет і дедлайн.</p>
+        {mode === "live" && <p>Запис триває до {maxSeconds} секунд і зупиняється автоматично.</p>}
         <p className="text-fg-strong">«Виправити зникнення аватара після оновлення профілю. Це терміново. Зробити до завтра, до 17:00».</p>
         <p>«Терміново» → високий, «може зачекати» → низький. Типовий пріоритет — середній. Для дедлайну назвіть день і час.</p>
       </div>
       <div role="status" className={statusStyles}>
         {phase === "requesting" && "Очікуємо доступ до мікрофона…"}
-        {phase === "recording" && "Йде запис · до 60 секунд"}
+        {phase === "recording" && `Йде запис · до ${maxSeconds} секунд`}
         {phase === "processing" && "Готуємо чернетку…"}
         {message}
       </div>

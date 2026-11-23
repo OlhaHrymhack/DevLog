@@ -7,7 +7,7 @@ export const useHotkeys = (onSearch: () => void, onNewTask?: () => void, dialogO
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.isComposing
         || event.ctrlKey || event.metaKey || event.altKey || dialogOpen) return;
-      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]")) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true], [aria-modal=true]")) return;
 
       if (event.key === "/") {
         event.preventDefault();

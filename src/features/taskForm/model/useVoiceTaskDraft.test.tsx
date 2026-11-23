@@ -57,8 +57,9 @@ it("DEV-016 AC-2: captures audio on demand and releases the microphone after man
   expect(result.current.phase).toBe("idle");
 });
 
-it("DEV-016 AC-2: stops a recording at the time limit", async () => {
+it("DEV-016 AC-2 / DEV-018 AC-1: stops and releases the microphone after 60 seconds", async () => {
   vi.useFakeTimers();
+  expect(VOICE_RECORDING_MAX_MS).toBe(60_000);
   const listener = vi.fn();
   const { result } = renderHook(() => useVoiceTaskDraft(listener));
   await act(async () => result.current.begin(false));
@@ -66,7 +67,7 @@ it("DEV-016 AC-2: stops a recording at the time limit", async () => {
   expect(result.current.phase).toBe("recording");
   await act(async () => vi.advanceTimersByTimeAsync(1));
   expect(listener).toHaveBeenCalledExactlyOnceWith(draft);
-  expect(trackStop).toHaveBeenCalled();
+  expect(trackStop).toHaveBeenCalledTimes(1);
 });
 
 it("DEV-016 AC-2: discards a closed dialog's recording and aborts an in-flight request", async () => {

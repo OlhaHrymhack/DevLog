@@ -16,7 +16,7 @@ import type { StuckRadarPanelProps } from "./types";
 const IDLE_SUMMARY = "Шукає задачі, що застрягли «в роботі»";
 
 /** Панель агента D «Радар застряглих»: пошук, діагноз, дії на картках, чернетки, «Ігнорувати» до перезавантаження. */
-export const StuckRadarPanel = ({ serious, demo = false }: StuckRadarPanelProps) => {
+export const StuckRadarPanel = ({ serious, demo = false, allowDecompose = true }: StuckRadarPanelProps) => {
   const { run, start, stop } = useAgentRun("stuck-radar");
   const { snoozedIds, snooze } = useSnoozedIds();
   const router = useRouter();
@@ -60,9 +60,12 @@ export const StuckRadarPanel = ({ serious, demo = false }: StuckRadarPanelProps)
         fallbackTitle="Пропозиції агента відхилено."
         fallbackMessage="Показую лише знайдені задачі без порад."
       >
-        {finished && cards.map((card) => (
-          <StuckTaskCard key={card.item.taskId} {...card} serious={serious} onAct={act} onSnooze={ignore} />
-        ))}
+        {finished && cards.map((card) => {
+          const item: TriageItem = !allowDecompose && card.item.action === "split"
+            ? { ...card.item, action: "open" }
+            : card.item;
+          return <StuckTaskCard key={item.taskId} {...card} item={item} serious={serious} onAct={act} onSnooze={ignore} />;
+        })}
         {finished && cards.length === 0 && (
           <div className={emptyStyles}>
             <span className={bigStyles} aria-hidden="true">🧘</span>
