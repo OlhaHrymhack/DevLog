@@ -2868,7 +2868,7 @@
     "DEV-018": {
       "id": "DEV-018",
       "title": "«Лічильник спроб агентів»",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "balanced",
       "model": "sonnet",
       "scores": {
@@ -2891,8 +2891,8 @@
         "tests failed: test(failed), e2e(failed)"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-018 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-018",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/36",
       "history": [
         {
           "at": "2026-11-23T16:19:44.789Z",
@@ -2989,10 +2989,21 @@
           "event": "transition",
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-23T16:45:45.059Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/36"
+        },
+        {
+          "at": "2026-11-23T16:45:45.566Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-23T16:19:44.759Z",
-      "updatedAt": "2026-11-23T16:41:47.727Z",
+      "updatedAt": "2026-11-23T16:45:45.567Z",
       "lastFailure": null,
       "reviewTree": "86b476e072c0d47ac3e51d67c7da2564a4050298",
       "usage": {
