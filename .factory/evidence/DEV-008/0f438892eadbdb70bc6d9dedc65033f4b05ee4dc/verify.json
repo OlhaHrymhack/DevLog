@@ -1,0 +1,36 @@
+{
+  "taskId": "DEV-008",
+  "kind": "verify",
+  "tree": "0f438892eadbdb70bc6d9dedc65033f4b05ee4dc",
+  "at": "2026-11-22T16:24:54.714Z",
+  "ok": false,
+  "failed": [
+    "код змінився під час перевірки"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1941,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3526,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n\n/private/tmp/devlog-dev008/src/server/agents/core/openAIClient.test.ts\n  71:32  warning  '_url' is defined but never used   @typescript-eslint/no-unused-vars\n  71:62  warning  '_init' is defined but never used  @typescript-eslint/no-unused-vars\n\n✖ 2 problems (0 errors, 2 warnings)\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 4070,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev008\n\n\n Test Files  35 passed (35)\n      Tests  179 passed (179)\n   Start at  18:24:50\n   Duration  3.65s (import 45%, environment 26%, tests 19%, transform 9%)\n\n"
+    }
+  ]
+}

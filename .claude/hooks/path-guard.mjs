@@ -7,7 +7,7 @@ import { deny, readInput } from './lib/common.mjs';
 
 const ROLE_GLOBS = {
   architect: ['.factory/task-plans/**'],
-  qa: null, // береться з project.config.json → testGlobs
+  qa: ['test-results/**'], // тести пише developer; QA лише запускає і звітує (D-016)
   docs: ['docs/vault/**'],
 };
 
@@ -16,6 +16,7 @@ const input = readInput();
 if (!['Edit', 'Write', 'MultiEdit', 'NotebookEdit'].includes(input.tool_name)) process.exit(0);
 const root = core.projectRoot();
 const rel = core.toRel(root, input.tool_input?.file_path ?? input.tool_input?.notebook_path);
-const globs = ROLE_GLOBS[role] ?? core.loadConfig(root).testGlobs;
+const globs = ROLE_GLOBS[role];
+if (!globs) deny(`невідома роль для path-guard: ${role}`);
 if (!core.matchesAny(rel, globs)) deny(`роль ${role} може змінювати лише: ${globs.join(', ')} (спроба: ${rel})`);
 process.exit(0);

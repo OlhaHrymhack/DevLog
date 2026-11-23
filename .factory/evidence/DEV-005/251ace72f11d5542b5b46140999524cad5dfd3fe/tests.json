@@ -1,0 +1,44 @@
+{
+  "taskId": "DEV-005",
+  "kind": "tests",
+  "tree": "251ace72f11d5542b5b46140999524cad5dfd3fe",
+  "at": "2026-11-22T14:11:32.742Z",
+  "ok": false,
+  "failed": [
+    "e2e(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 1778,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3690,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2707,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev005\n\n\n Test Files  27 passed (27)\n      Tests  129 passed (129)\n   Start at  16:11:27\n   Duration  2.29s (import 36%, environment 33%, tests 15%, transform 15%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 2978,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nError: Process from config.webServer was not able to start. Exit code: 1\n::error ::Error: Process from config.webServer was not able to start. Exit code: 1\n\n\n::notice title=🎭 Playwright Run Summary::\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n[WebServer] (node:60807) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:60826) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:60832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] ⨯ Another next dev server is already running.\n[WebServer] \n[WebServer] - Local:        http://localhost:3000\n[WebServer] - PID:          59684\n[WebServer] - Dir:          /private/tmp/devlog-dev005\n[WebServer] - Log:          .next/dev/logs/next-development.log\n[WebServer] \n[WebServer] You can access the existing server at http://localhost:3000,\n[WebServer] or run kill 59684 to stop it and start a new one.\n"
+    }
+  ]
+}

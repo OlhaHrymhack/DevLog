@@ -50,6 +50,26 @@ export function checkSecrets(tool, input) {
 // ---------- деструктивні команди ----------
 const SAFE_RM = new Set(['node_modules', '.next', 'dist', 'out', 'coverage', 'playwright-report', 'test-results', '.turbo']);
 
+function realish(p) {
+  // realpath найближчого існуючого предка: /var → /private/var на macOS, неіснуючий хвіст лишається як є
+  let cur = p; const tail = [];
+  while (!fs.existsSync(cur) && path.dirname(cur) !== cur) { tail.unshift(path.basename(cur)); cur = path.dirname(cur); }
+  try { return path.join(fs.realpathSync(cur), ...tail); } catch { return p; }
+}
+
+function isInside(child, parent) {
+  const rel = path.relative(parent, child);
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+// tmp-ціль безпечна лише якщо вона строго всередині tmpdir і не всередині проєкту
+// (проєкт сам може лежати в tmp — напр. selftest на Linux, де tmpdir = /tmp)
+function isSafeTmpTarget(target, root) {
+  const abs = realish(path.resolve(root, target));
+  const projectRoot = realish(path.resolve(root));
+  return isInside(abs, realish(os.tmpdir())) && abs !== projectRoot && !isInside(abs, projectRoot);
+}
+
 function gitArgs(argv) { return argv[0] === 'git' ? argv.slice(1).filter((a) => !a.startsWith('-C')) : null; }
 
 function protectedBranches(root) {
@@ -66,6 +86,11 @@ export function checkDestructive(tool, input, root) {
     if (g) {
       const [sub, ...a] = g;
       if (sub === 'push' && a.some((x) => x === '--force' || x === '-f' || x.startsWith('--force-with-lease') || x.startsWith('+'))) return { decision: 'deny', reason: 'force push заборонений' };
+      if (sub === 'commit') {
+        let current = '';
+        try { current = core.git(root, ['rev-parse', '--abbrev-ref', 'HEAD']).trim(); } catch { /* немає комітів */ }
+        if (branches.includes(current)) return { decision: 'deny', reason: `коміт прямо в ${current} заборонений — створи фіча-гілку від stage і відкрий PR` };
+      }
       const refspecs = a.filter((x) => !x.startsWith('-')).slice(1);
       if (sub === 'push' && !refspecs.length) {
         let current = '';
@@ -82,11 +107,18 @@ export function checkDestructive(tool, input, root) {
       if (sub === 'config' && a.some((x) => x === 'core.hooksPath') && !(a.includes('.githooks'))) return { decision: 'deny', reason: 'зміна core.hooksPath заборонена' };
       if (sub === 'update-ref' || sub === 'filter-branch' || (sub === 'rebase' && a.includes('--root'))) return { decision: 'deny', reason: 'переписування історії заборонене' };
     }
+    if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'create') {
+      let integration = 'stage';
+      try { integration = core.loadConfig(root).branches?.integration ?? 'stage'; } catch { /* default */ }
+      const i = argv.findIndex((x) => x === '--base' || x === '-B');
+      const base = i >= 0 ? argv[i + 1] : (argv.find((x) => x.startsWith('--base='))?.slice(7) ?? null);
+      if (base !== integration) return { decision: 'deny', reason: `PR відкривається лише в ${integration}: додай --base ${integration}` };
+    }
     if (argv[0] === 'gh' && argv[1] === 'pr' && argv[2] === 'merge') return { decision: 'deny', reason: 'автоматичний merge заборонений — merge робить лише користувач' };
     if (argv[0] === 'gh' && argv[1] === 'api' && argv.some((x) => /merge|protection/.test(x))) return { decision: 'ask', reason: 'gh api зачіпає merge/branch protection — потрібне підтвердження' };
     if (argv[0] === 'rm' && argv.some((x) => /^-\w*[rR]/.test(x))) {
       const targets = argv.slice(1).filter((x) => !x.startsWith('-'));
-      const safe = targets.length && targets.every((t) => SAFE_RM.has(t.replace(/\/$/, '')) || path.resolve(t).startsWith(os.tmpdir()));
+      const safe = targets.length && targets.every((t) => SAFE_RM.has(t.replace(/\/$/, '')) || isSafeTmpTarget(t, root));
       if (!safe) return { decision: 'deny', reason: `рекурсивне видалення дозволене лише для ${[...SAFE_RM].join(', ')} або tmp` };
     }
   }
@@ -107,7 +139,9 @@ export function checkFactoryIntegrity(tool, input, root) {
   if (tool === 'Bash') {
     const cmd = input.command ?? '';
     const viaCli = /^\s*node\s+\.factory\/bin\/factory\.mjs\b/.test(cmd) && !/[;&|]/.test(cmd.replace(/\|\|?\s*true\s*$/, ''));
-    if (!viaCli && (FACTORY_RECORDS.some((p) => cmd.includes(p)) || /user-prompt\.mjs|writeApproval/.test(cmd))) {
+    // staging/читання git не змінює вміст записів: одна команда, без ланцюжків, перенаправлень, підстановок і --output
+    const gitStaging = /^\s*git\s+(add|diff|log|show|status|commit)\b/.test(cmd) && !/[;&|<>`]|\$\(|--output/.test(cmd);
+    if (!viaCli && !gitStaging &&(FACTORY_RECORDS.some((p) => cmd.includes(p)) || /user-prompt\.mjs|writeApproval/.test(cmd))) {
       return { decision: 'deny', reason: 'записи фабрики (state/evidence/approvals) змінюються лише через factory.mjs; для читання — factory status/report' };
     }
   }
@@ -180,6 +214,14 @@ export function checkAgentModel(tool, input, root) {
   let cfg; try { cfg = core.loadConfig(root); } catch { return null; }
   if (cfg.pinnedStrongAgents.includes(input.subagent_type) && input.model && input.model !== 'opus') {
     return { decision: 'deny', reason: `${input.subagent_type} обов'язково працює на opus; зниження моделі лише з дозволу користувача` };
+  }
+  if (input.subagent_type === 'reviewer' && input.model) {
+    const state = core.loadState(root);
+    const task = state.currentTask ? state.tasks[state.currentTask] : null;
+    const need = core.requiredReviewModel(cfg, task);
+    if (core.modelRank(input.model) < core.modelRank(need)) {
+      return { decision: 'deny', reason: `reviewer для tier ${task ? core.effectiveTier(task) : '—'} має працювати щонайменше на ${need}` };
+    }
   }
   return null;
 }

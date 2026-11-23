@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevLog — інтерактивний прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* ============ DESIGN TOKENS ============ */
+:root{
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --text-xs:12px; --text-sm:13px; --text-base:14px; --text-md:16px; --text-lg:18px; --text-xl:22px; --text-2xl:28px; --text-3xl:40px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:14px; --radius-xl:20px; --radius-2xl:24px; --radius-full:999px;
+  --ease-out:cubic-bezier(.2,.8,.2,1); --dur-fast:150ms; --dur-base:240ms; --dur-slow:420ms;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000; --surface:#111111; --surface-sunken:#0A0A0A; --surface-raised:#1A1A1A;
+  --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20);
+  --text:#F1F1F1; --text-strong:#FFFFFF; --text-muted:#ABAFB5; --text-dim:#8A8E94;
+  --primary:#FFFFFF; --primary-fg:#000000; --primary-hover:#E6E6E6;
+  --ai:#C4B5FD; --ai-bg:rgba(196,181,253,.10); --ai-border:rgba(196,181,253,.35);
+  --status-todo-bg:rgba(255,255,255,.08); --status-todo-fg:#D4D4D8;
+  --status-progress-bg:rgba(96,165,250,.16); --status-progress-fg:#93C5FD; --status-progress-dot:#60A5FA;
+  --status-done-bg:rgba(74,222,128,.13); --status-done-fg:#86EFAC;
+  --priority-high:#FDBA74; --priority-medium:#FCD34D; --priority-low:#ABAFB5;
+  --danger:#F87171; --danger-fg:#000; --danger-bg:rgba(248,113,113,.10); --danger-border:rgba(248,113,113,.35); --danger-text:#FECACA;
+  --warning-bg:rgba(252,211,77,.08); --warning-border:rgba(252,211,77,.30); --warning-text:#FDE68A;
+  --success:#86EFAC; --heat:#FB923C;
+  --focus:#C4B5FD; --overlay:rgba(0,0,0,.66); --shadow-lg:0 30px 80px rgba(0,0,0,.6);
+  --skeleton:#1E1E1E; --skeleton-shine:#2A2A2A;
+}
+[data-theme="light"]{
+  color-scheme:light;
+  --bg:#F7F7F8; --surface:#FFFFFF; --surface-sunken:#FAFAFA; --surface-raised:#F0F0F2;
+  --border:#E4E4E7; --border-strong:#D4D4D8;
+  --text:#18181B; --text-strong:#000000; --text-muted:#52525B; --text-dim:#6B6B73;
+  --primary:#000000; --primary-fg:#FFFFFF; --primary-hover:#27272A;
+  --ai:#6D28D9; --ai-bg:#F5F3FF; --ai-border:#DDD6FE;
+  --status-todo-bg:#F4F4F5; --status-todo-fg:#3F3F46;
+  --status-progress-bg:#DBEAFE; --status-progress-fg:#1E40AF; --status-progress-dot:#2563EB;
+  --status-done-bg:#DCFCE7; --status-done-fg:#166534;
+  --priority-high:#C2410C; --priority-medium:#A16207; --priority-low:#52525B;
+  --danger:#DC2626; --danger-fg:#fff; --danger-bg:#FEF2F2; --danger-border:#FECACA; --danger-text:#991B1B;
+  --warning-bg:#FFFBEB; --warning-border:#FDE68A; --warning-text:#854D0E;
+  --success:#15803D; --heat:#EA580C;
+  --focus:#6D28D9; --overlay:rgba(24,24,27,.45); --shadow-lg:0 24px 60px rgba(0,0,0,.18);
+  --skeleton:#EDEDEF; --skeleton-shine:#F6F6F7;
+}
+
+/* ============ BASE ============ */
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:var(--text-base);line-height:1.45;-webkit-font-smoothing:antialiased}
+body{transition:background var(--dur-base),color var(--dur-base)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.icon{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--font-mono)}
+.muted{color:var(--text-muted)} .dim{color:var(--text-dim)}
+.container{max-width:1376px;margin:0 auto;padding:var(--space-8)}
+@media (max-width:767px){.container{padding:var(--space-4)}}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 18px;border-radius:var(--radius-lg);border:1px solid transparent;font-weight:500;cursor:pointer;white-space:nowrap;transition:transform var(--dur-fast) var(--ease-out),background var(--dur-fast),border-color var(--dur-fast),opacity var(--dur-fast);text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--primary);color:var(--primary-fg)}
+.btn-primary:hover:not(:disabled){background:var(--primary-hover)}
+.btn-ghost{background:transparent;color:var(--text);border-color:var(--border-strong)}
+.btn-ghost:hover:not(:disabled){background:var(--surface-raised)}
+.btn-danger{background:var(--danger);color:var(--danger-fg)}
+.btn-danger-ghost{background:transparent;color:var(--danger);border-color:var(--danger-border)}
+.btn-ai{background:var(--ai-bg);color:var(--ai);border-color:var(--ai-border)}
+.btn-ai:hover:not(:disabled){border-color:var(--ai)}
+.btn-sm{min-height:34px;padding:0 14px;border-radius:var(--radius-md);font-size:var(--text-sm)}
+.btn-icon{width:40px;padding:0}
+.btn-icon.btn-sm{width:34px}
+.btn-block{width:100%}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:var(--radius-md);border:0;background:transparent;color:var(--text-muted);cursor:pointer;transition:background var(--dur-fast),color var(--dur-fast)}
+.icon-btn:hover{background:var(--surface-raised);color:var(--text)}
+
+/* ============ HEADER ============ */
+.header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:var(--space-3);padding:12px var(--space-8);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-mark{width:30px;height:30px;border-radius:9px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px}
+.logo b{font-weight:600;letter-spacing:.04em}
+.header .spacer{flex:1}
+.team{color:var(--text-dim)}
+@media (max-width:767px){.header{padding:10px var(--space-4)} .team,.header .new-btn{display:none}}
+
+/* ============ BANNER ============ */
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px var(--space-8);font-size:var(--text-sm);background:var(--warning-bg);color:var(--warning-text);border-bottom:1px solid var(--warning-border);animation:fadeDown var(--dur-slow) var(--ease-out)}
+@media (max-width:767px){.banner{padding:10px var(--space-4)}}
+
+/* ============ LIST LAYOUT ============ */
+.list-layout{display:grid;grid-template-columns:minmax(0,1fr) 384px;grid-template-areas:"head aside" "main aside";column-gap:var(--space-6);row-gap:var(--space-5);align-items:start}
+.list-head{grid-area:head;min-width:0}
+.list-main{grid-area:main;display:flex;flex-direction:column;gap:var(--space-5);min-width:0}
+.list-aside{grid-area:aside;display:flex;flex-direction:column;gap:var(--space-5);position:sticky;top:84px}
+@media (max-width:1023px){.list-layout{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "aside" "main"} .list-aside{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}}
+@media (max-width:767px){.list-aside{grid-template-columns:minmax(0,1fr)}}
+
+.page-title{margin:0;font-size:var(--text-3xl);font-weight:400;letter-spacing:-.02em;color:var(--text-strong);line-height:1.1}
+@media (max-width:767px){.page-title{font-size:var(--text-2xl)}}
+.toolbar{display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center}
+.search{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0;height:42px;padding:0 14px;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--border);color:var(--text-dim);transition:border-color var(--dur-fast)}
+.search:focus-within{border-color:var(--border-strong)}
+.search input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:var(--text)}
+.search kbd{font-family:var(--font-mono);font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid var(--border-strong);color:var(--text-dim)}
+@media (max-width:767px){.search kbd{display:none}}
+.seg{display:flex;padding:4px;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow-x:auto;scrollbar-width:none;max-width:100%}
+.seg::-webkit-scrollbar{display:none}
+.seg button,.seg label{flex:none;height:34px;padding:0 14px;border-radius:10px;border:0;background:transparent;color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500;transition:background var(--dur-base) var(--ease-out),color var(--dur-base)}
+.seg button[aria-pressed="true"],.seg input:checked+label{background:var(--primary);color:var(--primary-fg)}
+.seg .count{color:var(--text-dim);font-weight:400}
+.seg button[aria-pressed="true"] .count{opacity:.6;color:inherit}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:focus-visible+label{outline:2px solid var(--focus);outline-offset:1px}
+.select-wrap{display:flex;align-items:center;gap:6px;height:42px;padding:0 12px;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--border);color:var(--text-muted)}
+.select-wrap select{border:0;background:transparent;color:var(--text);font-weight:500;outline:none;cursor:pointer;padding-right:4px}
+.select-wrap select option{background:var(--surface);color:var(--text)}
+.filters-row{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+@media (max-width:767px){.filters-row .seg{flex:1 1 100%}}
+
+/* ============ CARD ============ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl)}
+.card-sec{padding:var(--space-5) 22px}
+.card-sec+.card-sec{border-top:1px solid var(--border)}
+.card-title{margin:0;font-size:var(--text-lg);font-weight:500;color:var(--text-strong)}
+.label{font-size:var(--text-xs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+
+/* ============ TASK LIST ============ */
+.task-table{overflow:hidden}
+.task-head,.task-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 108px 80px 96px 88px;gap:var(--space-3);align-items:center;padding:14px 20px}
+.task-head{color:var(--text-dim);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.06em;padding-top:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.task-row{border-bottom:1px solid var(--border);position:relative;animation:fadeUp var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 35ms);transition:background var(--dur-fast)}
+.task-row:last-child{border-bottom:0}
+.task-row:hover{background:color-mix(in srgb,var(--surface-raised) 60%,transparent)}
+.t-link{color:var(--text-strong);font-weight:500;text-decoration:none;display:inline}
+.t-link::after{content:"";position:absolute;inset:0;z-index:0}
+.t-link:focus-visible{outline:none}
+.task-row:has(.t-link:focus-visible){outline:2px solid var(--focus);outline-offset:-2px}
+.t-desc{margin:3px 0 0;color:var(--text-dim);font-size:var(--text-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-done .t-link{color:var(--text-dim);text-decoration:line-through}
+.c-actions{display:flex;justify-content:flex-end;gap:2px;position:relative;z-index:1}
+.c-actions .icon-btn{width:38px;height:38px}
+.c-heat{position:relative;z-index:1}
+.focus-pin{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:1px 8px;border-radius:var(--radius-full);font-size:11px;font-weight:600;color:var(--ai);border:1px solid var(--ai-border);vertical-align:2px}
+@media (max-width:1023px){
+  .task-head{display:none}
+  .task-table{background:transparent;border:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);overflow:visible}
+  .task-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title heat" "meta meta" "age actions";gap:10px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--surface)}
+  .task-row:last-child{border-bottom:1px solid var(--border)}
+  .c-title{grid-area:title} .c-heat{grid-area:heat;align-self:start}
+  .c-status,.c-prio{grid-area:meta} .c-prio{justify-self:start;margin-left:122px}
+  .c-age{grid-area:age;font-size:var(--text-sm)} .c-actions{grid-area:actions}
+  .t-desc{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+@media (max-width:767px){.task-table{grid-template-columns:minmax(0,1fr)}}
+
+/* ============ BADGES ============ */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;white-space:nowrap;justify-self:start}
+.badge .dot{width:6px;height:6px;border-radius:50%}
+.st-todo{background:var(--status-todo-bg);color:var(--status-todo-fg)} .st-todo .dot{border:1.5px solid currentColor}
+.st-in-progress{background:var(--status-progress-bg);color:var(--status-progress-fg)} .st-in-progress .dot{background:var(--status-progress-dot);animation:pulseDot 1.8s ease-in-out infinite}
+.st-done{background:var(--status-done-bg);color:var(--status-done-fg)}
+.prio{display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);font-weight:500;white-space:nowrap}
+.pr-high{color:var(--priority-high)} .pr-medium{color:var(--priority-medium)} .pr-low{color:var(--priority-low)}
+.ai-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:var(--radius-full);border:1px solid var(--ai-border);color:var(--ai);font-size:var(--text-xs);white-space:nowrap}
+.ai-tag.demo{border-color:var(--warning-border);color:var(--warning-text);background:var(--warning-bg)}
+
+/* ============ HEAT (температура) ============ */
+.heat{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:36px;padding:0 6px;border-radius:var(--radius-md);border:0;background:transparent;cursor:help;font-size:15px;letter-spacing:-2px;white-space:nowrap}
+.heat:hover,.heat:focus-visible{background:var(--surface-raised)}
+.heat .tip{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:260px;padding:12px 14px;border-radius:var(--radius-md);background:var(--surface-raised);border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);color:var(--text);font-size:var(--text-sm);letter-spacing:0;text-align:left;line-height:1.5;opacity:0;transform:translateY(-4px);pointer-events:none;transition:opacity var(--dur-fast),transform var(--dur-fast)}
+.heat:hover .tip,.heat:focus-visible .tip{opacity:1;transform:none}
+.heat .tip b{display:block;color:var(--text-strong);margin-bottom:2px}
+.heat .tip i{display:block;margin-top:6px;color:var(--text-muted)}
+.lvl-fire .em,.lvl-alarm .em{display:inline-block;animation:flicker 1.6s ease-in-out infinite}
+.lvl-alarm{animation:siren 1.4s ease-in-out infinite}
+.row-fire,.row-alarm{box-shadow:inset 0 0 0 0 transparent}
+.row-alarm{background:color-mix(in srgb,var(--heat) 7%,transparent)}
+@media (max-width:1023px){.heat .tip{right:-8px}}
+
+/* ============ AGENT PANEL ============ */
+.agent{overflow:hidden;transition:border-color var(--dur-base)}
+.agent.running{border-color:var(--ai-border);animation:breathe 2.2s ease-in-out infinite}
+.agent-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);background:transparent;width:100%;border-left:0;border-right:0;border-top:0;text-align:left;color:inherit}
+.agent-head h2{margin:0;font-size:var(--text-lg);font-weight:500;color:var(--text-strong);display:flex;align-items:center;gap:8px}
+.agent-head .chev{display:none;transition:transform var(--dur-base)}
+.agent-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.agent-body p{margin:0}
+@media (max-width:1023px){
+  .agent-head{cursor:pointer}
+  .agent-head .chev{display:inline-flex}
+  .agent.collapsed .agent-body{display:none}
+  .agent.collapsed .agent-head{border-bottom:0}
+  .agent:not(.collapsed) .chev{transform:rotate(180deg)}
+}
+.agent-summary{font-size:var(--text-sm);color:var(--text-muted);display:none}
+@media (max-width:1023px){.agent.collapsed .agent-summary{display:block}}
+@media (max-width:767px){.agent-head{padding:12px 16px}.agent-head h2{font-size:var(--text-md)}.agent.collapsed .agent-head .ai-tag{display:none}.agent-summary{padding:0 16px 12px!important;font-size:var(--text-xs)!important}.agent-body{padding:14px 16px}.filters-row .select-wrap{flex:1 1 auto;min-width:0}.filters-row .select-wrap select{min-width:0;width:100%;text-overflow:ellipsis}.legend-btn .lbl{display:none}}
+
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;font-size:var(--text-sm)}
+.step{display:flex;gap:10px;align-items:flex-start;color:var(--text-dim);animation:fadeUp var(--dur-base) var(--ease-out) both}
+.step .si{width:16px;height:16px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center}
+.step.run{color:var(--text-strong)}
+.step.done{color:var(--text-muted)}
+.step.fail{color:var(--danger)}
+.step .detail{display:block;color:var(--text-dim);font-size:var(--text-xs);margin-top:1px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--ai);animation:spin .8s linear infinite}
+.pending{width:12px;height:12px;border-radius:50%;border:1.5px dashed var(--border-strong)}
+.ok{color:var(--success)} .ok .icon{width:14px;height:14px;stroke-width:3;animation:pop var(--dur-base) var(--ease-out)}
+.fail-i .icon{width:14px;height:14px;stroke-width:3}
+.progress{height:4px;border-radius:4px;background:var(--surface-raised);overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--ai);border-radius:4px;transition:width var(--dur-slow) var(--ease-out)}
+.plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.plan li{display:flex;gap:12px;padding:10px 0;animation:fadeUp var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 90ms)}
+.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--primary);color:var(--primary-fg);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.plan .pt{font-weight:500;color:var(--text-strong);text-decoration:none}
+.plan .pt:hover{text-decoration:underline}
+.plan .why{margin:4px 0 0;font-size:var(--text-sm);color:var(--text-muted);line-height:1.5}
+.plan .joke{margin:6px 0 0;font-size:var(--text-sm);color:var(--ai)}
+.note-box{padding:12px 14px;border-radius:var(--radius-lg);border:1px dashed var(--border-strong);font-size:var(--text-sm);color:var(--text-muted);line-height:1.5}
+.fine{font-size:var(--text-xs);color:var(--text-dim)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.actions .grow{flex:1}
+
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius-lg);font-size:var(--text-sm);line-height:1.5;animation:fadeUp var(--dur-base) var(--ease-out)}
+.alert .icon{margin-top:2px}
+.alert-err{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger-text)}
+.alert-warn{background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text)}
+.alert-info{background:var(--ai-bg);border:1px solid var(--ai-border);color:var(--ai)}
+.bubble{padding:14px 16px;border-radius:16px;background:var(--surface-sunken);border:1px solid var(--border);line-height:1.55;font-size:var(--text-sm)}
+
+/* stuck radar */
+.stuck{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius-lg);background:var(--surface-sunken);border:1px solid var(--border);animation:fadeUp var(--dur-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 90ms)}
+.stuck-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.stuck-top a{font-weight:500;color:var(--text-strong);text-decoration:none}
+.stuck-top a:hover{text-decoration:underline}
+.cause{font-size:var(--text-xs);color:var(--heat);white-space:nowrap}
+
+/* ============ DETAIL ============ */
+.detail-layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:var(--space-6);align-items:start}
+.detail-main,.detail-side{display:flex;flex-direction:column;gap:var(--space-5);min-width:0}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:var(--text-sm);min-height:32px}
+.back:hover{color:var(--text)}
+.detail-title{margin:0;font-size:34px;font-weight:400;letter-spacing:-.02em;line-height:1.15;color:var(--text-strong);overflow-wrap:anywhere}
+@media (max-width:767px){.detail-title{font-size:26px}}
+.title-row{display:flex;justify-content:space-between;gap:var(--space-4);align-items:flex-start;flex-wrap:wrap}
+.meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill-select{position:relative;display:inline-flex;align-items:center;border-radius:var(--radius-full)}
+.pill-select select{appearance:none;-webkit-appearance:none;border:0;border-radius:var(--radius-full);padding:6px 30px 6px 12px;font-size:var(--text-sm);font-weight:500;cursor:pointer;min-height:34px}
+.pill-select .icon{position:absolute;right:10px;width:14px;height:14px;pointer-events:none}
+.pill-select select option{background:var(--surface);color:var(--text)}
+.sel-prio select{background:var(--surface-raised)}
+.tabs{display:none;position:sticky;top:61px;z-index:10;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.tabs button{flex:1;min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--text-muted);font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button[aria-selected="true"]{background:var(--primary);color:var(--primary-fg)}
+@media (max-width:1023px){
+  .detail-layout{grid-template-columns:minmax(0,1fr)}
+  .tabs{display:flex}
+  .detail-layout[data-tab="task"] .detail-side{display:none}
+  .detail-layout[data-tab="B"] .detail-main,.detail-layout[data-tab="C"] .detail-main{display:none}
+  .detail-layout[data-tab="B"] #agentC,.detail-layout[data-tab="C"] #agentB{display:none}
+}
+.subtasks{list-style:none;margin:0;padding:0}
+.subtask{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);animation:fadeUp var(--dur-base) var(--ease-out) both;animation-delay:calc(var(--i,0) * 40ms)}
+.subtask:last-child{border-bottom:0}
+.subtask .st-title{flex:1;min-width:0;overflow-wrap:anywhere}
+.subtask.is-done .st-title{color:var(--text-dim);text-decoration:line-through}
+.cb{appearance:none;-webkit-appearance:none;width:20px;height:20px;flex:none;border-radius:6px;border:1.5px solid var(--border-strong);background:transparent;display:grid;place-content:center;cursor:pointer;margin:0;transition:background var(--dur-fast),border-color var(--dur-fast)}
+.cb::before{content:"";width:10px;height:6px;border-left:2px solid var(--primary-fg);border-bottom:2px solid var(--primary-fg);transform:rotate(-45deg) scale(0);margin-top:-2px;transition:transform var(--dur-fast) var(--ease-out)}
+.cb:checked{background:var(--primary);border-color:var(--primary)}
+.cb:checked::before{transform:rotate(-45deg) scale(1)}
+.cb-hit{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:-6px;cursor:pointer}
+.note{padding:12px 0;border-bottom:1px solid var(--border);animation:fadeUp var(--dur-base) var(--ease-out) both}
+.note:last-of-type{border-bottom:0}
+.note p{margin:0 0 4px;line-height:1.5;overflow-wrap:anywhere}
+
+/* ============ FORMS ============ */
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>.flabel{font-size:var(--text-xs);color:var(--text-muted);font-weight:500}
+.input,.textarea{width:100%;min-height:44px;padding:11px 14px;border-radius:var(--radius-md);background:var(--surface-sunken);border:1px solid var(--border-strong);color:var(--text);outline:none;transition:border-color var(--dur-fast),box-shadow var(--dur-fast)}
+.textarea{min-height:96px;resize:vertical;line-height:1.5}
+.input:focus,.textarea:focus{border-color:var(--text-strong);box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 25%,transparent)}
+.input[aria-invalid="true"],.textarea[aria-invalid="true"]{border-color:var(--danger)}
+.err-msg{color:var(--danger);font-size:var(--text-xs);min-height:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:36px;padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);font-size:var(--text-sm);cursor:pointer;transition:all var(--dur-fast)}
+.chip[aria-pressed="true"]{background:var(--primary);color:var(--primary-fg);border-color:var(--primary);font-weight:500}
+
+/* ============ OVERLAYS ============ */
+.overlay{position:fixed;inset:0;z-index:50;background:var(--overlay);display:flex;align-items:center;justify-content:center;padding:var(--space-4);animation:fadeIn var(--dur-base) ease both}
+.modal{width:100%;max-width:520px;max-height:calc(100dvh - 32px);overflow:auto;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-2xl);box-shadow:var(--shadow-lg);padding:26px;display:flex;flex-direction:column;gap:18px;animation:scaleIn var(--dur-slow) var(--ease-out) both}
+.modal.wide{max-width:760px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.modal-head h2{margin:0;font-size:var(--text-xl);font-weight:500;color:var(--text-strong)}
+.overlay.closing{animation:fadeOut var(--dur-fast) ease both}
+.overlay.closing .modal{animation:scaleOut var(--dur-fast) ease both}
+@media (max-width:767px){
+  .overlay{align-items:flex-end;padding:0}
+  .modal{max-width:none;border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;max-height:92dvh;padding:22px 18px calc(18px + env(safe-area-inset-bottom));animation:slideUp var(--dur-slow) var(--ease-out) both}
+  .overlay.closing .modal{animation:slideDown var(--dur-fast) ease both}
+  .modal .actions.end{position:sticky;bottom:-18px;background:var(--surface);padding-top:12px;margin-bottom:-4px}
+  .modal .actions.end .btn{flex:1}
+}
+.actions.end{justify-content:flex-end}
+.legend{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+.legend th{text-align:left;font-size:var(--text-xs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:500;padding:8px 10px;border-bottom:1px solid var(--border)}
+.legend td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.45}
+.legend td:first-child{white-space:nowrap;font-size:16px}
+.legend-wrap{overflow-x:auto;margin:0 -6px}
+.opt-group{display:flex;flex-direction:column;gap:8px}
+.switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.switch{appearance:none;-webkit-appearance:none;width:44px;height:26px;border-radius:999px;background:var(--surface-raised);border:1px solid var(--border-strong);position:relative;cursor:pointer;flex:none;margin:0;transition:background var(--dur-base)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--text-muted);transition:transform var(--dur-base) var(--ease-out),background var(--dur-base)}
+.switch:checked{background:var(--primary)}
+.switch:checked::after{transform:translateX(18px);background:var(--primary-fg)}
+
+/* ============ STATES ============ */
+.skeleton{border-radius:6px;background:linear-gradient(90deg,var(--skeleton) 0%,var(--skeleton-shine) 50%,var(--skeleton) 100%);background-size:200% 100%;animation:shimmer 1.3s linear infinite}
+.empty{padding:56px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty .big{font-size:40px;line-height:1;animation:float 3s ease-in-out infinite}
+.empty h3{margin:0;font-size:var(--text-xl);font-weight:500;color:var(--text-strong)}
+.empty p{margin:0;color:var(--text-muted);max-width:340px;line-height:1.5}
+
+/* ============ FAB & TOASTS ============ */
+.fab{display:none;position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:30;width:56px;height:56px;border-radius:18px;border:0;background:var(--primary);color:var(--primary-fg);box-shadow:var(--shadow-lg);align-items:center;justify-content:center;cursor:pointer;animation:popIn var(--dur-slow) var(--ease-out) both}
+.fab .icon{width:22px;height:22px}
+body.route-task .fab{display:none!important}
+@media (max-width:420px){.tabs button .icon{display:none}}
+@media (max-width:767px){.fab{display:flex}}
+.toasts{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,calc(100% - 32px))}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:var(--radius-lg);background:var(--primary);color:var(--primary-fg);font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn var(--dur-slow) var(--ease-out) both}
+.toast.out{animation:toastOut var(--dur-base) ease both}
+@media (max-width:767px){.toasts{bottom:88px}}
+
+/* ============ ANIMATIONS ============ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{to{opacity:0}}
+@keyframes scaleIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes scaleOut{to{opacity:0;transform:scale(.97)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes slideDown{to{transform:translateY(100%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes popIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes flicker{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-1px) rotate(-4deg)}50%{transform:translateY(0) rotate(3deg) scale(1.06)}75%{transform:translateY(-1px) rotate(-2deg)}}
+@keyframes siren{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--heat) 0%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--heat) 22%,transparent)}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ai) 0%,transparent)}50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--ai) 14%,transparent)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes caret{50%{opacity:0}}
+.caret{display:inline-block;width:2px;height:1em;background:var(--ai);vertical-align:-2px;margin-left:1px;animation:caret .8s steps(1) infinite}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
+</style>
+</head>
+<body>
+<a href="#main" class="sr-only">Перейти до вмісту</a>
+<div id="app"></div>
+<div id="overlay-root"></div>
+<div class="toasts" id="toasts" aria-live="polite" role="status"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   shared/lib
+   ===================================================================== */
+const DAY = 864e5, HOUR = 36e5, NOW = Date.now();
+const ago = (d) => NOW - d * DAY;
+let seq = 100;
+const newId = (p) => p + (++seq);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = (sel, root = document) => root.querySelector(sel);
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b === 1) return one;
+  if (b >= 2 && b <= 4) return few;
+  return many;
+}
+const daysBetween = (ts) => Math.floor((NOW - ts) / DAY);
+function ageLabel(ts) {
+  const d = daysBetween(ts);
+  if (d <= 0) return "сьогодні";
+  return d + " " + plural(d, "день", "дні", "днів");
+}
+const MONTHS = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear() + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+function hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
+
+/* shared/ui — icons (lucide-react shapes) */
+const ICONS = {
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sparkles: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  flask: '<path d="M10 2v7.31M14 9.3V2M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/>',
+  chevDown: '<path d="m6 9 6 6 6-6"/>',
+  chevLeft: '<path d="m15 18-6-6 6-6"/>',
+  pencil: '<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  copy: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>',
+  listTree: '<path d="M21 12h-8M21 6H8M21 18h-8M3 6v4c0 1.1.9 2 2 2h3M3 10v6c0 1.1.9 2 2 2h3"/>',
+  message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  radar: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="m12 12 7-7"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  square: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  arrowUp: '<path d="m18 15-6-6-6 6"/>',
+  arrowsUp: '<path d="m17 11-5-5-5 5M17 18l-5-5-5 5"/>',
+  minus: '<path d="M5 12h14"/>',
+  arrowDown: '<path d="m6 9 6 6 6-6"/>',
+  note: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/>',
+  wifiOff: '<path d="M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M2 8.82a15 15 0 0 1 4.17-2.65M10.66 5c4.01-.36 8.14.9 11.34 3.76M16.85 11.25a10 10 0 0 1 2.22 1.68M5 13a10 10 0 0 1 5.24-2.76M2 2l20 20"/>',
+  file: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/>'
+};
+const icon = (n, cls = "") => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+
+/* =====================================================================
+   entities/task · entities/note · entities/agentRun
+   ===================================================================== */
+const STATUS = { "todo": "До роботи", "in-progress": "В роботі", "done": "Готово" };
+const PRIORITY = { high: "Високий", medium: "Середній", low: "Низький" };
+const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
+const PRIORITY_ICON = { high: "arrowsUp", medium: "minus", low: "arrowDown" };
+
+/* Температура задачі — чиста функція домену (entities/task/model/heat.ts) */
+const HEAT = {
+  fresh: { key: "fresh", emoji: "🥒", name: "Свіжа", rule: "Будь-який пріоритет, оновлювалась за останні 2 дні", meaning: "Усе гаразд, задача рухається. Нічого робити не треба", joke: "Свіженька, хрумка, ще ніхто не встиг її зіпсувати", show: false, rank: 0 },
+  calm:  { key: "calm", emoji: "🧊", name: "Спокійна", rule: "Низький пріоритет, будь-який вік", meaning: "Не термінова, може почекати. Для вільної години", joke: "Лежить у морозилці. Нікому не заважає, нікого не чекає", show: false, rank: 0 },
+  done:  { key: "done", emoji: "✅", name: "Готово", rule: "Статус «Готово»", meaning: "Задачу закрито, жодних дій", joke: "Здано. Можна забути з чистою совістю", show: false, rank: -1 },
+  warm:  { key: "warm", emoji: "🌶️", name: "Тепленька", rule: "Середній або високий пріоритет, 3–4 дні без змін", meaning: "Починає застрягати. Перевірте, чи нічого не блокує", joke: "Ще не горить. Просто тліє, як твоя мотивація в понеділок", show: true, rank: 1 },
+  hot:   { key: "hot", emoji: "🌶️🌶️", name: "Гаряча", rule: "Високий пріоритет, 5–6 днів без змін", meaning: "Помітно затримується й впливає на інших. Взяти найближчим часом", joke: "Задачу помітив навіть менеджер. Це погано", show: true, rank: 2 },
+  fire:  { key: "fire", emoji: "🌶️🌶️🌶️🔥", name: "Палає", rule: "Високий пріоритет, 7+ днів без змін", meaning: "Прострочена за відчуттями команди. Зробити сьогодні або розбити", joke: "Ця задача вже має стаж. Скоро попросить підвищення", show: true, rank: 3 },
+  alarm: { key: "alarm", emoji: "🏚️🔥🚒", name: "Пожежна тривога", rule: "До дедлайну менше 24 годин, статус не «Готово»", meaning: "Критично: кинути все інше або чесно перенести дедлайн", joke: "Час удавати, що так і було задумано", show: true, rank: 4 }
+};
+const HEAT_ORDER = ["fresh", "calm", "done", "warm", "hot", "fire", "alarm"];
+function getHeat(t) {
+  if (t.status === "done") return HEAT.done;
+  if (t.dueAt && t.dueAt - NOW < 24 * HOUR) return HEAT.alarm;
+  if (t.priority === "low") return HEAT.calm;
+  const stale = daysBetween(t.updatedAt);
+  if (t.priority === "high") {
+    if (stale >= 7) return HEAT.fire;
+    if (stale >= 5) return HEAT.hot;
+    if (stale >= 3) return HEAT.warm;
+  }
+  if (t.priority === "medium" && stale >= 3) return HEAT.warm;
+  return HEAT.fresh;
+}
+
+function mockTasks() {
+  const sub = (title, status = "todo", source = "user") => ({ id: newId("s"), title, status, source });
+  const note = (text, d) => ({ id: newId("n"), text, createdAt: ago(d) });
+  return [
+    { id: "t1", title: "Виправити витік пам’яті у воркері нотифікацій", description: "Після деплою 2.14 RSS воркера росте приблизно на 40 МБ/год. Раз на добу процес падає з OOM, Kubernetes його перезапускає, частина push-нотифікацій губиться.", status: "in-progress", priority: "high", createdAt: ago(6.2), updatedAt: ago(5.1),
+      subtasks: [sub("Відтворити витік на staging", "done"), sub("Зняти heap snapshot до і після 2 год роботи", "done")],
+      notes: [note("Причина: слухачі на 'message' додаються при кожному reconnect, старі не знімаються. Фікс у PR #318, чекає ревʼю.", 5.1)] },
+    { id: "t2", title: "Міграція auth на нові токени", description: "Старі JWT перестають валідуватися завтра. Потрібно перевести сервіс на ротацію refresh-токенів і оновити middleware в API.", status: "todo", priority: "high", createdAt: ago(9.3), updatedAt: ago(9.3), dueAt: NOW + 20 * HOUR, subtasks: [], notes: [] },
+    { id: "t3", title: "Флакі e2e-тест оформлення замовлення", description: "Падає приблизно 1 з 8 запусків у CI, локально не відтворюється.", status: "in-progress", priority: "medium", createdAt: ago(4.4), updatedAt: ago(4.2), subtasks: [], notes: [] },
+    { id: "t4", title: "Додати пагінацію в /api/tasks", description: "Cursor-based пагінація, 50 задач на сторінку. Блокує сторінку архіву на фронтенді.", status: "todo", priority: "medium", createdAt: ago(2.1), updatedAt: ago(1.2), subtasks: [], notes: [] },
+    { id: "t5", title: "Оновити README з інструкцією запуску", description: "Додати опис .env.example, npm-скриптів і розділ про мок-режим агентів.", status: "todo", priority: "low", createdAt: ago(1.4), updatedAt: ago(1.4), subtasks: [], notes: [] },
+    { id: "t6", title: "Налаштувати бекапи SQLite", description: "Щоденний снапшот бази у ./backups, ротація 7 днів.", status: "done", priority: "medium", createdAt: ago(10.5), updatedAt: ago(3),
+      subtasks: [sub("Скрипт снапшоту", "done"), sub("Ротація старих файлів", "done")], notes: [note("Перевірено відновлення з бекапу на копії бази.", 3)] },
+    { id: "t7", title: "Оновити Next.js до 15", description: "Ми на 13.5, частина залежностей вже не підтримує цю версію. Потрібен апгрейд з переходом на нові кешування fetch.", status: "todo", priority: "high", createdAt: ago(8.6), updatedAt: ago(8.6), subtasks: [], notes: [] },
+    { id: "t8", title: "Зробити щось з тестами", description: "Тести погані.", status: "todo", priority: "medium", createdAt: ago(3.5), updatedAt: ago(3.5), subtasks: [], notes: [] },
+    { id: "t9", title: "Rate limiting для /api/agents", description: "Обмежити виклики агентів до 20 на хвилину на користувача, щоб не спалити бюджет LLM.", status: "in-progress", priority: "high", createdAt: ago(3.2), updatedAt: ago(0.4),
+      subtasks: [sub("Вибрати алгоритм (token bucket)", "done"), sub("Middleware для Next.js API routes"), sub("Повертати 429 з Retry-After")],
+      notes: [note("Token bucket в памʼяті процесу. Для кількох інстансів знадобиться Redis, поки не робимо.", 0.4)] },
+    { id: "t10", title: "Дашборд метрик агентів", description: "Кількість запусків, середній час, частка відповідей, що не пройшли валідацію.", status: "todo", priority: "low", createdAt: ago(12.2), updatedAt: ago(12.2), subtasks: [], notes: [] },
+    { id: "t11", title: "Виправити одруківку в onboarding-листі", description: "«Ласкаво просимо» написано разом у темі листа.", status: "done", priority: "low", createdAt: ago(5.5), updatedAt: ago(4.8), subtasks: [], notes: [] },
+    { id: "t12", title: "Логування запитів до LLM", description: "Зберігати промпт, відповідь, токени й латентність кожного виклику агента для дебагу.", status: "in-progress", priority: "medium", createdAt: ago(7.4), updatedAt: ago(6.3),
+      subtasks: [sub("Схема таблиці llm_calls", "done"), sub("Обгортка над клієнтом Anthropic"), sub("Маскування персональних даних"), sub("Сторінка перегляду логів")], notes: [] }
+  ];
+}
+
+const idleRun = () => ({ status: "idle", steps: [], result: null, runId: 0, startedAt: 0, finishedAt: 0 });
+
+/* =====================================================================
+   app state
+   ===================================================================== */
+const state = {
+  tasks: mockTasks(),
+  filter: "all", sort: "priority-desc", query: "",
+  theme: "dark", screen: "ready", aiMode: "api", forceAgentError: false, serious: false,
+  route: { name: "list" }, detailTab: "task",
+  openPanels: { A: false, D: false },
+  focusOrder: [],
+  agents: { A: idleRun(), D: idleRun() },
+  taskAgents: {}
+};
+try { const t = localStorage.getItem("devlog-theme"); if (t === "light" || t === "dark") state.theme = t; } catch (e) {}
+document.documentElement.dataset.theme = state.theme;
+
+const findTask = (id) => state.tasks.find((t) => t.id === id);
+const visibleTasks = () => (state.screen === "empty" ? [] : state.tasks);
+function taskAgents(id) {
+  if (!state.taskAgents[id]) state.taskAgents[id] = { B: idleRun(), C: { ...idleRun(), tone: "auto" } };
+  return state.taskAgents[id];
+}
+const touch = (t) => { t.updatedAt = Date.now(); };
+
+/* =====================================================================
+   shared/ui — primitives as string renderers
+   ===================================================================== */
+const statusBadge = (s) => `<span class="badge st-${s}">${s === "done" ? icon("check") : '<span class="dot"></span>'}${STATUS[s]}</span>`;
+const prioLabel = (p) => `<span class="prio pr-${p}">${icon(PRIORITY_ICON[p])}${PRIORITY[p]}</span>`;
+function heatButton(t, always = false) {
+  const h = getHeat(t);
+  if (!h.show && !always) return "";
+  const joke = state.serious ? "" : `<i>«${esc(h.joke)}»</i>`;
+  return `<button type="button" class="heat lvl-${h.key}" aria-label="Температура: ${esc(h.name)}. ${esc(h.meaning)}"><span class="em" aria-hidden="true">${h.emoji}</span><span class="tip" role="tooltip"><b>${esc(h.name)}</b>${esc(h.meaning)}${joke}</span></button>`;
+}
+const aiTag = (label) => state.aiMode === "demo" ? `<span class="ai-tag demo">Демо · ${label}</span>` : `<span class="ai-tag">${icon("sparkles")}${label}</span>`;
+
+function stepsHtml(run) {
+  if (!run.steps.length) return "";
+  return `<ol class="steps" aria-live="polite">${run.steps.map((s, i) => {
+    const si = s.state === "run" ? '<span class="spinner" aria-hidden="true"></span>'
+      : s.state === "done" ? `<span class="ok">${icon("check")}</span>`
+      : s.state === "fail" ? `<span class="fail-i">${icon("x")}</span>`
+      : '<span class="pending" aria-hidden="true"></span>';
+    const sr = { run: "виконується", done: "готово", fail: "помилка", pending: "очікує" }[s.state];
+    return `<li class="step ${s.state}" style="--i:${i}"><span class="si">${si}</span><span>${esc(s.label)}<span class="sr-only"> — ${sr}</span>${s.detail ? `<span class="detail">${esc(s.detail)}</span>` : ""}</span></li>`;
+  }).join("")}</ol>`;
+}
+function progressHtml(run) {
+  const done = run.steps.filter((s) => s.state === "done").length;
+  const pct = run.steps.length ? Math.round((done / run.steps.length) * 100) : 0;
+  return `<div class="progress" role="progressbar" aria-label="Прогрес агента" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>`;
+}
+const skeletonLines = (n = 4) => Array.from({ length: n }, (_, i) => `<div class="skeleton" style="height:12px;width:${[70, 92, 55, 80, 64][i % 5]}%"></div>`).join("");
+const runTime = (run) => ((run.finishedAt - run.startedAt) / 1000).toFixed(1).replace(".", ",") + " с";
+
+function agentPanel({ key, title, iconName, tagLabel, body, summary, collapsible, running }) {
+  const collapsed = collapsible && !state.openPanels[key];
+  const head = collapsible
+    ? `<button type="button" class="agent-head" data-action="toggle-panel" data-key="${key}" aria-expanded="${!collapsed}"><h2>${icon(iconName)}${title}</h2><span style="display:flex;gap:8px;align-items:center">${aiTag(tagLabel)}<span class="chev">${icon("chevDown")}</span></span></button>`
+    : `<div class="agent-head"><h2>${icon(iconName)}${title}</h2>${aiTag(tagLabel)}</div>`;
+  return `<section class="card agent ${collapsed ? "collapsed" : ""} ${running ? "running" : ""}" aria-label="${title}">${head}${summary ? `<p class="agent-summary" style="padding:0 20px 14px">${summary}</p>` : ""}<div class="agent-body">${body}</div></section>`;
+}
+
+/* =====================================================================
+   features/agent-runner — покроковий виконавець з можливістю зупинки
+   ===================================================================== */
+async function runAgent(run, defs, rerender) {
+  const myId = ++run.runId;
+  run.status = "running"; run.result = null; run.startedAt = Date.now();
+  run.steps = defs.map((d) => ({ label: d.label, state: "pending", detail: "" }));
+  rerender();
+  const ctx = {};
+  for (let i = 0; i < defs.length; i++) {
+    run.steps[i].state = "run"; rerender();
+    await sleep(defs[i].ms ?? (520 + Math.random() * 380));
+    if (run.runId !== myId) return null;
+    const out = defs[i].fn ? defs[i].fn(ctx) : {};
+    run.steps[i].state = out && out.fail ? "fail" : "done";
+    if (out && out.label) run.steps[i].label = out.label;
+    if (out && out.detail) run.steps[i].detail = out.detail;
+    if (out && out.stop) { run.finishedAt = Date.now(); rerender(); return { ctx, stop: out.stop }; }
+  }
+  run.finishedAt = Date.now();
+  return { ctx };
+}
+const stopRun = (run) => { run.runId++; run.status = "idle"; run.steps = []; };
+
+/* =====================================================================
+   features/prioritize-tasks — Агент A
+   ===================================================================== */
+const JOKES_A = {
+  alarm: ["Дедлайн завтра. Час удавати, що так і було задумано 🚒", "Тут уже не перці, тут пожежна команда 🏚️🔥"],
+  fire: ["Почни з цієї. Вона висить {d} і вже знає про тебе забагато 🔥", "Ця задача має стаж. Скоро попросить підвищення 🌶️🌶️🌶️"],
+  hot: ["Технічно це «high priority». Фактично це «хтось уже пише в лічку» 📞", "Задачу помітив навіть менеджер. Це погано 🌶️🌶️"],
+  warm: ["Ще не горить. Просто тліє, як мотивація в понеділок 🌶️"]
+};
+function scoreTask(t) {
+  const age = Math.min(daysBetween(t.createdAt), 14);
+  const stale = Math.min(daysBetween(t.updatedAt), 14);
+  let s = PRIORITY_WEIGHT[t.priority] * 10 + age * 1.2 + stale * 0.8;
+  if (t.status === "in-progress") s += 6;
+  if (t.dueAt && t.dueAt - NOW < 48 * HOUR) s += 30;
+  return s;
+}
+function explain(t) {
+  const parts = [];
+  const h = getHeat(t);
+  if (t.dueAt && t.dueAt - NOW < 48 * HOUR) parts.push("дедлайн менш ніж за добу");
+  parts.push(PRIORITY[t.priority].toLowerCase() + " пріоритет");
+  if (t.status === "in-progress") parts.push("уже в роботі: закінчити дешевше, ніж перемикатися");
+  const st = daysBetween(t.updatedAt);
+  if (st >= 3) parts.push(st + " " + plural(st, "день", "дні", "днів") + " без змін");
+  else parts.push("задача свіжа, швидко дасть результат");
+  if (t.subtasks.length && t.subtasks.some((s) => s.status !== "done")) parts.push("є готовий план з підзадач");
+  let why = parts.join(", ");
+  why = why.charAt(0).toUpperCase() + why.slice(1) + ".";
+  let joke = "";
+  if (!state.serious && JOKES_A[h.key]) {
+    const list = JOKES_A[h.key];
+    const d = daysBetween(t.updatedAt);
+    joke = list[hash(t.id) % list.length].replace("{d}", d + " " + plural(d, "день", "дні", "днів"));
+  }
+  return { why, joke };
+}
+function rulePlan(active) {
+  return [...active].sort((a, b) => PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority] || a.createdAt - b.createdAt || (b.status === "in-progress") - (a.status === "in-progress"));
+}
+async function runPrioritize() {
+  const run = state.agents.A;
+  state.openPanels.A = true;
+  const active = visibleTasks().filter((t) => t.status !== "done");
+  const failMode = state.forceAgentError;
+  const res = await runAgent(run, [
+    { label: "Зібрати активні задачі", fn: () => ({ label: "Зібрав " + active.length + " " + plural(active.length, "активну задачу", "активні задачі", "активних задач") }) },
+    { label: "Зважити пріоритет, вік, статус і дедлайни", fn: (ctx) => { ctx.ranked = [...active].sort((a, b) => scoreTask(b) - scoreTask(a)); return { detail: "Найвища вага: " + (ctx.ranked[0] ? ctx.ranked[0].title.slice(0, 38) + "…" : "—") }; } },
+    { label: "Скласти порядок і пояснення", fn: (ctx) => { ctx.top = ctx.ranked.slice(0, 3); return {}; } },
+    { label: "Перевірити відповідь (схема, існування задач)", ms: 700, fn: (ctx) => {
+        if (failMode) return { fail: true, label: "Перевірка не пройдена", detail: "Відповідь посилається на задачу #42, якої немає. Повтор теж невдалий.", stop: "fallback" };
+        return { label: "Перевірив відповідь: " + ctx.top.length + " з " + ctx.top.length + " задач існують" };
+      } }
+  ], renderAgentA);
+  if (!res) return;
+  if (res.stop === "fallback") {
+    run.status = "fallback";
+    run.result = { order: rulePlan(active).slice(0, 3).map((t) => t.id) };
+  } else {
+    run.status = "result";
+    const top = res.ctx.top;
+    run.result = {
+      items: top.map((t) => ({ id: t.id, ...explain(t) })),
+      deferred: res.ctx.ranked.slice(3).filter((t) => t.priority !== "high").slice(0, 2).map((t) => ({ id: t.id, reason: t.priority === "low" ? "низький пріоритет" : "може почекати день" }))
+    };
+  }
+  renderAgentA();
+}
+function renderAgentA() {
+  const el = $("#agentA"); if (!el) return;
+  const run = state.agents.A;
+  const noData = state.screen !== "ready" || !visibleTasks().some((t) => t.status !== "done");
+  let body = "", summary = "Пропонує, з чого почати день, і пояснює чому";
+  if (state.screen === "loading") body = `<div style="display:flex;flex-direction:column;gap:10px">${skeletonLines(3)}</div><p class="fine">Чекаю, поки завантажаться задачі…</p>`;
+  else if (state.screen === "error") body = `<p class="muted" style="font-size:13px">Агенту немає з чим працювати: список задач не завантажився.</p>`;
+  else if (noData) body = `<p class="muted" style="font-size:13px">Немає активних задач для аналізу. ${state.serious ? "" : "Підозріло спокійно 🧘"}</p>`;
+  else if (run.status === "idle") {
+    const pinned = state.focusOrder.map(findTask).filter(Boolean);
+    body = `<p class="muted" style="font-size:13px;line-height:1.5">Агент подивиться на всі активні задачі, зважить пріоритет, вік, статус і дедлайни та запропонує порядок на сьогодні. Нічого не змінить без вашого підтвердження.</p>
+      ${pinned.length ? `<div class="note-box"><span style="color:var(--text)">Фокус дня закріплено:</span> ${pinned.map((t, i) => (i + 1) + ". " + esc(t.title)).join(" · ")}</div>` : ""}
+      <button class="btn btn-primary btn-block" data-action="run-A">${icon("sparkles")}Скласти план на день</button>`;
+  } else if (run.status === "running") {
+    summary = "Агент працює…";
+    body = progressHtml(run) + stepsHtml(run) + `<div style="display:flex;flex-direction:column;gap:10px">${skeletonLines(3)}</div><button class="btn btn-ghost btn-block" data-action="stop" data-agent="A">${icon("square")}Зупинити</button>`;
+  } else if (run.status === "result") {
+    const r = run.result;
+    summary = "План готовий: " + r.items.length + " задачі";
+    body = stepsHtml(run) + `<p class="fine">${run.steps.length} кроки · ${runTime(run)}${state.aiMode === "demo" ? " · мок-відповідь" : ""}</p>
+      <ol class="plan">${r.items.map((it, i) => { const t = findTask(it.id); return t ? `<li style="--i:${i}"><span class="num">${i + 1}</span><div><a class="pt" href="#task-${t.id}">${esc(t.title)}</a><p class="why">${esc(it.why)}</p>${it.joke ? `<p class="joke">${esc(it.joke)}</p>` : ""}</div></li>` : ""; }).join("")}</ol>
+      ${r.deferred.length ? `<div class="note-box"><span style="color:var(--text)">Відкладено:</span> ${r.deferred.map((d) => { const t = findTask(d.id); return t ? esc(t.title) + " (" + d.reason + ")" : ""; }).join(", ")}.</div>` : ""}
+      <div class="actions"><button class="btn btn-primary grow" data-action="apply-A">Застосувати порядок</button><button class="btn btn-ghost btn-icon" data-action="run-A" aria-label="Перегенерувати план">${icon("refresh")}</button></div>
+      <p class="fine">Це пропозиція: фокус дня зміниться лише після підтвердження.</p>`;
+  } else if (run.status === "fallback") {
+    summary = "Агент не впорався, показано порядок за правилом";
+    body = stepsHtml(run) + `<div class="alert alert-err" role="alert">${icon("alert")}<div><b>Відповідь агента відхилено.</b> Вона не пройшла перевірку двічі, тому не показуємо її.</div></div>
+      <p class="muted" style="font-size:13px">Порядок за простим правилом: пріоритет → вік → статус. Без пояснень від AI.</p>
+      <ol class="plan">${run.result.order.map((id, i) => { const t = findTask(id); return `<li style="--i:${i}"><span class="num">${i + 1}</span><div><a class="pt" href="#task-${t.id}">${esc(t.title)}</a></div></li>`; }).join("")}</ol>
+      <div class="actions"><button class="btn btn-primary grow" data-action="run-A">${icon("refresh")}Спробувати ще раз</button><button class="btn btn-ghost" data-action="apply-A-rule">Взяти цей порядок</button></div>`;
+  }
+  el.innerHTML = agentPanel({ key: "A", title: "План на день", iconName: "target", tagLabel: "Агент A", body, summary, collapsible: true, running: run.status === "running" });
+}
+
+/* =====================================================================
+   features/detect-stuck-tasks — Агент D «Радар застряглих задач»
+   ===================================================================== */
+function diagnose(t) {
+  const notesText = t.notes.map((n) => n.text).join(" ");
+  const open = t.subtasks.filter((s) => s.status !== "done").length;
+  const d = daysBetween(t.updatedAt);
+  const dd = d + " " + plural(d, "день", "дні", "днів");
+  if (/PR|ревʼю|review/i.test(notesText)) return { cause: "Чекає на ревʼю", why: "У нотатці згадано PR, який чекає ревʼю. Блокер поза автором задачі.", joke: "PR чекає ревʼю. Ревʼюер, мабуть, теж чекає, поки його хтось пінганe ⏳", action: "draft-review", actionLabel: "Чернетка запиту на ревʼю", dd };
+  if (!t.subtasks.length && !t.notes.length) return { cause: "Задача розмита", why: "Немає ні підзадач, ні нотаток: незрозуміло, з чого почати.", joke: "«В роботі» " + dd + " без жодної нотатки. Або ти геній, або вона тебе перемогла 🕸️", action: "split", actionLabel: "Розбити на підзадачі", dd };
+  if (open >= 3) return { cause: "Задача завелика", why: open + " відкритих підзадач і жодного руху. Варто попросити допомоги або зменшити обсяг.", joke: "Класична пастка «та там на 5 хвилин» 🫠", action: "draft-help", actionLabel: "Чернетка прохання про допомогу", dd };
+  return { cause: "Немає активності", why: "Задача давно не оновлювалась.", joke: "", action: "open", actionLabel: "Відкрити задачу", dd };
+}
+async function runRadar() {
+  const run = state.agents.D;
+  state.openPanels.D = true;
+  const res = await runAgent(run, [
+    { label: "Знайти задачі «в роботі» без змін понад 3 дні", fn: (ctx) => { ctx.stuck = visibleTasks().filter((t) => t.status === "in-progress" && daysBetween(t.updatedAt) >= 3 && !(run.snoozed || []).includes(t.id)); return { label: "Знайшов " + ctx.stuck.length + " " + plural(ctx.stuck.length, "застряглу задачу", "застряглі задачі", "застряглих задач") }; } },
+    { label: "Зіставити з нотатками та підзадачами", fn: (ctx) => { if (!ctx.stuck.length) return { stop: "none" }; return {}; } },
+    { label: "Визначити ймовірну причину", fn: (ctx) => { ctx.items = ctx.stuck.map((t) => ({ id: t.id, ...diagnose(t) })); return { detail: [...new Set(ctx.items.map((i) => i.cause))].join(", ") }; } },
+    { label: "Запропонувати конкретну дію", fn: (ctx) => state.forceAgentError ? { fail: true, label: "Дії не пройшли перевірку", detail: "Агент запропонував змінити задачу, якої немає", stop: "fallback" } : {} }
+  ], renderAgentD);
+  if (!res) return;
+  if (res.stop === "none") { run.status = "result"; run.result = { items: [] }; }
+  else if (res.stop === "fallback") { run.status = "fallback"; run.result = { items: (res.ctx.items || []).map((i) => ({ ...i, action: "open", actionLabel: "Відкрити задачу", joke: "" })) }; }
+  else { run.status = "result"; run.result = { items: res.ctx.items }; }
+  renderAgentD();
+}
+function renderAgentD() {
+  const el = $("#agentD"); if (!el) return;
+  const run = state.agents.D;
+  let body = "", summary = "Шукає задачі, що застрягли «в роботі»";
+  if (state.screen !== "ready") body = `<p class="muted" style="font-size:13px">${state.screen === "loading" ? "Чекаю на дані…" : "Немає задач для сканування."}</p>`;
+  else if (run.status === "idle") body = `<p class="muted" style="font-size:13px;line-height:1.5">Агент знаходить задачі, які давно не рухаються, з’ясовує ймовірну причину (розмита, завелика, чекає ревʼю) і пропонує дію.</p><button class="btn btn-ai btn-block" data-action="run-D">${icon("radar")}Просканувати</button>`;
+  else if (run.status === "running") { summary = "Сканую…"; body = progressHtml(run) + stepsHtml(run) + `<button class="btn btn-ghost btn-block" data-action="stop" data-agent="D">${icon("square")}Зупинити</button>`; }
+  else {
+    const items = run.result.items.filter((i) => findTask(i.id) && findTask(i.id).status === "in-progress" && !(run.snoozed || []).includes(i.id));
+    summary = items.length ? "Знайдено застряглих: " + items.length : "Нічого не застрягло";
+    body = stepsHtml(run) + (run.status === "fallback" ? `<div class="alert alert-err" role="alert">${icon("alert")}<div><b>Пропозиції агента відхилено.</b> Показую лише знайдені задачі без порад.</div></div>` : "")
+      + (items.length ? items.map((it, i) => { const t = findTask(it.id); return `<div class="stuck" style="--i:${i}"><div class="stuck-top"><a href="#task-${t.id}">${esc(t.title)}</a><span class="cause">${esc(it.dd)} без змін</span></div>
+          <p class="muted" style="font-size:13px;line-height:1.5"><b style="color:var(--text);font-weight:500">${esc(it.cause)}.</b> ${esc(it.why)}</p>
+          ${it.joke && !state.serious ? `<p style="font-size:13px;color:var(--ai)">${esc(it.joke)}</p>` : ""}
+          <div class="actions"><button class="btn btn-primary btn-sm" data-action="d-act" data-kind="${it.action}" data-id="${t.id}">${esc(it.actionLabel)}</button><button class="btn btn-ghost btn-sm" data-action="d-snooze" data-id="${t.id}">Ігнорувати</button></div></div>`; }).join("")
+        : `<div class="empty" style="padding:24px 8px"><div class="big" aria-hidden="true">🧘</div><p>${state.serious ? "Застряглих задач немає." : "Нічого не застрягло. Або все під контролем, або ти забув оновити статуси."}</p></div>`)
+      + `<button class="btn btn-ghost btn-sm" data-action="run-D">${icon("refresh")}Сканувати ще раз</button>`;
+  }
+  el.innerHTML = agentPanel({ key: "D", title: "Радар застряглих", iconName: "radar", tagLabel: "Агент D", body, summary, collapsible: true, running: run.status === "running" });
+}
+
+/* =====================================================================
+   features/decompose-task — Агент B
+   ===================================================================== */
+const TEMPLATES = {
+  bug: [["Відтворити проблему стабільно", "~1 год", "без цього фікс не перевірити"], ["Знайти першопричину", "~2 год", "логи, профайлер, heap snapshot"], ["Написати фікс", "~2 год", "мінімальна зміна"], ["Додати регресійний тест", "~1 год", "щоб не повернулось"], ["Задеплоїти й спостерігати 24 год", "~30 хв", "метрики після релізу"]],
+  api: [["Описати контракт API", "~1 год", "запит, відповідь, коди помилок"], ["Реалізувати на бекенді", "~3 год", "основна логіка"], ["Інтеграційні тести", "~1,5 год", "граничні випадки"], ["Оновити клієнт і документацію", "~1 год", "README і типи"]],
+  upgrade: [["Прочитати changelog і breaking changes", "~1 год", "список ризиків"], ["Оновити залежності в окремій гілці", "~1 год", "ізольовано від main"], ["Виправити помилки збірки й типів", "~3 год", "найбільша частина роботи"], ["Прогнати e2e і smoke-тести", "~1 год", "перевірка ключових флоу"], ["План відкату", "~30 хв", "якщо прод зламається"]],
+  tests: [["Зібрати статистику падінь з CI", "~1 год", "які тести і як часто"], ["Ізолювати нестабільний крок", "~2 год", "запуск у циклі"], ["Прибрати залежність від таймінгів", "~2 год", "явні очікування замість sleep"], ["Retry лише для мережевих кроків", "~1 год", "не маскувати справжні баги"]],
+  generic: [["Уточнити критерії готовності", "~30 хв", "що означає «готово»"], ["Розбити реалізацію на етапи", "~1 год", "кожен етап можна задеплоїти"], ["Реалізувати перший етап", "~3 год", "найризиковіша частина спершу"], ["Перевірити й задокументувати", "~1 год", "README або нотатка"]]
+};
+const isVague = (t) => t.description.trim().length < 40 || /щось|якось|покращити|розібратись|погані/i.test(t.title + " " + t.description);
+function pickTemplate(t, answer) {
+  const s = (t.title + " " + t.description + " " + (answer || "")).toLowerCase();
+  if (/e2e|тест|test/.test(s)) return "tests";
+  if (/витік|флакі|падає|виправ|bug|fix|помилк/.test(s)) return "bug";
+  if (/оновити|міграц|upgrade|next\.js/.test(s)) return "upgrade";
+  if (/api|endpoint|rate|пагінац|middleware/.test(s)) return "api";
+  return "generic";
+}
+async function runDecompose(taskId, answer) {
+  const t = findTask(taskId); if (!t) return;
+  const run = taskAgents(taskId).B;
+  const rr = () => renderAgentB(taskId);
+  const vague = !answer && isVague(t);
+  const defs = [
+    { label: "Прочитати назву, опис і наявні підзадачі", fn: () => ({ detail: t.subtasks.length + " " + plural(t.subtasks.length, "підзадача", "підзадачі", "підзадач") + " вже є" }) },
+    { label: "Оцінити чіткість формулювання", fn: () => vague ? { label: "Задача нечітка: потрібне уточнення", stop: "clarify" } : { label: answer ? "Уточнення отримано, контексту достатньо" : "Формулювання чітке" } },
+    { label: "Згенерувати підзадачі", fn: (ctx) => { ctx.tpl = pickTemplate(t, answer); const existing = t.subtasks.map((s) => s.title.toLowerCase()); ctx.items = TEMPLATES[ctx.tpl].filter(([title]) => !existing.some((e) => e.includes(title.toLowerCase().slice(0, 12)))).map(([title, est, why]) => ({ title, est, why, on: true })); return { detail: ctx.items.length + " " + plural(ctx.items.length, "пункт", "пункти", "пунктів") }; } },
+    { label: "Перевірити структуру (3–6 пунктів, без дублів)", ms: 650, fn: (ctx) => state.forceAgentError ? { fail: true, label: "Структура не пройшла перевірку", detail: "Дублікати з наявними підзадачами", stop: "fallback" } : { label: "Структуру перевірено" } }
+  ];
+  const res = await runAgent(run, defs, rr);
+  if (!res) return;
+  if (res.stop === "clarify") {
+    run.status = "clarify";
+    run.result = { questions: ["Що саме не так: падають, повільні чи їх немає?", "Які тести: unit, e2e чи всі? Є приклад падіння?"] };
+  } else if (res.stop === "fallback") {
+    run.status = "fallback";
+    run.result = { items: TEMPLATES.generic.map(([title, est, why]) => ({ title, est, why, on: true })) };
+  } else {
+    run.status = "result"; run.result = { items: res.ctx.items };
+  }
+  rr();
+}
+function renderAgentB(taskId) {
+  const el = $("#agentB"); if (!el) return;
+  const t = findTask(taskId); const run = taskAgents(taskId).B;
+  let body = "";
+  if (run.status === "idle") body = `<p class="muted" style="font-size:13px;line-height:1.5">Агент розіб’є задачу на 3–6 підзадач з оцінкою часу. Якщо задача нечітка, спершу поставить уточнювальні питання. Підзадачі з’являться лише після підтвердження.</p>
+    ${isVague(t) ? `<div class="alert alert-info">${icon("info")}<div>Опис короткий: агент, найімовірніше, попросить уточнення.</div></div>` : ""}
+    <button class="btn btn-primary btn-block" data-action="run-B">${icon("listTree")}Розбити на підзадачі</button>`;
+  else if (run.status === "running") body = progressHtml(run) + stepsHtml(run) + `<button class="btn btn-ghost btn-block" data-action="stop-task" data-agent="B">${icon("square")}Зупинити</button>`;
+  else if (run.status === "clarify") body = stepsHtml(run) + `<div class="bubble">${state.serious ? "" : "🤔 "}Опису замало, щоб розбити задачу. Уточніть, будь ласка:<br>${run.result.questions.map((q, i) => (i + 1) + ". " + esc(q)).join("<br>")}</div>
+      <form data-form="clarify" class="field" novalidate><label for="bAnswer">Ваша відповідь</label><textarea id="bAnswer" class="textarea" style="min-height:80px" placeholder="Наприклад: e2e checkout, падає ~1 з 8 запусків у CI" required></textarea><span class="err-msg" id="bAnswerErr"></span>
+      <div class="actions" style="margin-top:6px"><button class="btn btn-primary grow" type="submit">Відповісти і продовжити</button><button class="btn btn-ghost" type="button" data-action="reset-B">Скасувати</button></div></form>
+      <p class="fine">Підзадачі не генеруються, доки немає відповіді.</p>`;
+  else if (run.status === "result" || run.status === "fallback") {
+    const n = run.result.items.filter((i) => i.on).length;
+    body = stepsHtml(run) + (run.status === "fallback" ? `<div class="alert alert-err" role="alert">${icon("alert")}<div><b>Відповідь агента відхилено.</b> Пропонуємо базовий шаблон без AI. Його можна відредагувати після створення.</div></div>` : "")
+      + `<p class="label" style="margin:0">Пропоновані підзадачі</p><ul class="subtasks">${run.result.items.map((it, i) => `<li class="subtask" style="--i:${i}"><label class="cb-hit"><input type="checkbox" class="cb" data-action="b-toggle" data-i="${i}" ${it.on ? "checked" : ""} aria-label="${esc(it.title)}"></label><div class="st-title"><div>${esc(it.title)}</div><div class="fine">${esc(it.est)} · ${esc(it.why)}</div></div></li>`).join("")}</ul>
+      <div class="actions"><button class="btn btn-primary grow" data-action="apply-B" ${n ? "" : "disabled"}>Створити ${n} ${plural(n, "підзадачу", "підзадачі", "підзадач")}</button><button class="btn btn-ghost" data-action="reset-B">Скасувати</button></div>
+      <p class="fine">Нічого не створено, доки ви не натиснете «Створити».</p>`;
+  } else if (run.status === "applied") body = `<div class="alert alert-info">${icon("check")}<div>Створено ${run.result.count} ${plural(run.result.count, "підзадачу", "підзадачі", "підзадач")}. ${state.serious ? "" : "План є, тепер лишилось його виконати 😅"}</div></div><button class="btn btn-ghost btn-block" data-action="run-B">${icon("refresh")}Розбити ще раз</button>`;
+  el.innerHTML = agentPanel({ key: "B", title: "Декомпозиція", iconName: "listTree", tagLabel: "Агент B", body, collapsible: false, running: run.status === "running" });
+}
+
+/* =====================================================================
+   features/generate-status-update — Агент C
+   ===================================================================== */
+const TONES = { auto: "Авто", team: "Для команди", manager: "Для менеджера", short: "Коротко", humor: "З гумором" };
+function autoTone(t) {
+  const h = getHeat(t);
+  if (t.status === "done") return "team";
+  if (h.rank >= 2 || t.dueAt) return "manager";
+  return "team";
+}
+function buildUpdate(t, tone) {
+  const done = t.subtasks.filter((s) => s.status === "done").map((s) => s.title);
+  const open = t.subtasks.filter((s) => s.status !== "done").map((s) => s.title);
+  const note = t.notes.length ? t.notes[t.notes.length - 1].text : "";
+  const h = getHeat(t);
+  const stale = daysBetween(t.updatedAt);
+  const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+  const L = [];
+  if (tone === "short") {
+    L.push(`*${t.title}*: ${STATUS[t.status].toLowerCase()}, ${done.length}/${t.subtasks.length || 0} підзадач.` + (open[0] ? ` Далі: ${lower(open[0])}.` : ""));
+    return L.join("\n");
+  }
+  if (tone === "manager") {
+    L.push(`*${t.title}*`);
+    L.push(`Статус: ${STATUS[t.status].toLowerCase()}` + (t.subtasks.length ? `, прогрес ${done.length} з ${t.subtasks.length} підзадач.` : "."));
+    if (open[0]) L.push(`Наступний крок: ${lower(open[0])}.`);
+    if (t.dueAt) L.push(`Дедлайн: ${formatDate(t.dueAt)}.`);
+    if (h.rank >= 2 || /PR|ревʼю/i.test(note)) L.push(`Ризик: ` + (/PR|ревʼю/i.test(note) ? "чекаємо на ревʼю, це блокує реліз." : `задача ${stale} ${plural(stale, "день", "дні", "днів")} без змін, потрібне рішення щодо пріоритету.`));
+    return L.join("\n");
+  }
+  if (tone === "humor") {
+    L.push(`🚒 *${t.title}*: новини з фронту`);
+    if (done.length) L.push(`✅ Вже зроблено: ${done.map(lower).join(", ")}.`);
+    if (note) L.push(`🕵️ ${note}`);
+    if (open.length) L.push(`👀 Далі: ${open.map(lower).join(", ")}.`);
+    if (!done.length && !note) L.push(`🫠 Прогресу поки нуль, але настрій бойовий.`);
+    if (h.rank >= 2) L.push(`🌶️ Задача висить ${stale} ${plural(stale, "день", "дні", "днів")}. Стабільність, яку ми заслужили.`);
+    return L.join("\n");
+  }
+  L.push(`*${t.title}*: апдейт`);
+  if (done.length) L.push(`Готово: ${done.map(lower).join(", ")}.`);
+  if (note) L.push(`Нотатка: ${note}`);
+  if (open.length) L.push(`Далі: ${open.map(lower).join(", ")}.`);
+  if (!done.length && !note && !open.length) L.push(`Поки без помітного прогресу, беру в роботу.`);
+  if (t.status === "done") L.push(`Задачу закрито 🎉`);
+  return L.join("\n");
+}
+const slackToHtml = (s) => esc(s).replace(/\*(.+?)\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+async function runStatusUpdate(taskId, tone) {
+  const t = findTask(taskId); if (!t) return;
+  const run = taskAgents(taskId).C;
+  if (tone) run.tone = tone;
+  const rr = () => renderAgentC(taskId);
+  const res = await runAgent(run, [
+    { label: "Зібрати задачу, підзадачі й нотатки", fn: (ctx) => { ctx.thin = !t.subtasks.length && !t.notes.length; return { detail: t.subtasks.length + " " + plural(t.subtasks.length, "підзадача", "підзадачі", "підзадач") + " · " + t.notes.length + " " + plural(t.notes.length, "нотатка", "нотатки", "нотаток") }; } },
+    { label: "Визначити контекст і тон", fn: (ctx) => { ctx.tone = run.tone === "auto" ? autoTone(t) : run.tone; return { label: "Тон: " + TONES[ctx.tone].toLowerCase(), detail: run.tone === "auto" ? (ctx.tone === "manager" ? "є ризик або дедлайн, тож пишу для менеджера" : "звичайний прогрес, пишу для команди") : "вибрано вручну" }; } },
+    { label: "Написати чернетку", fn: (ctx) => { ctx.text = buildUpdate(t, ctx.tone); return {}; } },
+    { label: "Перевірити факти", ms: 600, fn: () => state.forceAgentError ? { fail: true, label: "Факти не підтверджено", detail: "У тексті згадано PR #999, якого немає в нотатках", stop: "fallback" } : { label: "Згадано лише наявні підзадачі й нотатки" } }
+  ], rr);
+  if (!res) return;
+  if (res.stop === "fallback") { run.status = "fallback"; run.result = { text: buildUpdate(t, "short"), thin: res.ctx.thin, tone: "short" }; }
+  else { run.status = "result"; run.result = { text: res.ctx.text, thin: res.ctx.thin, tone: res.ctx.tone, typing: true }; }
+  rr();
+  if (run.status === "result") typeOut(taskId);
+}
+async function typeOut(taskId) {
+  const run = taskAgents(taskId).C;
+  const myId = run.runId;
+  const target = run.result.text;
+  const box = $("#cText"); if (!box) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce) {
+    const chars = [...target];
+    for (let i = 0; i <= chars.length; i += 3) {
+      if (run.runId !== myId || !$("#cText")) return;
+      $("#cText").innerHTML = esc(chars.slice(0, i).join("")).replace(/\n/g, "<br>") + '<span class="caret"></span>';
+      await sleep(14);
+    }
+  }
+  run.result.typing = false;
+  if ($("#cText")) $("#cText").innerHTML = slackToHtml(target);
+  const cp = $("#cCopy"); if (cp) cp.disabled = false;
+}
+function renderAgentC(taskId) {
+  const el = $("#agentC"); if (!el) return;
+  const t = findTask(taskId); const run = taskAgents(taskId).C;
+  const toneChips = Object.entries(TONES).filter(([k]) => !(k === "humor" && state.serious)).map(([k, v]) => {
+    const chosen = run.tone === "auto" && run.result && run.result.tone ? " → " + TONES[run.result.tone].toLowerCase() : "";
+    return `<button type="button" class="chip" data-action="c-tone" data-tone="${k}" aria-pressed="${run.tone === k}">${v}${k === "auto" ? chosen : ""}</button>`;
+  }).join("");
+  let body = "";
+  if (run.status === "idle") body = `<p class="muted" style="font-size:13px;line-height:1.5">Агент складе коротке повідомлення у стилі Slack із задачі, підзадач і нотаток. Тон підбере за контекстом: є ризик чи дедлайн, отже пише для менеджера.</p><div class="chips" role="group" aria-label="Тон">${toneChips}</div><button class="btn btn-primary btn-block" data-action="run-C">${icon("message")}Згенерувати апдейт</button>`;
+  else if (run.status === "running") body = progressHtml(run) + stepsHtml(run) + `<button class="btn btn-ghost btn-block" data-action="stop-task" data-agent="C">${icon("square")}Зупинити</button>`;
+  else {
+    const r = run.result;
+    body = stepsHtml(run)
+      + (run.status === "fallback" ? `<div class="alert alert-err" role="alert">${icon("alert")}<div><b>Чернетку агента відхилено:</b> вона згадувала неіснуючий PR. Нижче короткий шаблонний апдейт без AI.</div></div>` : "")
+      + (r.thin ? `<div class="alert alert-info">${icon("info")}<div>Даних мало: немає підзадач і нотаток. Додайте нотатку, і апдейт буде точнішим.</div></div>` : "")
+      + `<div class="chips" role="group" aria-label="Тон">${toneChips}</div>
+      <div class="bubble"><div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><span class="logo-mark" style="width:24px;height:24px;font-size:10px;border-radius:7px">dl</span><b style="font-weight:600">#platform-team</b><span class="fine">чернетка</span></div><div id="cText" aria-live="polite">${r.typing ? "" : slackToHtml(r.text)}</div></div>
+      <div class="actions"><button class="btn btn-primary grow" id="cCopy" data-action="c-copy" ${r.typing ? "disabled" : ""}>${icon("copy")}Скопіювати</button><button class="btn btn-ghost btn-icon" data-action="run-C" aria-label="Перегенерувати">${icon("refresh")}</button></div>
+      <p class="fine">Агент нічого не надсилає сам: скопіюйте й вставте в Slack.</p>`;
+  }
+  el.innerHTML = agentPanel({ key: "C", title: "Статус-апдейт", iconName: "message", tagLabel: "Агент C", body, collapsible: false, running: run.status === "running" });
+}
+
+/* =====================================================================
+   views/tasks-list
+   ===================================================================== */
+function filteredSorted() {
+  const q = state.query.trim().toLowerCase();
+  let list = visibleTasks().filter((t) => (state.filter === "all" || t.status === state.filter) && (!q || (t.title + " " + t.description).toLowerCase().includes(q)));
+  const [field, dir] = state.sort.split("-");
+  const k = dir === "desc" ? -1 : 1;
+  list.sort((a, b) => field === "priority"
+    ? (PRIORITY_WEIGHT[a.priority] - PRIORITY_WEIGHT[b.priority]) * k || b.createdAt - a.createdAt
+    : (a.createdAt - b.createdAt) * k);
+  return list;
+}
+function renderList() {
+  $("#view").innerHTML = `
+  <div class="container list-layout">
+    <div class="list-head"><h1 class="page-title">Задачі</h1><p class="muted" id="listMeta" style="margin:8px 0 0"></p></div>
+    <div class="list-main">
+      <div class="toolbar">
+        <label class="search">${icon("search")}<span class="sr-only">Пошук задач</span><input id="search" type="search" placeholder="Пошук задач…" value="${esc(state.query)}" autocomplete="off"><kbd>/</kbd></label>
+      </div>
+      <div class="filters-row">
+        <div class="seg" role="group" aria-label="Фільтр за статусом" id="filters"></div>
+        <label class="select-wrap">${icon("arrowsUp")}<span class="sr-only">Сортування</span>
+          <select id="sort" aria-label="Сортування">
+            <option value="priority-desc">Пріоритет: високий → низький</option>
+            <option value="priority-asc">Пріоритет: низький → високий</option>
+            <option value="date-desc">Дата: спершу нові</option>
+            <option value="date-asc">Дата: спершу старі</option>
+          </select></label>
+        <button class="btn btn-ghost btn-sm legend-btn" data-action="legend" style="min-height:42px" aria-label="Температура задач: легенда">${icon("help")}<span class="lbl">Температура</span></button>
+      </div>
+      <div id="tasks"></div>
+    </div>
+    <aside class="list-aside" aria-label="AI-агенти"><div id="agentA"></div><div id="agentD"></div></aside>
+  </div>`;
+  $("#sort").value = state.sort;
+  renderFilters(); renderTasks(); renderAgentA(); renderAgentD();
+}
+function renderFilters() {
+  const all = visibleTasks();
+  const c = (s) => all.filter((t) => s === "all" || t.status === s).length;
+  const ready = state.screen === "ready";
+  $("#filters").innerHTML = [["all", "Всі"], ["todo", "До роботи"], ["in-progress", "В роботі"], ["done", "Готово"]].map(([k, v]) =>
+    `<button type="button" data-action="filter" data-f="${k}" aria-pressed="${state.filter === k}">${v}${ready ? ` <span class="count">${c(k)}</span>` : ""}</button>`).join("");
+  const inP = all.filter((t) => t.status === "in-progress").length;
+  const hot = all.filter((t) => getHeat(t).rank >= 2).length;
+  $("#listMeta").textContent = state.screen !== "ready" ? (state.screen === "loading" ? "Завантаження…" : state.screen === "error" ? "Не вдалося завантажити" : "0 задач")
+    : `${all.length} ${plural(all.length, "задача", "задачі", "задач")} · ${inP} в роботі` + (hot ? ` · ${hot} ${plural(hot, "гаряча", "гарячі", "гарячих")} ${state.serious ? "" : "🌶️"}` : "");
+}
+function taskRow(t, i) {
+  const h = getHeat(t);
+  const pin = state.focusOrder.indexOf(t.id);
+  return `<article class="task-row row-${h.key} ${t.status === "done" ? "t-done" : ""}" style="--i:${i}">
+    <div class="c-title" style="min-width:0"><a class="t-link" href="#task-${t.id}">${esc(t.title)}</a>${pin >= 0 ? `<span class="focus-pin">${icon("target")}Фокус #${pin + 1}</span>` : ""}<p class="t-desc">${esc(t.description)}</p></div>
+    <div class="c-status">${statusBadge(t.status)}</div>
+    <div class="c-prio">${prioLabel(t.priority)}</div>
+    <div class="c-age ${h.rank >= 2 ? "" : "muted"}" style="${h.rank >= 2 ? "color:var(--priority-high)" : ""}" title="Створено ${formatDate(t.createdAt)}">${ageLabel(t.createdAt)}</div>
+    <div class="c-heat">${heatButton(t)}</div>
+    <div class="c-actions"><button class="icon-btn" data-action="edit" data-id="${t.id}" aria-label="Редагувати «${esc(t.title)}»">${icon("pencil")}</button><button class="icon-btn" data-action="delete" data-id="${t.id}" aria-label="Видалити «${esc(t.title)}»">${icon("trash")}</button></div>
+  </article>`;
+}
+function renderTasks() {
+  const el = $("#tasks"); if (!el) return;
+  if (state.screen === "loading") {
+    el.innerHTML = `<div class="card" aria-busy="true" aria-label="Завантаження задач">${Array.from({ length: 6 }, () => `<div style="display:flex;gap:16px;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border)"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="skeleton" style="height:14px;width:60%"></div><div class="skeleton" style="height:10px;width:85%"></div></div><div class="skeleton" style="height:24px;width:90px;border-radius:999px"></div><div class="skeleton" style="height:14px;width:70px"></div></div>`).join("")}</div>`;
+    return;
+  }
+  if (state.screen === "error") {
+    el.innerHTML = `<div class="card empty" role="alert"><div class="big" aria-hidden="true">${state.serious ? "⚠️" : "🔌"}</div><h3>Не вдалося завантажити задачі</h3><p>Сервер не відповів (GET /api/tasks → 500). ${state.serious ? "" : "Найімовірніше, хтось знову перезапустив воркер 🙃"}</p><button class="btn btn-primary" data-action="retry">${icon("refresh")}Спробувати ще раз</button></div>`;
+    return;
+  }
+  const list = filteredSorted();
+  if (!visibleTasks().length) {
+    el.innerHTML = `<div class="card empty"><div class="big" aria-hidden="true">${state.serious ? "📋" : "🧘"}</div><h3>${state.serious ? "Поки що задач немає" : "Нічого не горить"}</h3><p>${state.serious ? "Створіть першу задачу, і агенти допоможуть з пріоритетами та підзадачами." : "Або все під контролем, або ти забув створити задачі. Створи першу, агенти підхоплять."}</p><button class="btn btn-primary" data-action="new">${icon("plus")}Нова задача</button></div>`;
+    return;
+  }
+  if (!list.length) {
+    el.innerHTML = `<div class="card empty" style="padding:40px 24px"><p>${state.query ? "Нічого не знайдено за запитом «" + esc(state.query) + "»" : "Немає задач зі статусом «" + STATUS[state.filter] + "»"}</p><button class="btn btn-ghost btn-sm" data-action="reset-filters">Скинути фільтри</button></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card task-table"><div class="task-head" aria-hidden="true"><span>Задача</span><span>Статус</span><span>Пріоритет</span><span>Вік</span><span>🌶️</span><span></span></div>${list.map(taskRow).join("")}</div>`;
+}
+
+/* =====================================================================
+   views/task-details
+   ===================================================================== */
+function renderDetail(id) {
+  const view = $("#view");
+  if (state.screen === "loading") {
+    view.innerHTML = `<div class="container" aria-busy="true"><div class="skeleton" style="height:14px;width:120px;margin-bottom:20px"></div><div class="skeleton" style="height:36px;width:70%;margin-bottom:16px"></div><div class="skeleton" style="height:24px;width:40%;margin-bottom:28px"></div><div class="card card-sec" style="display:flex;flex-direction:column;gap:10px">${skeletonLines(4)}</div></div>`; return;
+  }
+  const t = findTask(id);
+  if (state.screen === "error" || !t || state.screen === "empty") {
+    const err = state.screen === "error";
+    view.innerHTML = `<div class="container"><a class="back" href="#list">${icon("chevLeft")}Задачі</a><div class="card empty" style="margin-top:16px" ${err ? 'role="alert"' : ""}><div class="big" aria-hidden="true">${err ? "🔌" : "🕳️"}</div><h3>${err ? "Не вдалося завантажити задачу" : "Задачу не знайдено"}</h3><p>${err ? "GET /api/tasks/" + esc(id) + " → 500" : "Можливо, її видалили. " + (state.serious ? "" : "Ніхто й не помітить 🪦")}</p>${err ? `<button class="btn btn-primary" data-action="retry">${icon("refresh")}Спробувати ще раз</button>` : `<a class="btn btn-primary" href="#list">До списку</a>`}</div></div>`;
+    return;
+  }
+  view.innerHTML = `<div class="container" style="display:flex;flex-direction:column;gap:16px">
+    <a class="back" href="#list">${icon("chevLeft")}Задачі</a>
+    <div class="tabs" role="tablist" aria-label="Розділи задачі">
+      <button role="tab" data-action="tab" data-tab="task" aria-selected="${state.detailTab === "task"}">${icon("file")}Задача</button>
+      <button role="tab" data-action="tab" data-tab="B" aria-selected="${state.detailTab === "B"}">${icon("listTree")}Підзадачі</button>
+      <button role="tab" data-action="tab" data-tab="C" aria-selected="${state.detailTab === "C"}">${icon("message")}Апдейт</button>
+    </div>
+    <div class="detail-layout" data-tab="${state.detailTab}">
+      <div class="detail-main" id="detailMain"></div>
+      <div class="detail-side"><div id="agentB"></div><div id="agentC"></div></div>
+    </div></div>`;
+  renderDetailMain(id); renderAgentB(id); renderAgentC(id);
+}
+function renderDetailMain(id) {
+  const t = findTask(id); const el = $("#detailMain"); if (!t || !el) return;
+  const h = getHeat(t);
+  const done = t.subtasks.filter((s) => s.status === "done").length;
+  const pct = t.subtasks.length ? Math.round(done / t.subtasks.length * 100) : 0;
+  el.innerHTML = `
+    <div class="title-row"><h1 class="detail-title">${esc(t.title)}</h1>
+      <div class="actions"><button class="btn btn-ghost btn-sm" data-action="edit" data-id="${t.id}">${icon("pencil")}Редагувати</button><button class="btn btn-danger-ghost btn-sm" data-action="delete" data-id="${t.id}">${icon("trash")}Видалити</button></div></div>
+    <div class="meta">
+      <label class="pill-select badge st-${t.status}" style="padding:0"><span class="sr-only">Статус</span><select data-action="set-status" data-id="${t.id}" style="background:transparent;color:inherit">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === t.status ? "selected" : ""}>${v}</option>`).join("")}</select>${icon("chevDown")}</label>
+      <label class="pill-select sel-prio pr-${t.priority}"><span class="sr-only">Пріоритет</span><select data-action="set-priority" data-id="${t.id}" style="color:inherit">${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${k === t.priority ? "selected" : ""}>${v} пріоритет</option>`).join("")}</select>${icon("chevDown")}</label>
+      ${heatButton(t, true)}<span class="fine" style="font-size:13px">${esc(h.name)}</span>
+      <span class="dim" style="font-size:13px">Створено ${formatDate(t.createdAt)} · ${ageLabel(t.createdAt)}${t.dueAt ? ` · <b style="color:var(--priority-high);font-weight:500">дедлайн ${formatDate(t.dueAt)}</b>` : ""}</span>
+    </div>
+    <section class="card card-sec"><p class="label">Опис</p><p style="margin:0;line-height:1.6;overflow-wrap:anywhere">${esc(t.description)}</p></section>
+    <section class="card">
+      <div class="card-sec" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 class="card-title">Підзадачі</h2><span class="muted" style="font-size:13px">${done} з ${t.subtasks.length} готово</span></div>
+      <div class="card-sec" style="padding-top:12px;padding-bottom:8px">
+        ${t.subtasks.length ? `<div class="progress" style="margin-bottom:6px" role="progressbar" aria-label="Прогрес підзадач" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%;background:var(--success)"></span></div>
+        <ul class="subtasks">${t.subtasks.map((s, i) => `<li class="subtask ${s.status === "done" ? "is-done" : ""}" style="--i:${i}"><label class="cb-hit"><input type="checkbox" class="cb" data-action="toggle-sub" data-id="${t.id}" data-sid="${s.id}" ${s.status === "done" ? "checked" : ""} aria-label="${esc(s.title)}"></label><span class="st-title">${esc(s.title)}</span>${s.source === "ai" ? `<span class="ai-tag" style="font-size:11px">${icon("sparkles")}AI</span>` : ""}<button class="icon-btn" style="width:36px;height:36px" data-action="del-sub" data-id="${t.id}" data-sid="${s.id}" aria-label="Видалити підзадачу «${esc(s.title)}»">${icon("x")}</button></li>`).join("")}</ul>`
+        : `<div class="empty" style="padding:20px 8px"><p>Підзадач ще немає. Агент декомпозиції запропонує план, а ви вирішите, що створити.</p><button class="btn btn-ai btn-sm" data-action="goto-B">${icon("listTree")}Розбити з AI</button></div>`}
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-sec"><h2 class="card-title">Нотатки про виконання</h2></div>
+      <div class="card-sec" style="padding-top:8px">
+        ${t.notes.length ? t.notes.map((n) => `<div class="note"><p>${esc(n.text)}</p><span class="fine">${ageLabel(n.createdAt) === "сьогодні" ? "сьогодні" : ageLabel(n.createdAt) + " тому"}</span></div>`).join("") : `<p class="muted" style="margin:0 0 12px;font-size:13px">Нотаток немає. Агент статус-апдейту пише точніше, коли вони є.</p>`}
+        <form data-form="note" data-id="${t.id}" class="field" style="margin-top:12px" novalidate><label for="noteText">Нова нотатка</label><textarea id="noteText" class="textarea" style="min-height:72px" placeholder="Що зроблено, що блокує, посилання на PR…"></textarea><span class="err-msg" id="noteErr"></span><div class="actions end"><button class="btn btn-ghost btn-sm" type="submit">${icon("note")}Додати нотатку</button></div></form>
+      </div>
+    </section>`;
+}
+
+/* =====================================================================
+   widgets/app-header · banner · overlays · toasts
+   ===================================================================== */
+function renderShell() {
+  $("#app").innerHTML = `
+    <header class="header">
+      <a class="logo" href="#list" aria-label="DevLog, на головну"><span class="logo-mark">dl</span><b>DEVLOG</b></a><span class="team">/ Platform team</span>
+      <span class="spacer"></span>
+      <button class="icon-btn" data-action="states" aria-label="Стани прототипу" title="Стани прототипу">${icon("flask")}</button>
+      <button class="icon-btn" data-action="theme" id="themeBtn" aria-label="Змінити тему"></button>
+      <button class="btn btn-primary new-btn" data-action="new">${icon("plus")}Нова задача</button>
+    </header>
+    <div id="banner"></div>
+    <main id="main" tabindex="-1"><div id="view"></div></main>
+    <button class="fab" data-action="new" aria-label="Нова задача">${icon("plus")}</button>`;
+  renderThemeBtn(); renderBanner();
+}
+function renderThemeBtn() {
+  const b = $("#themeBtn");
+  b.innerHTML = icon(state.theme === "dark" ? "sun" : "moon");
+  b.setAttribute("aria-label", state.theme === "dark" ? "Увімкнути світлу тему" : "Увімкнути темну тему");
+}
+function renderBanner() {
+  $("#banner").innerHTML = state.aiMode === "demo"
+    ? `<div class="banner" role="status">${icon("wifiOff")}<div><b>Демо-режим AI.</b> ANTHROPIC_API_KEY не задано в .env, тому агенти повертають детерміновані мок-відповіді. Додайте ключ і перезапустіть <span class="mono">npm run dev</span>.</div></div>` : "";
+}
+function renderView() {
+  if (state.route.name === "task") renderDetail(state.route.id); else renderList();
+}
+function rerenderAll() { renderBanner(); renderView(); }
+
+let lastFocus = null;
+function openModal(html, { wide = false, onOpen } = {}) {
+  lastFocus = document.activeElement;
+  const root = $("#overlay-root");
+  root.innerHTML = `<div class="overlay" data-overlay><div class="modal ${wide ? "wide" : ""}" role="dialog" aria-modal="true" aria-labelledby="mTitle">${html}</div></div>`;
+  const first = root.querySelector("[autofocus]") || root.querySelector("input,textarea,select,button:not([data-close])") || root.querySelector("button");
+  if (first) first.focus();
+  if (onOpen) onOpen(root);
+}
+function closeModal() {
+  const ov = $("#overlay-root .overlay"); if (!ov) return;
+  ov.classList.add("closing");
+  setTimeout(() => { $("#overlay-root").innerHTML = ""; if (lastFocus && document.contains(lastFocus)) lastFocus.focus(); }, 140);
+}
+const modalHead = (title) => `<div class="modal-head"><h2 id="mTitle">${title}</h2><button class="icon-btn" data-close data-action="close-modal" aria-label="Закрити">${icon("x")}</button></div>`;
+function confirmDialog({ title, body, confirmLabel, danger = false, onConfirm }) {
+  openModal(`${modalHead(title)}<p class="muted" style="margin:0;line-height:1.55">${body}</p><div class="actions end"><button class="btn btn-ghost" data-action="close-modal">Скасувати</button><button class="btn ${danger ? "btn-danger" : "btn-primary"}" id="confirmBtn">${confirmLabel}</button></div>`);
+  $("#confirmBtn").focus();
+  $("#confirmBtn").onclick = () => { closeModal(); onConfirm(); };
+}
+function toast(text) {
+  const el = document.createElement("div");
+  el.className = "toast"; el.innerHTML = `<span>${text}</span>`;
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 260); }, 3200);
+}
+const joke = (serious, funny) => state.serious ? serious : funny;
+
+/* =====================================================================
+   features/task-form (create/edit) · delete-task
+   ===================================================================== */
+function openTaskForm(task) {
+  const t = task || { title: "", description: "", status: "todo", priority: "medium" };
+  const radios = (name, opts, cur) => `<div class="seg" role="radiogroup" aria-label="${name === "status" ? "Статус" : "Пріоритет"}" style="align-self:flex-start">${Object.entries(opts).map(([k, v]) => `<input type="radio" name="${name}" id="${name}-${k}" value="${k}" ${k === cur ? "checked" : ""}><label for="${name}-${k}">${v}</label>`).join("")}</div>`;
+  openModal(`${modalHead(task ? "Редагувати задачу" : "Нова задача")}
+    <form id="taskForm" novalidate style="display:flex;flex-direction:column;gap:16px">
+      <div class="field"><label for="fTitle">Назва *</label><input id="fTitle" class="input" value="${esc(t.title)}" placeholder="Наприклад: Виправити флакі тест" autofocus aria-describedby="fTitleErr"><span class="err-msg" id="fTitleErr"></span></div>
+      <div class="field"><label for="fDesc">Опис *</label><textarea id="fDesc" class="textarea" placeholder="Що потрібно зробити і навіщо" aria-describedby="fDescErr fDescHint">${esc(t.description)}</textarea><span class="err-msg" id="fDescErr"></span><span class="fine" id="fDescHint"></span></div>
+      <div class="field"><span class="flabel">Статус</span>${radios("status", STATUS, t.status)}</div>
+      <div class="field"><span class="flabel">Пріоритет</span>${radios("priority", PRIORITY, t.priority)}</div>
+      <p class="fine" style="margin:0">${task ? "Створено " + formatDate(task.createdAt) + ". Дата створення не редагується." : "createdAt проставляється автоматично."}</p>
+      <div class="actions end"><button type="button" class="btn btn-ghost" data-action="close-modal">Скасувати</button><button type="submit" class="btn btn-primary">${task ? "Зберегти" : "Створити"}</button></div>
+    </form>`, { onOpen: (root) => {
+      const desc = root.querySelector("#fDesc"), hint = root.querySelector("#fDescHint");
+      const upd = () => { const v = desc.value.trim(); hint.innerHTML = v && v.length < 40 ? `<span style="color:var(--ai)">✦ Опис короткий: агент декомпозиції попросить уточнення.</span>` : ""; };
+      desc.addEventListener("input", upd); upd();
+      root.querySelector("#taskForm").addEventListener("submit", (e) => { e.preventDefault(); submitTaskForm(task); });
+    } });
+}
+function submitTaskForm(task) {
+  const title = $("#fTitle").value.trim(), description = $("#fDesc").value.trim();
+  const status = document.querySelector('input[name="status"]:checked').value;
+  const priority = document.querySelector('input[name="priority"]:checked').value;
+  let ok = true;
+  const setErr = (id, msg) => { const inp = $("#" + id); inp.setAttribute("aria-invalid", msg ? "true" : "false"); $("#" + id + "Err").textContent = msg; if (msg && ok) { inp.focus(); ok = false; } };
+  setErr("fTitle", title.length < 3 ? "Назва обовʼязкова, щонайменше 3 символи" : "");
+  setErr("fDesc", description.length < 5 ? "Опишіть задачу хоча б одним реченням" : "");
+  if (!ok) return;
+  if (task) {
+    const wasHot = getHeat(task).rank >= 2 && task.status !== "done";
+    Object.assign(task, { title, description, status, priority }); touch(task);
+    closeModal(); rerenderAll();
+    toast(status === "done" && wasHot ? joke("Задачу закрито", "🧯 Пожежу загашено. Звіт для страхової не потрібен") : "Зміни збережено");
+  } else {
+    const t = { id: newId("t"), title, description, status, priority, createdAt: Date.now(), updatedAt: Date.now(), subtasks: [], notes: [] };
+    state.tasks.unshift(t);
+    if (state.screen === "empty") state.screen = "ready";
+    closeModal(); rerenderAll();
+    toast(joke("Задачу створено", "✨ Задачу створено. Поки що вона 🥒 свіжа"));
+  }
+}
+function askDelete(id) {
+  const t = findTask(id); if (!t) return;
+  confirmDialog({ title: "Видалити задачу?", danger: true, confirmLabel: "Видалити",
+    body: `«${esc(t.title)}» буде видалено разом із ${t.subtasks.length} ${plural(t.subtasks.length, "підзадачею", "підзадачами", "підзадачами")} і ${t.notes.length} ${plural(t.notes.length, "нотаткою", "нотатками", "нотатками")}. Цю дію не можна скасувати.`,
+    onConfirm: () => {
+      state.tasks = state.tasks.filter((x) => x.id !== id);
+      state.focusOrder = state.focusOrder.filter((x) => x !== id);
+      if (state.route.name === "task") location.hash = "list"; else rerenderAll();
+      toast(joke("Задачу видалено", "🪦 Видалено. Ніхто й не помітить"));
+    } });
+}
+function openLegend() {
+  const rows = HEAT_ORDER.map((k) => HEAT[k]).map((h) => `<tr><td>${h.emoji}</td><td><b style="font-weight:500;color:var(--text-strong)">${h.name}</b><div class="fine" style="margin-top:2px">${esc(h.rule)}</div></td><td>${esc(h.meaning)}</td>${state.serious ? "" : `<td class="muted">«${esc(h.joke)}»</td>`}</tr>`).join("");
+  openModal(`${modalHead("Температура задачі")}<p class="muted" style="margin:0;font-size:13px;line-height:1.5">Рахується за пріоритетом, днями без змін (статус, підзадачі, нотатки) і дедлайном. У списку показуються лише 🌶️ і вище, щоб погляд чіплявся за проблеми.</p>
+    <div class="legend-wrap"><table class="legend"><thead><tr><th></th><th>Рівень</th><th>Розшифровка</th>${state.serious ? "" : "<th>Підпис</th>"}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="actions end"><button class="btn btn-primary" data-action="close-modal">Зрозуміло</button></div>`, { wide: true });
+}
+function openStates() {
+  const r = (name, opts, cur) => `<div class="seg" role="radiogroup" aria-label="${name}">${opts.map(([k, v]) => `<input type="radio" name="${name}" id="${name}-${k}" value="${k}" ${k === cur ? "checked" : ""} data-action="state-set" data-key="${name}"><label for="${name}-${k}">${v}</label>`).join("")}</div>`;
+  openModal(`${modalHead("Стани прототипу")}
+    <p class="muted" style="margin:0;font-size:13px">Перемикайте, щоб побачити кожен стан екранів і агентів.</p>
+    <div class="opt-group"><span class="label" style="margin:0">Дані екрана</span>${r("screen", [["ready", "Дані"], ["loading", "Завантаження"], ["empty", "Порожньо"], ["error", "Помилка"]], state.screen)}</div>
+    <div class="opt-group"><span class="label" style="margin:0">Режим AI</span>${r("aiMode", [["api", "Реальний API"], ["demo", "Демо без ключа"]], state.aiMode)}</div>
+    <div>
+      <label class="switch-row"><span>Зламати відповідь агента<span class="fine" style="display:block">Валідація не пройде → fallback без AI</span></span><input type="checkbox" class="switch" data-action="state-toggle" data-key="forceAgentError" ${state.forceAgentError ? "checked" : ""}></label>
+      <label class="switch-row" style="border-bottom:0"><span>Серйозний режим<span class="fine" style="display:block">Вимикає жарти та емодзі в текстах</span></span><input type="checkbox" class="switch" data-action="state-toggle" data-key="serious" ${state.serious ? "checked" : ""}></label>
+    </div>
+    <p class="fine" style="margin:0">Клавіші: <span class="mono">/</span> пошук · <span class="mono">N</span> нова задача · <span class="mono">Esc</span> закрити вікно</p>
+    <div class="actions end"><button class="btn btn-primary" data-action="close-modal">Готово</button></div>`);
+}
+
+/* =====================================================================
+   routing (#list, #task-<id>)
+   ===================================================================== */
+function route() {
+  const h = location.hash.slice(1);
+  const m = h.match(/^task-([a-z0-9]+)$/i);
+  const prev = state.route;
+  state.route = m ? { name: "task", id: m[1] } : { name: "list" };
+  if (state.route.name !== prev.name || state.route.id !== prev.id) { if (state.route.name === "task" && !state.pendingTab) state.detailTab = "task"; }
+  if (state.pendingTab) { state.detailTab = state.pendingTab; state.pendingTab = null; }
+  document.body.classList.toggle("route-task", state.route.name === "task");
+  renderView();
+  window.scrollTo({ top: 0 });
+  const auto = state.pendingRun; state.pendingRun = null;
+  if (auto && state.route.name === "task") runDecompose(state.route.id);
+}
+window.addEventListener("hashchange", route);
+
+/* =====================================================================
+   events (delegation)
+   ===================================================================== */
+async function copyText(text, okMsg) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg); }
+  catch (e) { toast("Не вдалося скопіювати. Виділіть текст вручну"); }
+}
+const ACTIONS = {
+  "new": () => openTaskForm(),
+  "edit": (el) => openTaskForm(findTask(el.dataset.id)),
+  "delete": (el) => askDelete(el.dataset.id),
+  "close-modal": () => closeModal(),
+  "theme": () => { state.theme = state.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = state.theme; try { localStorage.setItem("devlog-theme", state.theme); } catch (e) {} renderThemeBtn(); },
+  "states": () => openStates(),
+  "legend": () => openLegend(),
+  "filter": (el) => { state.filter = el.dataset.f; renderFilters(); renderTasks(); },
+  "reset-filters": () => { state.filter = "all"; state.query = ""; const s = $("#search"); if (s) s.value = ""; renderFilters(); renderTasks(); },
+  "retry": () => { state.screen = "loading"; rerenderAll(); setTimeout(() => { state.screen = "ready"; rerenderAll(); toast("Задачі завантажено"); }, 1100); },
+  "toggle-panel": (el) => { const k = el.dataset.key; state.openPanels[k] = !state.openPanels[k]; k === "A" ? renderAgentA() : renderAgentD(); },
+  "run-A": () => runPrioritize(),
+  "run-D": () => runRadar(),
+  "stop": (el) => { const r = state.agents[el.dataset.agent]; stopRun(r); el.dataset.agent === "A" ? renderAgentA() : renderAgentD(); },
+  "apply-A": () => {
+    const items = state.agents.A.result.items;
+    confirmDialog({ title: "Закріпити фокус дня?", confirmLabel: "Закріпити",
+      body: "Ці задачі отримають позначку «Фокус» у списку:<br>" + items.map((it, i) => (i + 1) + ". " + esc(findTask(it.id).title)).join("<br>") + "<br><br>Статуси й пріоритети не зміняться.",
+      onConfirm: () => { state.focusOrder = items.map((i) => i.id); state.agents.A = idleRun(); renderTasks(); renderAgentA(); toast(joke("Фокус дня закріплено", "🎯 Фокус дня закріплено. Тепер точно без прокрастинації")); } });
+  },
+  "apply-A-rule": () => {
+    const order = state.agents.A.result.order;
+    confirmDialog({ title: "Закріпити порядок за правилом?", confirmLabel: "Закріпити", body: order.map((id, i) => (i + 1) + ". " + esc(findTask(id).title)).join("<br>"),
+      onConfirm: () => { state.focusOrder = order; state.agents.A = idleRun(); renderTasks(); renderAgentA(); toast("Фокус дня закріплено"); } });
+  },
+  "d-snooze": (el) => { const r = state.agents.D; r.snoozed = [...(r.snoozed || []), el.dataset.id]; renderAgentD(); toast(joke("Сховано до наступного сканування", "🙈 Окей, вдаємо, що її не існує")); },
+  "d-act": (el) => {
+    const t = findTask(el.dataset.id); const kind = el.dataset.kind;
+    if (kind === "split") { state.pendingTab = "B"; state.pendingRun = true; location.hash = "task-" + t.id; return; }
+    if (kind === "open") { location.hash = "task-" + t.id; return; }
+    const pr = (t.notes.map((n) => n.text).join(" ").match(/PR #\d+/) || ["PR"])[0];
+    const text = kind === "draft-review"
+      ? `Привіт! Можеш глянути ${pr} по задачі «${t.title}»? Він блокує реліз фіксу, ревʼю займе ~15 хв. Дякую 🙏`
+      : `Привіт! Задача «${t.title}» вийшла більшою, ніж здавалось: ${t.subtasks.filter((s) => s.status !== "done").length} відкритих підзадач. Хтось може взяти одну з них? Деталі в DevLog.`;
+    openModal(`${modalHead(kind === "draft-review" ? "Чернетка запиту на ревʼю" : "Чернетка прохання про допомогу")}<div class="bubble" id="draftText">${esc(text)}</div><p class="fine" style="margin:0">Агент нічого не надсилає сам. Скопіюйте й вставте в Slack.</p><div class="actions end"><button class="btn btn-ghost" data-action="close-modal">Закрити</button><button class="btn btn-primary" id="draftCopy">${icon("copy")}Скопіювати</button></div>`);
+    $("#draftCopy").onclick = () => copyText(text, "Чернетку скопійовано");
+  },
+  "tab": (el) => { state.detailTab = el.dataset.tab; renderDetail(state.route.id); const b = document.querySelector(`.tabs [data-tab="${state.detailTab}"]`); if (b) b.focus(); },
+  "goto-B": () => { state.detailTab = "B"; renderDetail(state.route.id); runDecompose(state.route.id); },
+  "run-B": () => runDecompose(state.route.id),
+  "reset-B": () => { taskAgents(state.route.id).B = idleRun(); renderAgentB(state.route.id); },
+  "stop-task": (el) => { const r = taskAgents(state.route.id)[el.dataset.agent]; stopRun(r); el.dataset.agent === "B" ? renderAgentB(state.route.id) : renderAgentC(state.route.id); },
+  "apply-B": () => {
+    const id = state.route.id; const t = findTask(id); const run = taskAgents(id).B;
+    const chosen = run.result.items.filter((i) => i.on);
+    chosen.forEach((i) => t.subtasks.push({ id: newId("s"), title: i.title, status: "todo", source: "ai" }));
+    touch(t); run.status = "applied"; run.result = { count: chosen.length };
+    renderDetailMain(id); renderAgentB(id);
+    toast(`Створено ${chosen.length} ${plural(chosen.length, "підзадачу", "підзадачі", "підзадач")}`);
+  },
+  "run-C": () => runStatusUpdate(state.route.id),
+  "c-tone": (el) => { const run = taskAgents(state.route.id).C; run.tone = el.dataset.tone; if (run.status === "idle") renderAgentC(state.route.id); else runStatusUpdate(state.route.id, el.dataset.tone); },
+  "c-copy": () => { const r = taskAgents(state.route.id).C.result; copyText(r.text.replace(/\*/g, "*"), joke("Апдейт скопійовано", "📋 Скопійовано. Тепер вдай, що писав сам")); }
+};
+document.addEventListener("click", (e) => {
+  if (e.target.matches("[data-overlay]")) { closeModal(); return; }
+  const el = e.target.closest("[data-action]");
+  if (!el || el.tagName === "SELECT" || el.matches("input")) return;
+  const fn = ACTIONS[el.dataset.action];
+  if (fn) { e.preventDefault(); fn(el, e); }
+});
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  const a = el.dataset.action;
+  if (el.id === "sort") { state.sort = el.value; renderTasks(); return; }
+  if (a === "set-status" || a === "set-priority") {
+    const t = findTask(el.dataset.id); const wasHot = getHeat(t).rank >= 2 && t.status !== "done";
+    if (a === "set-status") t.status = el.value; else t.priority = el.value;
+    touch(t); renderDetailMain(t.id);
+    toast(a === "set-status" && el.value === "done" && wasHot ? joke("Задачу закрито", "🧯 Пожежу загашено. Звіт для страхової не потрібен") : (a === "set-status" ? "Статус: " + STATUS[el.value] : "Пріоритет: " + PRIORITY[el.value]));
+    return;
+  }
+  if (a === "toggle-sub") {
+    const t = findTask(el.dataset.id); const s = t.subtasks.find((x) => x.id === el.dataset.sid);
+    s.status = el.checked ? "done" : "todo"; touch(t); renderDetailMain(t.id);
+    if (t.subtasks.every((x) => x.status === "done") && t.status !== "done") toast(joke("Усі підзадачі готові. Можна закривати задачу", "🏁 Усі підзадачі готові. Закрий задачу, поки вона не передумала"));
+    return;
+  }
+  if (a === "b-toggle") { const run = taskAgents(state.route.id).B; run.result.items[+el.dataset.i].on = el.checked; const n = run.result.items.filter((i) => i.on).length; const btn = document.querySelector('[data-action="apply-B"]'); if (btn) { btn.disabled = !n; btn.textContent = `Створити ${n} ${plural(n, "підзадачу", "підзадачі", "підзадач")}`; } return; }
+  if (a === "state-set") { state[el.dataset.key] = el.value; if (el.dataset.key === "screen" && el.value !== "ready") { state.agents.A = idleRun(); state.agents.D = idleRun(); } rerenderAll(); return; }
+  if (a === "state-toggle") { state[el.dataset.key] = el.checked; rerenderAll(); return; }
+});
+document.addEventListener("click", (e) => {
+  const el = e.target.closest('[data-action="del-sub"]'); if (!el) return;
+  const t = findTask(el.dataset.id); t.subtasks = t.subtasks.filter((s) => s.id !== el.dataset.sid); touch(t); renderDetailMain(t.id); toast("Підзадачу видалено");
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "search") { state.query = e.target.value; renderTasks(); }
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target;
+  if (f.dataset.form === "note") {
+    e.preventDefault();
+    const ta = $("#noteText"); const v = ta.value.trim();
+    if (!v) { ta.setAttribute("aria-invalid", "true"); $("#noteErr").textContent = "Нотатка порожня"; ta.focus(); return; }
+    const t = findTask(f.dataset.id); t.notes.push({ id: newId("n"), text: v, createdAt: Date.now() }); touch(t); renderDetailMain(t.id); toast("Нотатку додано");
+  }
+  if (f.dataset.form === "clarify") {
+    e.preventDefault();
+    const ta = $("#bAnswer"); const v = ta.value.trim();
+    if (v.length < 3) { ta.setAttribute("aria-invalid", "true"); $("#bAnswerErr").textContent = "Напишіть хоча б кілька слів"; ta.focus(); return; }
+    const t = findTask(state.route.id); t.notes.push({ id: newId("n"), text: "Уточнення для декомпозиції: " + v, createdAt: Date.now() });
+    renderDetailMain(t.id); runDecompose(t.id, v);
+  }
+});
+document.addEventListener("keydown", (e) => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  const modal = $("#overlay-root .modal");
+  if (e.key === "Escape" && modal) { closeModal(); return; }
+  if (e.key === "Tab" && modal) {
+    const f = [...modal.querySelectorAll('button:not([disabled]),input:not([type="radio"]),input[type="radio"]:checked,textarea,select,a[href]')];
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    return;
+  }
+  if (typing || modal || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "/" && $("#search")) { e.preventDefault(); $("#search").focus(); }
+  if (e.key === "n" || e.key === "N" || e.key === "т" || e.key === "Т") { e.preventDefault(); openTaskForm(); }
+});
+
+/* boot */
+renderShell();
+route();
+</script>
+</body>
+</html>

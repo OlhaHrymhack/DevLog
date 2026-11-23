@@ -1,0 +1,42 @@
+{
+  "taskId": "DEV-003",
+  "kind": "tests",
+  "tree": "90ce2f70ea6df5e44ac0825b90097792a04b630a",
+  "at": "2026-11-22T11:11:06.814Z",
+  "ok": true,
+  "failed": [],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2790,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2571,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2276,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /Users/olhahrymchak/Desktop/DevLog\n\n\n Test Files  20 passed (20)\n      Tests  111 passed (111)\n   Start at  13:10:51\n   Duration  1.88s (import 36%, environment 35%, tests 18%, transform 10%, worker 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 13316,
+      "output": "    Expected: >= 44\n    Received:    43.99993896484375\n\n      86 |   for (const target of targets) {\n      87 |     const box = await target.boundingBox();\n    > 88 |     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);\n         |                              ^\n      89 |     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);\n      90 |   }\n      91 | });\n        at /Users/olhahrymchak/Desktop/DevLog/e2e/uiKit.spec.ts:88:30\n\n    Error Context: test-results/uiKit-DEV-002-AC-7-на-мобі-b9b91--елементи-мають-ціль-≥-44px-mobile-375/error-context.md\n\n  1 flaky\n    [mobile-375] › e2e/uiKit.spec.ts:75:1 › DEV-002 AC-7: на мобільному інтерактивні елементи мають ціль ≥ 44px \n  4 skipped\n  35 passed (12.6s)\n::notice title=🎭 Playwright Run Summary::  1 flaky%0A    [mobile-375] › e2e/uiKit.spec.ts:75:1 › DEV-002 AC-7: на мобільному інтерактивні елементи мають ціль ≥ 44px %0A  4 skipped%0A  35 passed (12.6s)\n[WebServer] (node:43317) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:43318) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:43341) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n(node:43346) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43345) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43343) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43347) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43371) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:43406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+    }
+  ]
+}

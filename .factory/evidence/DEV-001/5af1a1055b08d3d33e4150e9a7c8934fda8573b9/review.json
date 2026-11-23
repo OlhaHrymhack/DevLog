@@ -1,0 +1,71 @@
+{
+  "taskId": "DEV-001",
+  "kind": "review",
+  "tree": "5af1a1055b08d3d33e4150e9a7c8934fda8573b9",
+  "at": "2026-11-22T09:24:42.887Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "Review DEV-001: відповідає плану, AC-1…AC-7 покриті тестами, Critical/High немає.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "eslint закріплено на ^9 замість 10, рішення не записано в decisions",
+      "file": "package.json",
+      "line": 37
+    },
+    {
+      "severity": "medium",
+      "title": "Tailwind через @tailwindcss/turbopack замість @tailwindcss/postcss без пояснення",
+      "file": "next.config.ts",
+      "line": 5
+    },
+    {
+      "severity": "medium",
+      "title": "Файли поза елементами boundaries не обмежені (немає no-unknown-files)",
+      "file": "eslint.config.mjs",
+      "line": 37
+    },
+    {
+      "severity": "medium",
+      "title": "AI_MODE=live без ключа: помилка валідації, рішення не зафіксовано",
+      "file": "src/shared/config/env.ts",
+      "line": 20
+    },
+    {
+      "severity": "low",
+      "title": "Резолвер alias залежить від process.cwd()",
+      "file": "eslint.config.mjs",
+      "line": 36
+    },
+    {
+      "severity": "low",
+      "title": "Фікстури AC-6 не покривають дозволені напрямки",
+      "file": "test/eslintRules.test.ts",
+      "line": 72
+    },
+    {
+      "severity": "low",
+      "title": "test/** і e2e/** поза правилами стайл-гайду",
+      "file": "eslint.config.mjs",
+      "line": 33
+    },
+    {
+      "severity": "low",
+      "title": "/api/health на невалідному env повертає дефолтний 500",
+      "file": "src/app/api/health/route.ts",
+      "line": 6
+    },
+    {
+      "severity": "low",
+      "title": "E2E AC-1 не доводить відсутність .env",
+      "file": "playwright.config.ts",
+      "line": 21
+    },
+    {
+      "severity": "low",
+      "title": "AGENTS.md згенерований next dev, містить вбудовані інструкції",
+      "file": "AGENTS.md",
+      "line": 3
+    }
+  ]
+}

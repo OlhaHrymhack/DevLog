@@ -1,0 +1,35 @@
+{
+  "taskId": "DEV-014",
+  "kind": "review",
+  "tree": "6da3d452f53b35c56227a18c1b79b81d4fbb7c54",
+  "at": "2026-11-22T10:23:11.736Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Review DEV-014: кодмод змінив лише форму функцій, hoisting і експорти збережені, 17 shadcn перенесено коректно, ESLint не послаблено, тест AC-5 справжній. Блокерів немає.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "func-style діє лише на src; AC-1 вимагає також test/e2e/конфіги (sliceLayers у eslint.config.mjs)",
+      "file": "eslint.config.mjs",
+      "line": 34
+    },
+    {
+      "severity": "low",
+      "title": "Тест хуків перевіряє імена файлів, формулювання про rules-of-hooks перебільшене",
+      "file": "test/conventions.test.ts",
+      "line": 55
+    },
+    {
+      "severity": "low",
+      "title": "CLAUDE.md можна прочитати як вимогу трьох файлів для кожного компонента",
+      "file": "CLAUDE.md",
+      "line": 38
+    },
+    {
+      "severity": "low",
+      "title": "D-023 не уточнює, що правило не стосується .claude/hooks і .factory/bin",
+      "file": "docs/vault/decisions.md",
+      "line": 127
+    }
+  ]
+}

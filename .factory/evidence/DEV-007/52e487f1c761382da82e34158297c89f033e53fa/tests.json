@@ -1,0 +1,44 @@
+{
+  "taskId": "DEV-007",
+  "kind": "tests",
+  "tree": "52e487f1c761382da82e34158297c89f033e53fa",
+  "at": "2026-11-22T15:58:27.814Z",
+  "ok": false,
+  "failed": [
+    "e2e(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2251,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3762,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3075,
+      "output": "\n> devlog@0.1.0 test\n> vitest run\n\n\n RUN  v5.1.1 /private/tmp/devlog-dev007\n\n\n Test Files  33 passed (33)\n      Tests  145 passed (145)\n   Start at  17:57:54\n   Duration  2.66s (import 43%, environment 29%, tests 18%, transform 9%, worker 1%)\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 30701,
+      "output": "    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────\n\n    Error: expect(received).toHaveLength(expected)\n\n    Expected length: 2\n    Received length: 5\n    Received array:  [{\"createdAt\": \"2026-11-15T06:21:57.842Z\", \"description\": \"Зберігати промпт, відповідь, токени й латентність кожного виклику агента для дебагу.\", \"dueAt\": null, \"focusRank\": null, \"id\": \"t12\", \"priority\": \"medium\", \"status\": \"in-progress\", \"subtaskCount\": 4, \"subtaskDone\": 1, \"title\": \"Логування запитів до LLM\", \"updatedAt\": \"2026-11-16T08:45:57.842Z\"}, {\"createdAt\": \"2026-11-12T03:57:57.842Z\", \"description\": \"Щоденний снапшот бази у ./backups, ротація 7 днів.\", \"dueAt\": null, \"focusRank\": null, \"id\": \"t6\", \"priority\": \"medium\", \"status\": \"done\", \"subtaskCount\": 2, \"subtaskDone\": 2, \"title\": \"Налаштувати бекапи SQLite\", \"updatedAt\": \"2026-11-19T15:57:57.842Z\"}, {\"createdAt\": \"2026-11-21T06:21:57.842Z\", \"description\": \"Додати опис .env.example, npm-скриптів і розділ про мок-режим агентів.\", \"dueAt\": null, \"focusRank\": null, \"id\": \"t5\", \"priority\": \"low\", \"status\": \"todo\", \"subtaskCount\": 0, \"subtaskDone\": 0, \"title\": \"Оновити README з інструкцією запуску\", \"updatedAt\": \"2026-11-21T06:21:57.842Z\"}, {\"createdAt\": \"2026-11-17T03:57:57.842Z\", \"description\": \"«Ласкаво просимо» написано разом у темі листа.\", \"dueAt\": null, \"focusRank\": null, \"id\": \"t11\", \"priority\": \"low\", \"status\": \"done\", \"subtaskCount\": 0, \"subtaskDone\": 0, \"title\": \"Виправити одруківку в onboarding-листі\", \"updatedAt\": \"2026-11-17T20:45:57.842Z\"}, {\"createdAt\": \"2026-11-10T11:09:57.842Z\", \"description\": \"Кількість запусків, середній час, частка відповідей, що не пройшли валідацію.\", \"dueAt\": null, \"focusRank\": null, \"id\": \"t10\", \"priority\": \"low\", \"status\": \"todo\", \"subtaskCount\": 0, \"subtaskDone\": 0, \"title\": \"Дашборд метрик агентів\", \"updatedAt\": \"2026-11-10T11:09:57.842Z\"}]\n\n      85 |   });\n      86 |   await next.click();\n    > 87 |   await expect((await (await secondPage).json()).data).toHaveLength(2);\n         |                                                        ^\n      88 |   await expect(pager.getByText(\"Сторінка 2 з 2\")).toBeVisible();\n      89 |   await expect(tasks).toHaveCount(2);\n      90 |   await expect(tasks.first()).toContainText(\"Виправити одруківку\");\n        at /private/tmp/devlog-dev007/e2e/tasksList.spec.ts:87:56\n\n    Error Context: test-results/tasksList-DEV-005-AC-13-na-9503b-r-page-and-filters-reset-it-desktop-1280-retry1/error-context.md\n\n    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────\n    test-results/tasksList-DEV-005-AC-13-na-9503b-r-page-and-filters-reset-it-desktop-1280-retry1/trace.zip\n    Usage:\n\n        npx playwright show-trace test-results/tasksList-DEV-005-AC-13-na-9503b-r-page-and-filters-reset-it-desktop-1280-retry1/trace.zip\n\n    ────────────────────────────────────────────────────────────────────────────────────────────────\n\n  5 failed\n    [mobile-375] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється \n    [tablet-768] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється \n    [desktop-1280] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється \n    [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset \n    [desktop-1280] › e2e/tasksList.spec.ts:72:1 › DEV-005 AC-13: navigation fetches the next server page and filters reset it \n  7 skipped\n  6 did not run\n  63 passed (30.2s)\n::notice title=🎭 Playwright Run Summary::  5 failed%0A    [mobile-375] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється %0A    [tablet-768] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється %0A    [desktop-1280] › e2e/taskDetails.spec.ts:40:1 › DEV-007 AC-2: статус і пріоритет змінюються з деталей, список оновлюється %0A    [desktop-1280] › e2e/tasksList.spec.ts:6:1 › DEV-005 AC-1 AC-2 AC-3 AC-4: API list, status counts, sorting, search and reset %0A    [desktop-1280] › e2e/tasksList.spec.ts:72:1 › DEV-005 AC-13: navigation fetches the next server page and filters reset it %0A  7 skipped%0A  6 did not run%0A  63 passed (30.2s)\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n"
+    }
+  ]
+}

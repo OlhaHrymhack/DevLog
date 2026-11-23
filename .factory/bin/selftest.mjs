@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const realRoot = path.resolve(here, '..', '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-selftest-'));
 const reports = fs.mkdtempSync(path.join(os.tmpdir(), 'factory-reports-'));
-const env = { ...process.env, FACTORY_ROOT: tmp, CLAUDE_PROJECT_DIR: tmp };
+const env = { ...process.env, FACTORY_ROOT: tmp, CLAUDE_PROJECT_DIR: tmp, FACTORY_SESSION_DIR: path.join(reports, 'sessions') };
 let passed = 0; const failures = [];
 
 // ---------- підготовка ----------
@@ -24,7 +24,7 @@ fs.mkdirSync(path.join(tmp, 'src'));
 fs.mkdirSync(path.join(tmp, 'docs', 'vault'), { recursive: true });
 const w = (rel, text) => { fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true }); fs.writeFileSync(path.join(tmp, rel), text); };
 w('src/app.ts', 'export const a = 1;\n');
-w('check.mjs', 'import fs from "node:fs"; process.exit(fs.existsSync("FAIL") ? 1 : 0);\n');
+w('check.mjs', 'import fs from "node:fs"; if (fs.existsSync("FAIL")) { console.log(fs.readFileSync("FAIL", "utf8")); process.exit(1); }\n');
 w('.gitignore', '.claude/prompt-log.md\n');
 w('README.md', '# App\n\n## Запуск\n\nnpm run dev\n\n## Рішення і компроміси\n\nПише автор.\n');
 w('docs/vault/decisions.md', '# Decisions\n\n- D1: SQLite\n');
@@ -47,7 +47,7 @@ const PLAN = '# DEV-001\n\n## Acceptance criteria\n- AC-1: створення з
 function check(scenario, cond, detail = '') {
   if (cond) { passed++; console.log(`  ✅ ${scenario}`); } else { failures.push(scenario); console.log(`  ❌ ${scenario} ${detail}`); }
 }
-const allScores = (v, over = {}) => ['modules', 'architecture', 'criticality', 'security', 'integrations', 'migrations', 'state', 'uncertainty'].map((k) => `${k}=${over[k] ?? v}`);
+const allScores = (v, over = {}) => [...['modules', 'architecture', 'criticality', 'security', 'integrations', 'migrations', 'state', 'uncertainty'].map((k) => `${k}=${over[k] ?? v}`), `ui=${over.ui ?? 0}`];
 
 // ---------- сценарії ----------
 console.log('\n[1–2] Маршрутизація моделей');
@@ -61,12 +61,14 @@ r = factory('classify', 'DEV-091', ...allScores(0, { security: 2 }));
 check('2. високий ризик навіть при малій сумі → strong / opus', /"tier": "strong"/.test(r.stdout) && /"developerModel": "opus"/.test(r.stdout), r.stdout);
 r = factory('classify', 'DEV-091', ...allScores(2));
 check('2b. велика сума балів → strong', /"tier": "strong"/.test(r.stdout));
+r = factory('classify', 'DEV-091', ...allScores(2).filter((p) => !p.startsWith('ui=')));
+check('2c. classify без прапорця ui → помилка (QA не вимикається мовчки)', r.status !== 0 && /ui/.test(r.stderr), r.stderr);
 
 console.log('\n[3] Approval gate');
 factory('add', 'DEV-001', 'CRUD задач'); factory('start', 'DEV-001'); factory('transition', 'DEV-001', 'PLANNING');
 check('3a. Edit коду не в IMPLEMENTING → deny', guard('Edit', { file_path: path.join(tmp, 'src/app.ts'), old_string: 'a', new_string: 'b' }) === 'deny');
 w('.factory/task-plans/DEV-001.md', PLAN);
-factory('classify', 'DEV-001', ...allScores(1));
+factory('classify', 'DEV-001', ...allScores(1, { ui: 1 }));
 r = factory('transition', 'DEV-001', 'IMPLEMENTING');
 check('3b. balanced задача не йде в IMPLEMENTING без AWAITING_APPROVAL', r.status !== 0);
 factory('transition', 'DEV-001', 'AWAITING_APPROVAL');
@@ -84,15 +86,21 @@ w('.factory/task-plans/DEV-001.md', `${PLAN}- AC-2: новий scope\n`);
 check('3j. зміна плану (scope) → approval недійсний, Edit → deny', guard('Edit', { file_path: path.join(tmp, 'src/app.ts'), old_string: 'a', new_string: 'b' }) === 'deny');
 w('.factory/task-plans/DEV-001.md', PLAN);
 
-console.log('\n[5, 9] Tests gate та інвалідація');
+console.log('\n[5, 9] Verify gate (код + тести) та інвалідація');
 w('FAIL', '1');
 r = factory('verify', 'DEV-001');
 check('5a. failed tests → verify exit 1', r.status === 1);
 r = factory('transition', 'DEV-001', 'REVIEWING');
 check('5b. failed verify блокує REVIEWING', r.status !== 0);
+r = factory('verify', 'DEV-001');
+check('5c. повтор тієї самої помилки → повідомлення, модель не змінюється', /Повтор тієї самої помилки/.test(r.stdout) && state().tasks['DEV-001'].model === 'sonnet', r.stdout);
 fs.rmSync(path.join(tmp, 'FAIL'));
 r = factory('verify', 'DEV-001');
-check('5c. зелений verify → exit 0', r.status === 0, r.stdout + r.stderr);
+check('5d. AC без тесту → verify червоний ще до рев\'ю', r.status === 1 && /AC без тестів: AC-1/.test(r.stdout), r.stdout);
+w('src/app.test.ts', 'test("DEV-001 AC-1: створення задачі", () => {});\n');
+r = factory('verify', 'DEV-001');
+check('5e. код + тест на кожен AC → verify зелений', r.status === 0, r.stdout + r.stderr);
+check('5f. 3 провали verify не підвищують ні tier, ні модель', state().tasks['DEV-001'].tier === 'balanced' && state().tasks['DEV-001'].model === 'sonnet');
 w('src/app.ts', 'export const a = 2;\n');
 r = factory('transition', 'DEV-001', 'REVIEWING');
 check('9. зміна коду після verify → evidence застарілий, перехід заблоковано', r.status !== 0 && /застарілий/.test(r.stderr), r.stderr);
@@ -100,40 +108,70 @@ factory('verify', 'DEV-001');
 r = factory('transition', 'DEV-001', 'REVIEWING', '--agent', 'reviewer');
 check('9b. повторний verify → REVIEWING дозволено', r.status === 0, r.stderr);
 
+console.log('\n[4a] Хеш рев\'ю фіксується при вході в REVIEWING');
+check('4a1. вхід у REVIEWING запам\'ятовує хеш дерева', /^[0-9a-f]{40}$/.test(state().tasks['DEV-001'].reviewTree ?? ''));
+r = factory('transition', 'DEV-001', 'IMPLEMENTING');
+check('4a2. повернення в IMPLEMENTING до всіх звітів заблоковано (блокери збираємо разом)', r.status !== 0 && /дочекайся/.test(r.stderr), r.stderr);
+w('src/app.ts', 'export const a = 3;\n');
+r = factory('record', 'DEV-001', 'review', findings('rev-drift', 'reviewer', 'opus', []));
+check('4a3. код змінився між запуском рев\'ю і записом звіту → звіт відхилено', r.status !== 0 && /змінився/.test(r.stderr), r.stderr);
+r = factory('record', 'DEV-001', 'security', findings('sec-drift', 'security', 'opus', []));
+check('4a4. те саме для security', r.status !== 0 && /змінився/.test(r.stderr), r.stderr);
+check('4a5. відхилений звіт не потрапляє в історію', !state().tasks['DEV-001'].history.some((e) => e.event === 'review' || e.event === 'security'));
+w('src/app.ts', 'export const a = 2;\n');
+
+console.log('\n[4f] Погоджена заміна Claude на Codex для одного дерева');
+const codexReview = findings('rev-codex', 'reviewer', 'codex', []);
+const codexSecurity = findings('sec-codex', 'security', 'codex', []);
+const originalConfig = JSON.stringify(cfg, null, 2);
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f1. без погодження Codex не зараховується', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+const allowedFallback = { tree: state().tasks['DEV-001'].reviewTree, reason: 'Claude quota exhausted' };
+w('.factory/project.config.json', JSON.stringify({ ...cfg, codexReviewFallbacks: { 'DEV-001': allowedFallback } }));
+r = factory('record', 'DEV-001', 'security', codexReview);
+check('4f2. звіт reviewer не зараховується як security', r.status !== 0 && /роль звіту/.test(r.stderr), r.stderr);
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f3. погоджений reviewer зберігає фактичну модель', r.status === 0 && /підтверджено звітом codex/.test(factory('line', 'DEV-001').stdout), r.stderr);
+r = factory('record', 'DEV-001', 'security', codexSecurity);
+check('4f4. погоджений security проходить gate', r.status === 0 && /security\/codex/.test(factory('report', 'DEV-001').stdout), r.stderr);
+w('src/app.ts', 'export const a = 3;\n');
+r = factory('record', 'DEV-001', 'review', codexReview);
+check('4f5. погодження Codex не переноситься на новий хеш', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+w('src/app.ts', 'export const a = 2;\n');
+w('.factory/project.config.json', originalConfig);
+check('4f6. після відкликання погодження звіт Codex не зараховується', /Codex не погоджено/.test(factory('report', 'DEV-001').stdout));
+
 console.log('\n[4] Review gate');
 r = factory('record', 'DEV-001', 'review', findings('rev-bad', 'reviewer', 'opus', [{ severity: 'high', title: 'SQL injection' }, { severity: 'low', title: 'naming' }]));
 check('4a. High finding → record exit 1', r.status === 1);
-r = factory('transition', 'DEV-001', 'TESTING');
-check('4b. невиправлений High блокує TESTING', r.status !== 0);
+r = factory('transition', 'DEV-001', 'QA');
+check('4b. невиправлений High блокує QA', r.status !== 0);
 r = factory('record', 'DEV-001', 'review', findings('rev-weak', 'reviewer', 'sonnet', []));
-check('4c. reviewer не на opus → звіт відхилено', r.status !== 0 && /opus/.test(r.stderr));
+check('4c. balanced з підвищеним ризиком (security=1): reviewer нижче opus → звіт відхилено', r.status !== 0 && /opus/.test(r.stderr));
 check('4d. виклик reviewer з model=haiku → deny', guard('Agent', { subagent_type: 'reviewer', model: 'haiku', prompt: 'x' }) === 'deny');
 check('4e. виклик reviewer без override → allow', guard('Agent', { subagent_type: 'reviewer', prompt: 'x' }) === 'allow');
+check('4e2. balanced з підвищеним ризиком: reviewer з model=sonnet → deny', guard('Agent', { subagent_type: 'reviewer', model: 'sonnet', prompt: 'x' }) === 'deny');
+check('4e3. security з model=sonnet → deny', guard('Agent', { subagent_type: 'security', model: 'sonnet', prompt: 'x' }) === 'deny');
 factory('record', 'DEV-001', 'review', findings('rev-ok', 'reviewer', 'opus', [{ severity: 'low', title: 'naming' }]));
 
 console.log('\n[6] Security gate');
 r = factory('record', 'DEV-001', 'security', findings('sec-bad', 'security', 'opus', [{ severity: 'critical', title: 'key leak' }]));
-r = factory('transition', 'DEV-001', 'TESTING');
-check('6. Critical security finding блокує TESTING (задача з security-ризиком)', r.status !== 0 && /security/.test(r.stderr), r.stderr);
+r = factory('transition', 'DEV-001', 'QA');
+check('6. Critical security finding блокує QA (задача з security-ризиком)', r.status !== 0 && /security/.test(r.stderr), r.stderr);
 factory('record', 'DEV-001', 'security', findings('sec-ok', 'security', 'opus', []));
-check('6c. 2 провали (verify + review) → ескалація balanced → strong', state().tasks['DEV-001'].tier === 'strong' && state().tasks['DEV-001'].model === 'opus');
-factory('record', 'DEV-001', 'codex', findings('cx-1', 'codex', 'gpt', []));
-r = factory('transition', 'DEV-001', 'TESTING');
-check('6b. після виправлення → TESTING', r.status === 0, r.stderr);
+check('6c. провали verify/review не вмикають codex: balanced лишається balanced', state().tasks['DEV-001'].tier === 'balanced');
+r = factory('transition', 'DEV-001', 'AWAITING_FINAL_APPROVAL');
+check('6d. UI-задача balanced не може пропустити QA', r.status !== 0 && /QA/.test(r.stderr), r.stderr);
+r = factory('transition', 'DEV-001', 'QA', '--agent', 'qa');
+check('6b. після виправлення → QA (без codex для balanced)', r.status === 0, r.stderr);
 
 console.log('\n[7] Успішний PR-флоу (локальна частина)');
+r = factory('transition', 'DEV-001', 'AWAITING_FINAL_APPROVAL');
+check('7a. UI-задача: без e2e (verify --full) і QA-звіту → заблоковано', r.status !== 0 && /verify --full/.test(r.stderr), r.stderr);
 factory('verify', 'DEV-001', '--full');
-r = factory('transition', 'DEV-001', 'QA');
-check('7a. AC без тесту блокує QA (traceability)', r.status !== 0 && /AC-1/.test(r.stderr), r.stderr);
-w('src/app.test.ts', 'test("DEV-001 AC-1: створення задачі", () => {});\n');
-factory('verify', 'DEV-001'); factory('record', 'DEV-001', 'review', findings('rev-ok2', 'reviewer', 'opus', []));
-factory('record', 'DEV-001', 'security', findings('sec-ok2', 'security', 'opus', []));
-factory('record', 'DEV-001', 'codex', findings('cx-2', 'codex', 'gpt', []));
-factory('verify', 'DEV-001', '--full');
-r = factory('transition', 'DEV-001', 'QA', '--agent', 'qa');
-check('7b. з тестом на AC-1 → QA', r.status === 0, r.stderr);
 factory('record', 'DEV-001', 'qa', findings('qa-ok', 'qa', 'sonnet', []));
-factory('transition', 'DEV-001', 'AWAITING_FINAL_APPROVAL');
+r = factory('transition', 'DEV-001', 'AWAITING_FINAL_APPROVAL');
+check('7b. QA пройдено → AWAITING_FINAL_APPROVAL', r.status === 0, r.stderr);
 r = factory('transition', 'DEV-001', 'READY_FOR_PR');
 check('7c. READY_FOR_PR без фінального approval → заблоковано', r.status !== 0);
 user('APPROVE-FINAL DEV-001');
@@ -148,17 +186,22 @@ factory('pr', 'DEV-001', 'https://github.com/x/y/pull/1');
 r = factory('transition', 'DEV-001', 'COMPLETED');
 check('7g. з PR reference → COMPLETED', r.status === 0, r.stderr);
 check('7h. guard: gh pr merge → deny', guard('Bash', { command: 'gh pr merge 1 --squash' }) === 'deny');
+factory('usage', 'DEV-001', 'developer', '1200'); factory('usage', 'DEV-001', 'reviewer', '800'); factory('usage', 'DEV-001', 'developer', '300');
+const m = JSON.parse(factory('metrics', 'DEV-001').stdout)[0];
+check('7n. metrics: токени за ролями, цикли доопрацювання, час до PR', m.tokensByRole.developer === 1500 && m.tokensTotal === 2300 && m.failedVerify === 3 && m.blockingReviews === 2 && typeof m.hoursToPR === 'number', JSON.stringify(m));
+r = factory('line', 'DEV-001');
+check('7o. line — один рядок статусу', r.status === 0 && r.stdout.trim().split('\n').length === 1 && /COMPLETED/.test(r.stdout), r.stdout);
 
-console.log('\n[7+] Fast-задача: без approval і без QA');
+console.log('\n[7+] Fast-задача: без approval, reviewer на sonnet, без QA');
 r = factory('transition', 'DEV-090', 'IMPLEMENTING');
 check('7i. fast → IMPLEMENTING без approval', r.status === 0, r.stderr);
 factory('verify', 'DEV-090'); factory('transition', 'DEV-090', 'REVIEWING');
-factory('record', 'DEV-090', 'review', findings('rev-fast', 'reviewer', 'opus', []));
-factory('transition', 'DEV-090', 'TESTING'); factory('verify', 'DEV-090', '--full');
+check('7i2. fast: виклик reviewer з model=sonnet → allow', guard('Agent', { subagent_type: 'reviewer', model: 'sonnet', prompt: 'x' }) === 'allow');
+check('7i3. fast: reviewer з model=haiku → deny', guard('Agent', { subagent_type: 'reviewer', model: 'haiku', prompt: 'x' }) === 'deny');
+r = factory('record', 'DEV-090', 'review', findings('rev-fast', 'reviewer', 'sonnet', []));
+check('7i4. fast: звіт reviewer на sonnet прийнято', r.status === 0, r.stderr);
 r = factory('transition', 'DEV-090', 'AWAITING_FINAL_APPROVAL');
-check('7j. fast: TESTING → AWAITING_FINAL_APPROVAL (QA пропущено)', r.status === 0, r.stderr);
-r = factory('transition', 'DEV-091', 'AWAITING_FINAL_APPROVAL');
-check('7k. не-fast не може пропустити QA', r.status !== 0);
+check('7j. fast: REVIEWING → AWAITING_FINAL_APPROVAL (QA і e2e пропущено)', r.status === 0, r.stderr);
 check('7l. push у stage → deny', guard('Bash', { command: 'git push origin stage' }) === 'deny');
 check('7m. push без refspec з main → deny; фіча-гілка → allow', guard('Bash', { command: 'git push' }) === 'deny' && guard('Bash', { command: 'git push -u origin feat/DEV-001-init' }) === 'allow');
 
@@ -169,16 +212,260 @@ factory('classify', 'DEV-092', ...allScores(0, { security: 2 }));
 factory('transition', 'DEV-092', 'AWAITING_APPROVAL'); user('APPROVE DEV-092');
 factory('transition', 'DEV-092', 'IMPLEMENTING'); factory('verify', 'DEV-092');
 factory('transition', 'DEV-092', 'REVIEWING');
+w('.factory/project.config.json', JSON.stringify({ ...cfg, codexReviewFallbacks: {
+  'DEV-092': { ...allowedFallback, tree: state().tasks['DEV-092'].reviewTree },
+} }));
+r = factory('record', 'DEV-092', 'review', codexReview);
+check('4f7. задача з вимогою іншої сімʼї не може замінити основне ревʼю на Codex', r.status !== 0 && /не погоджено/.test(r.stderr), r.stderr);
+w('.factory/project.config.json', originalConfig);
 factory('record', 'DEV-092', 'review', findings('rev-s', 'reviewer', 'opus', []));
 factory('record', 'DEV-092', 'security', findings('sec-s', 'security', 'opus', []));
-r = factory('transition', 'DEV-092', 'TESTING');
-check('4f. strong без codex-рев\'ю → TESTING заблоковано', r.status !== 0 && /codex/.test(r.stderr), r.stderr);
+r = factory('transition', 'DEV-092', 'AWAITING_FINAL_APPROVAL');
+check('4f. strong без codex-рев\'ю → заблоковано', r.status !== 0 && /codex/.test(r.stderr), r.stderr);
 factory('record', 'DEV-092', 'codex', findings('cx-bad', 'codex', 'gpt', [{ severity: 'high', title: 'race' }]));
-r = factory('transition', 'DEV-092', 'TESTING');
+r = factory('transition', 'DEV-092', 'AWAITING_FINAL_APPROVAL');
 check('4g. High від codex блокує', r.status !== 0);
 factory('record', 'DEV-092', 'codex', findings('cx-ok', 'codex', 'gpt', []));
-r = factory('transition', 'DEV-092', 'TESTING');
-check('4h. reviewer + codex без блокерів → TESTING', r.status === 0, r.stderr);
+r = factory('transition', 'DEV-092', 'AWAITING_FINAL_APPROVAL');
+check('4h. reviewer + codex без блокерів; не-UI strong → без QA', r.status === 0, r.stderr);
+
+console.log('\n[4++] Codex недоступний: резервне рев\'ю тієї ж сім\'ї (D-027)');
+factory('add', 'DEV-098', 'Strong fallback'); factory('start', 'DEV-098'); factory('transition', 'DEV-098', 'PLANNING');
+w('.factory/task-plans/DEV-098.md', '# plan\n');
+factory('classify', 'DEV-098', ...allScores(0, { security: 2 }));
+factory('transition', 'DEV-098', 'AWAITING_APPROVAL'); user('APPROVE DEV-098');
+factory('transition', 'DEV-098', 'IMPLEMENTING'); factory('verify', 'DEV-098');
+factory('transition', 'DEV-098', 'REVIEWING');
+factory('record', 'DEV-098', 'review', findings('fb-rev', 'reviewer', 'opus', []));
+factory('record', 'DEV-098', 'security', findings('fb-sec', 'security', 'opus', []));
+const fallbackReport = (name, extra) => { const f = path.join(reports, `${name}.json`); fs.writeFileSync(f, JSON.stringify({ agent: 'reviewer', model: 'opus', summary: 'test', findings: [], ...extra })); return f; };
+r = factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-noreason', {}));
+check('4i. codex-fallback без fallbackReason відхилено', r.status !== 0 && /fallbackReason/.test(r.stderr), r.stderr);
+r = factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-agent', { agent: 'codex', fallbackReason: 'quota' }));
+check('4j. codex-fallback від не-reviewer відхилено', r.status !== 0, r.stderr);
+r = factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-sonnet', { model: 'sonnet', fallbackReason: 'quota' }));
+check('4k. codex-fallback на моделі нижче opus (sonnet) відхилено', r.status !== 0, r.stderr);
+r = factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-high', { fallbackReason: 'quota', findings: [{ severity: 'high', title: 'race' }] }));
+r = factory('transition', 'DEV-098', 'AWAITING_FINAL_APPROVAL');
+check('4l. High у codex-fallback блокує', r.status !== 0);
+factory('record', 'DEV-098', 'codex-fallback', fallbackReport('fb-ok', { fallbackReason: 'quota exhausted until 8:40 PM' }));
+r = factory('transition', 'DEV-098', 'AWAITING_FINAL_APPROVAL');
+check('4m. reviewer + security + codex-fallback без блокерів → gate пройдено', r.status === 0, r.stderr);
+
+console.log('\n[4+++] Явне рішення користувача: override tier (D-028)');
+factory('add', 'DEV-097', 'Override'); factory('start', 'DEV-097'); factory('transition', 'DEV-097', 'PLANNING');
+w('.factory/task-plans/DEV-097.md', '# plan\n');
+factory('classify', 'DEV-097', ...allScores(0, { security: 2 }));
+factory('transition', 'DEV-097', 'AWAITING_APPROVAL'); user('APPROVE DEV-097');
+factory('transition', 'DEV-097', 'IMPLEMENTING'); factory('verify', 'DEV-097');
+r = factory('override', 'DEV-097', 'balanced');
+check('4n. override без причини відхилено', r.status !== 0, r.stderr);
+r = factory('override', 'DEV-097', 'turbo', 'нестача токенів');
+check('4o. override з невідомим tier відхилено', r.status !== 0, r.stderr);
+r = factory('override', 'DEV-097', 'balanced', 'нестача токенів, рішення користувача');
+check('4p. override → balanced; security лишається обов\'язковим', r.status === 0 && /security лишається обов/.test(r.stdout), r.stdout + r.stderr);
+factory('transition', 'DEV-097', 'REVIEWING');
+r = factory('record', 'DEV-097', 'review', findings('ov-rev', 'reviewer', 'sonnet', []));
+check('4q. після override reviewer на sonnet приймається', r.status === 0, r.stderr);
+factory('record', 'DEV-097', 'security', findings('ov-sec', 'security', 'opus', []));
+r = factory('transition', 'DEV-097', 'AWAITING_FINAL_APPROVAL');
+check('4r. після override codex/fallback не вимагається', r.status === 0, r.stderr);
+
+console.log('\n[11] Balanced без ризику, ручна ескалація і ліміт циклів');
+factory('add', 'DEV-093', 'Ескалація'); factory('start', 'DEV-093'); factory('transition', 'DEV-093', 'PLANNING');
+w('.factory/task-plans/DEV-093.md', '# plan\n');
+r = factory('classify', 'DEV-093', ...allScores(1, { security: 0, integrations: 0 }));
+check('11a. рядок старту: tier, реалізація (заплановано), модель рев\'ю', /DEV-093 · PLANNING · tier balanced · реалізація: головна сесія sonnet \(заплановано\) · рев'ю: sonnet \(заплановано\)/.test(r.stdout), r.stdout);
+factory('transition', 'DEV-093', 'AWAITING_APPROVAL'); user('APPROVE DEV-093');
+r = factory('transition', 'DEV-093', 'IMPLEMENTING');
+check('11b. після переходу line показує актуальну наступну дію', /далі: головна сесія \(sonnet\) продовжує реалізацію і тести на кожен AC → verify DEV-093/.test(r.stdout), r.stdout);
+check('11c. balanced без ризику: reviewer на sonnet → allow', guard('Agent', { subagent_type: 'reviewer', model: 'sonnet', prompt: 'x' }) === 'allow');
+r = factory('escalate', 'DEV-093');
+check('11d. escalate без причини → помилка', r.status !== 0);
+factory('escalate', 'DEV-093', 'складний', 'дефект', 'у', 'стані');
+r = factory('line', 'DEV-093');
+check('11e. escalate: реалізація → developer opus, tier balanced, рев\'ю лишається sonnet', state().tasks['DEV-093'].model === 'opus' && /tier balanced · реалізація: developer opus \(заплановано\) · рев'ю: sonnet/.test(r.stdout), r.stdout);
+check('11f. після escalate codex не потрібен', !/codex/.test(factory('report', 'DEV-093').stdout));
+w('FAIL', 'alpha');
+factory('verify', 'DEV-093'); factory('verify', 'DEV-093'); r = factory('verify', 'DEV-093');
+check('11g. 3 однакові падіння на opus → не BLOCKED, лічильник = 1', state().tasks['DEV-093'].status === 'IMPLEMENTING' && state().tasks['DEV-093'].attempts.opus === 1 && /Повтор тієї самої помилки/.test(r.stdout), r.stdout + JSON.stringify(state().tasks['DEV-093'].attempts));
+w('FAIL', 'beta'); factory('verify', 'DEV-093');
+w('FAIL', 'gamma'); r = factory('verify', 'DEV-093');
+check('11h. 3 різні невдалі спроби на opus → BLOCKED', state().tasks['DEV-093'].status === 'BLOCKED' && /заблоковано/.test(r.stdout), r.stdout);
+fs.rmSync(path.join(tmp, 'FAIL'));
+
+console.log('\n[12] Сумісність із задачею старої фабрики (фікстура за зразком DEV-001)');
+{
+  const st = state();
+  const at = new Date().toISOString();
+  st.tasks['DEV-080'] = {
+    id: 'DEV-080', title: 'Legacy', status: 'AWAITING_APPROVAL', tier: 'strong', model: 'opus',
+    scores: { modules: 2, architecture: 2, criticality: 1, security: 1, integrations: 0, migrations: 0, state: 0, uncertainty: 1 },
+    securityRequired: true, agent: 'developer', attempts: { balanced: 2 }, issues: [], blockers: [], nextAction: 'старий запис', pr: null,
+    history: [{ at, event: 'classified', note: 'сума 7 → balanced' }, { at, event: 'escalation', from: 'balanced', to: 'strong', note: '2 провали на verify' }],
+    createdAt: at, updatedAt: at,
+  };
+  fs.writeFileSync(path.join(tmp, '.factory', 'workflow-state.json'), JSON.stringify(st, null, 2));
+}
+w('.factory/task-plans/DEV-080.md', '# DEV-080\n- AC-1: каркас\n- AC-2: typecheck, lint, test, test:e2e зелені (evidence — `factory verify DEV-080 --full`)\n');
+user('APPROVE DEV-080');
+factory('transition', 'DEV-080', 'IMPLEMENTING');
+r = factory('line', 'DEV-080');
+check('12a. стара ескалація tier strong ігнорується: tier balanced, рев\'ю opus за ризиком (security=1)', /tier balanced \(збережений strong/.test(r.stdout) && /рев'ю: opus/.test(r.stdout), r.stdout);
+check('12b. стара автоескалація моделі скасовується: реалізація за балами — головна сесія sonnet', /реалізація: головна сесія sonnet/.test(r.stdout), r.stdout);
+factory('escalate', 'DEV-080', 'ручне', 'підвищення');
+check('12b2. ручне підвищення моделі після старої автоескалації зберігається', /реалізація: developer opus/.test(factory('line', 'DEV-080').stdout), factory('line', 'DEV-080').stdout);
+w('src/legacy.test.ts', 'test("DEV-080 AC-1: x", () => {});\n');
+w('e2e/legacy.spec.ts', 'test("DEV-080 AC-2: e2e", () => {});\n');
+factory('verify', 'DEV-080'); factory('transition', 'DEV-080', 'REVIEWING');
+check('12c. legacy: reviewer з model=sonnet → deny (ризик, не стара ескалація, визначає рев\'ю)', guard('Agent', { subagent_type: 'reviewer', model: 'sonnet', prompt: 'x' }) === 'deny');
+factory('record', 'DEV-080', 'review', findings('rev-l', 'reviewer', 'opus', []));
+factory('record', 'DEV-080', 'security', findings('sec-l', 'security', 'opus', []));
+r = factory('report', 'DEV-080');
+check('12d. legacy: codex не вимагається (бали → balanced)', !/codex/.test(r.stdout), r.stdout);
+check('12e. legacy без scores.ui: QA і e2e не вимикаються мовчки', /QA-етап: потрібен \(ui не оцінено/.test(r.stdout) && /E2E: потрібен/.test(r.stdout), r.stdout);
+r = factory('transition', 'DEV-080', 'AWAITING_FINAL_APPROVAL');
+check('12f. legacy: пропустити QA не можна', r.status !== 0 && /QA/.test(r.stderr), r.stderr);
+factory('transition', 'DEV-080', 'QA');
+factory('record', 'DEV-080', 'qa', findings('qa-l', 'qa', 'sonnet', []));
+r = factory('transition', 'DEV-080', 'AWAITING_FINAL_APPROVAL');
+check('12g. AC-2 вимагає Playwright: без verify --full фінальне погодження заблоковано', r.status !== 0 && /verify --full/.test(r.stderr), r.stderr);
+factory('verify', 'DEV-080', '--full');
+r = factory('transition', 'DEV-080', 'AWAITING_FINAL_APPROVAL');
+check('12h. з verify --full → AWAITING_FINAL_APPROVAL', r.status === 0, r.stderr);
+factory('add', 'DEV-081', 'План з e2e без UI'); factory('start', 'DEV-081'); factory('transition', 'DEV-081', 'PLANNING');
+w('.factory/task-plans/DEV-081.md', '# plan\n- перевірка: `npm run test:e2e`\n');
+factory('classify', 'DEV-081', ...allScores(1, { security: 0, integrations: 0 }));
+check('12i. ui=0, але план вимагає test:e2e → E2E потрібен, QA ні', /QA-етап: не потрібен · E2E: потрібен/.test(factory('report', 'DEV-081').stdout));
+
+console.log('\n[13] Відновлення активної задачі (resume) після старої автоескалації');
+{
+  const st = state();
+  const at = new Date().toISOString();
+  const legacy = (id, extraHistory = []) => ({
+    id, title: `Legacy ${id}`, status: 'AWAITING_APPROVAL', tier: 'strong', model: 'opus',
+    scores: { modules: 2, architecture: 2, criticality: 1, security: 0, integrations: 0, migrations: 0, state: 0, uncertainty: 1 },
+    securityRequired: false, agent: 'developer', attempts: { balanced: 2 }, issues: [], blockers: [], nextAction: null, pr: null,
+    history: [{ at, event: 'classified', note: 'сума 6 → balanced' }, { at, event: 'escalation', from: 'balanced', to: 'strong', note: '2 провали на verify' }, ...extraHistory],
+    createdAt: at, updatedAt: at,
+  });
+  st.tasks['DEV-086'] = legacy('DEV-086');
+  st.tasks['DEV-087'] = legacy('DEV-087', [{ at, event: 'escalation', manual: true, from: 'sonnet', to: 'opus', note: 'складний дефект' }]);
+  fs.writeFileSync(path.join(tmp, '.factory', 'workflow-state.json'), JSON.stringify(st, null, 2));
+}
+for (const id of ['DEV-086', 'DEV-087']) {
+  w(`.factory/task-plans/${id}.md`, `# ${id}\n- AC-1: x\n`);
+  w(`src/${id}.test.ts`, `test("${id} AC-1: x", () => {});\n`);
+  user(`APPROVE ${id}`); factory('transition', id, 'IMPLEMENTING');
+}
+factory('next', 'DEV-086', 'чекаємо рішення користувача: продовжити після merge');
+r = factory('resume', 'DEV-086');
+check('13a. resume: стара автоескалація → tier і модель за балами (balanced / sonnet)', /відновлено за балами: tier strong → balanced, модель opus → sonnet/.test(r.stdout) && state().tasks['DEV-086'].tier === 'balanced' && state().tasks['DEV-086'].model === 'sonnet', r.stdout);
+check('13b. resume: наступна дія зі статусу і gates, а не зі старого nextAction', /далі: головна сесія \(sonnet\) продовжує реалізацію/.test(r.stdout) && !/після merge/.test(state().tasks['DEV-086'].nextAction), r.stdout);
+check('13c. resume: погодження чинне → продовжувати без питань', /Продовжувати без питань: так/.test(r.stdout), r.stdout);
+r = factory('resume', 'DEV-087');
+check('13d. resume зберігає ручне підвищення моделі (developer opus), tier balanced', /tier balanced · реалізація: developer opus/.test(r.stdout) && state().tasks['DEV-087'].model === 'opus' && / · перебіг subagent: \/tasks/.test(r.stdout), r.stdout);
+w('.factory/task-plans/DEV-087.md', '# DEV-087\n- AC-1: x\n- AC-2: новий обсяг\n');
+r = factory('resume', 'DEV-087');
+check('13e. resume: план змінився після approval → не продовжувати без користувача', /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+w('.factory/task-plans/DEV-087.md', '# DEV-087\n- AC-1: x\n');
+
+console.log('\n[14] Stop hook: блокує лише за зміни коду цієї сесії');
+factory('resume', 'DEV-086');
+const stop = (input) => hook('stop.mjs', { hook_event_name: 'Stop', ...input }).decision;
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S1' });
+check('14a. IMPLEMENTING без verify, але сесія не змінювала код → не блокує', stop({ session_id: 'S1' }) !== 'block');
+w('.claude/rules/extra.md', '# правка фабрики\n'); w('docs/vault/notes.md', 'x\n');
+check('14b. сесія змінила лише фабрику / docs → не блокує', stop({ session_id: 'S1' }) !== 'block');
+check('14c. сесія без бази (стартувала до hook-а) → не блокує', stop({ session_id: 'S0' }) !== 'block');
+w('src/feature.ts', 'export const f = 1;\n');
+check('14d. сесія змінила код без verify → блокує', stop({ session_id: 'S1' }) === 'block');
+check('14e. stop_hook_active → не блокує повторно в тому ж ході', stop({ session_id: 'S1', stop_hook_active: true }) !== 'block');
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S2' });
+check('14f. нова сесія S2 після чужих змін коду (як DEV-001 зараз) → не блокує', stop({ session_id: 'S2' }) !== 'block');
+hook('session-start.mjs', { hook_event_name: 'SessionStart', session_id: 'S1', source: 'compact' });
+check('14g. compact не скидає базу S1 → зміни коду цієї сесії і далі блокують', stop({ session_id: 'S1' }) === 'block');
+
+console.log('\n[15] Перевірки у відповідний момент');
+r = factory('verify', 'DEV-086');
+check('15a. verify зелений', r.status === 0, r.stdout + r.stderr);
+check('15b. після verify Stop не блокує', stop({ session_id: 'S1' }) !== 'block');
+r = factory('verify', 'DEV-086');
+check('15c. незмінний tree → зелений результат повторно використано', r.status === 0 && /♻ verify/.test(r.stdout) && !/… typecheck/.test(r.stdout), r.stdout);
+w('FAIL', 'delta: expected 2, got 3');
+r = factory('verify', 'DEV-086');
+check('15d. падіння → лише команда і конкретна діагностика', r.status === 1 && /команда: node check\.mjs/.test(r.stdout) && /│ delta: expected 2, got 3/.test(r.stdout), r.stdout);
+fs.rmSync(path.join(tmp, 'FAIL'));
+factory('add', 'DEV-088', 'E2E за специфікацією'); factory('start', 'DEV-088'); factory('transition', 'DEV-088', 'PLANNING');
+w('docs/vault/specs/DEV-088.md', '# DEV-088\n**Агенти:** стандарт + E2E (фільтр)\n- AC-1: фільтр\n');
+w('.factory/task-plans/DEV-088.md', '# DEV-088\n- AC-1: фільтр (спека docs/vault/specs/DEV-088.md)\n');
+factory('classify', 'DEV-088', ...allScores(1, { security: 0, integrations: 0 }));
+factory('transition', 'DEV-088', 'AWAITING_APPROVAL'); user('APPROVE DEV-088'); factory('transition', 'DEV-088', 'IMPLEMENTING');
+w('src/DEV-088.test.ts', 'test("DEV-088 AC-1: фільтр", () => {});\n');
+factory('verify', 'DEV-088'); factory('transition', 'DEV-088', 'REVIEWING');
+factory('record', 'DEV-088', 'review', findings('rev-88', 'reviewer', 'sonnet', []));
+r = factory('line', 'DEV-088');
+check('15e. спека вимагає E2E, ui=0 → після рев\'ю наступна дія verify --full, без QA', /далі: verify DEV-088 --full \(E2E за специфікацією\)/.test(r.stdout), r.stdout);
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('15f. без verify --full фінальне погодження заблоковано', r.status !== 0 && /verify --full/.test(r.stderr), r.stderr);
+factory('verify', 'DEV-088', '--full');
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('15g. E2E зелений → фінальне погодження без ручного QA', r.status === 0 && !state().tasks['DEV-088'].history.some((e) => e.event === 'qa'), r.stderr);
+
+console.log('\n[16] resume: чинне погодження → наступний дозволений етап без повторного запиту');
+factory('add', 'DEV-089', 'Approval при відновленні'); factory('start', 'DEV-089'); factory('transition', 'DEV-089', 'PLANNING');
+w('.factory/task-plans/DEV-089.md', '# DEV-089\n- AC-1: x\n');
+factory('classify', 'DEV-089', ...allScores(1, { security: 0, integrations: 0 }));
+factory('transition', 'DEV-089', 'AWAITING_APPROVAL');
+r = factory('resume', 'DEV-089');
+check('16a. AWAITING_APPROVAL без APPROVE → лишається, просить APPROVE', state().tasks['DEV-089'].status === 'AWAITING_APPROVAL' && /Продовжувати без питань: ні — потрібне погодження користувача: APPROVE DEV-089/.test(r.stdout), r.stdout);
+user('APPROVE DEV-089');
+r = factory('resume', 'DEV-089');
+check('16b. APPROVE уже чинний → resume сам переходить у IMPLEMENTING і продовжує', state().tasks['DEV-089'].status === 'IMPLEMENTING' && /погодження вже чинне: AWAITING_APPROVAL → IMPLEMENTING/.test(r.stdout) && /Продовжувати без питань: так/.test(r.stdout), r.stdout);
+r = factory('resume', 'DEV-088');
+check('16c. AWAITING_FINAL_APPROVAL без APPROVE-FINAL → лишається, просить APPROVE-FINAL', state().tasks['DEV-088'].status === 'AWAITING_FINAL_APPROVAL' && /APPROVE-FINAL DEV-088/.test(r.stdout) && /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+user('APPROVE-FINAL DEV-088');
+w('src/DEV-088.ts', 'export const late = 1;\n');
+r = factory('resume', 'DEV-088');
+check('16d. APPROVE-FINAL для старого коду (tree змінився) → не продовжує', state().tasks['DEV-088'].status === 'AWAITING_FINAL_APPROVAL' && /Продовжувати без питань: ні/.test(r.stdout), r.stdout);
+fs.rmSync(path.join(tmp, 'src/DEV-088.ts'));
+r = factory('resume', 'DEV-088');
+check('16e. APPROVE-FINAL чинний для поточного коду → resume сам переходить у READY_FOR_PR', state().tasks['DEV-088'].status === 'READY_FOR_PR' && /погодження вже чинне: AWAITING_FINAL_APPROVAL → READY_FOR_PR/.test(r.stdout) && /Продовжувати без питань: так/.test(r.stdout) && /далі: коміт, push/.test(r.stdout), r.stdout);
+
+console.log('\n[17] COMPLETED → REVIEWING: повторне рев\'ю, коли код змінився після фінального approval');
+factory('pr', 'DEV-088', 'https://github.com/x/y/pull/88');
+r = factory('transition', 'DEV-088', 'COMPLETED');
+check('17a. READY_FOR_PR з PR reference → COMPLETED', r.status === 0 && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17b. код не змінився після APPROVE-FINAL → COMPLETED → REVIEWING заборонено', r.status !== 0 && /не змінився/.test(r.stderr) && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+w('src/DEV-088.ts', 'export const rebased = 1;\n');
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17c. код змінився, але verify на новому хеші ще немає → REVIEWING заблоковано', r.status !== 0 && /verify/.test(r.stderr) && state().tasks['DEV-088'].status === 'COMPLETED', r.stderr);
+factory('verify', 'DEV-088', '--full');
+r = factory('transition', 'DEV-088', 'REVIEWING', '--agent', 'reviewer');
+check('17d. після verify на новому хеші → REVIEWING, хеш рев\'ю зафіксовано', r.status === 0 && state().tasks['DEV-088'].status === 'REVIEWING' && !!state().tasks['DEV-088'].reviewTree, r.stderr);
+factory('record', 'DEV-088', 'review', findings('rev-88b', 'reviewer', 'sonnet', []));
+r = factory('transition', 'DEV-088', 'AWAITING_FINAL_APPROVAL');
+check('17e. рев\'ю пройдено → AWAITING_FINAL_APPROVAL, потрібен новий APPROVE-FINAL', r.status === 0, r.stderr);
+r = factory('transition', 'DEV-088', 'READY_FOR_PR');
+check('17f. READY_FOR_PR без нового APPROVE-FINAL → заблоковано (старий approval для іншого коду)', r.status !== 0, r.stderr);
+fs.rmSync(path.join(tmp, 'src/DEV-088.ts'));
+
+console.log('\n[+] Git staging записів фабрики');
+check('git add state → allow', guard('Bash', { command: 'git add .factory/workflow-state.json' }) === 'allow');
+check('git diff state → allow', guard('Bash', { command: 'git diff .factory/workflow-state.json' }) === 'allow');
+check('git add state && запис → deny', guard('Bash', { command: 'git add .factory/workflow-state.json && echo {} > .factory/workflow-state.json' }) === 'deny');
+check('git diff --output у state → deny', guard('Bash', { command: 'git diff --output=.factory/workflow-state.json' }) === 'deny');
+check('git checkout state → deny', guard('Bash', { command: 'git checkout -- .factory/workflow-state.json' }) === 'deny');
+
+console.log('\n[+] Керування бектлогом');
+factory('add', 'DEV-095', 'Стара назва');
+r = factory('retitle', 'DEV-095', 'Нова', 'назва');
+check('retitle змінює назву і пише історію', r.status === 0 && state().tasks['DEV-095'].title === 'Нова назва');
+r = factory('remove', 'DEV-095');
+check('remove видаляє задачу з BACKLOG', r.status === 0 && !state().tasks['DEV-095']);
+r = factory('remove', 'DEV-001');
+check('remove не видаляє задачу в роботі', r.status !== 0 && !!state().tasks['DEV-001']);
 
 console.log('\n[8] Відновлення зі стану');
 const s = state();
@@ -199,6 +486,13 @@ check('10h. Read приватного ключа → deny', guard('Read', { file
 r = user('мій ключ sk-ant-api03-abcdefghijklmnop');
 check('10i. секрет у промпті маскується в prompt-log', !fs.readFileSync(path.join(tmp, '.claude/prompt-log.md'), 'utf8').includes('abcdefghijklmnop'));
 
+console.log('\n[+] Гілки і PR');
+check('коміт прямо в main → deny', guard('Bash', { command: 'git commit -m "x"' }) === 'deny');
+execFileSync('git', ['checkout', '-q', '-b', 'feat/DEV-001-test'], { cwd: tmp });
+check('коміт у фіча-гілці → allow', guard('Bash', { command: 'git commit -m "DEV-001: x"' }) === 'allow');
+check('gh pr create без --base / з --base main → deny', guard('Bash', { command: 'gh pr create --title x --body y' }) === 'deny' && guard('Bash', { command: 'gh pr create --base main --title x' }) === 'deny');
+check('gh pr create --base stage → allow', guard('Bash', { command: 'gh pr create --base stage --title "DEV-001: x" --body-file /tmp/b.md' }) === 'allow');
+
 console.log('\n[+] Деструктивні команди та документи');
 check('force push → deny', guard('Bash', { command: 'git push --force origin feat' }) === 'deny');
 check('push у main → deny', guard('Bash', { command: 'git push origin main' }) === 'deny');
@@ -213,8 +507,17 @@ check('decisions.md: дописування в кінець → allow', guard('E
 check('decisions.md: переписування історії → deny', guard('Edit', { file_path: path.join(tmp, 'docs/vault/decisions.md'), old_string: 'D1: SQLite', new_string: 'D1: Postgres' }) === 'deny');
 check('зміна hooks фабрики → ask (потрібне підтвердження)', guard('Edit', { file_path: path.join(tmp, '.claude/hooks/stop.mjs'), old_string: 'a', new_string: 'b' }) === 'ask');
 const pg = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.ts'), content: 'x' } }, ['qa']);
-const pgOk = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.test.ts'), content: 'x' } }, ['qa']);
-check('QA-агент не може змінювати прод-код, може — тести', pg.decision === 'deny' && pgOk.decision === 'allow');
+const pgTest = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'src/app.test.ts'), content: 'x' } }, ['qa']);
+const pgOk = hook('path-guard.mjs', { tool_name: 'Write', tool_input: { file_path: path.join(tmp, 'test-results/DEV-001/home.png'), content: 'x' } }, ['qa']);
+check('QA-агент не змінює ні код, ні тести (повертає findings); пише лише test-results/', pg.decision === 'deny' && pgTest.decision === 'deny' && pgOk.decision === 'allow');
+
+console.log('\n[+] Журнал спрацювань контролю');
+const glog = path.join(tmp, '.factory/guard-log.jsonl');
+const entries = fs.existsSync(glog) ? fs.readFileSync(glog, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : [];
+check('кожне блокування guard-ом записано в guard-log.jsonl', entries.filter((e) => e.decision === 'deny').length >= 20, `записів: ${entries.length}`);
+check('у guard-log немає незамаскованих секретів', !fs.readFileSync(glog, 'utf8').includes('abcdefghijklmnop'));
+hook('permission-denied.mjs', { hook_event_name: 'PermissionDenied', tool_name: 'Bash', tool_input: { command: 'brew install x' }, reason: 'classifier' });
+check('PermissionDenied записується', fs.readFileSync(glog, 'utf8').includes('"source":"permission-denied"'));
 
 // ---------- підсумок ----------
 fs.rmSync(tmp, { recursive: true, force: true });

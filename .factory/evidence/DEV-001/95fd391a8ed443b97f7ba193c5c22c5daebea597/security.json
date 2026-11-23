@@ -1,0 +1,35 @@
+{
+  "taskId": "DEV-001",
+  "kind": "security",
+  "tree": "95fd391a8ed443b97f7ba193c5c22c5daebea597",
+  "at": "2026-11-22T09:34:25.676Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Security DEV-001 (хеш 95fd391a8e): Critical/High немає; обидва Medium щодо redact закрито; npm audit 0.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Redact чутливий до регістру (Authorization, X-Api-Key)",
+      "file": "src/server/logger.ts",
+      "line": 7
+    },
+    {
+      "severity": "low",
+      "title": "Прогалини redact: вкладеність 4+, x-api-key поза headers, api_key/token",
+      "file": "src/server/logger.ts",
+      "line": 7
+    },
+    {
+      "severity": "low",
+      "title": "Немає security headers у next.config",
+      "file": "next.config.ts",
+      "line": 3
+    },
+    {
+      "severity": "low",
+      "title": "/api/health розкриває aiMode (прийнятно)",
+      "file": "src/app/api/health/route.ts",
+      "line": 7
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "taskId": "DEV-007",
+  "kind": "review",
+  "tree": "a999004cee20f713a91a6de57e58384a0c1e7a4f",
+  "at": "2026-11-22T15:55:27.375Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Рев'ю DEV-007 (дерево a999004cee20). Блокуючих (Critical/High) проблем не знайдено; реалізація відповідає плану й AC-1…AC-7. Зауваження — переважно до повноти тестів і дрібних edge cases. Тести reviewer не запускав (статичне рев'ю).",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "AC-4: зв'язок нотатки з температурою не перевірено тестом",
+      "file": "e2e/taskDetails.spec.ts",
+      "line": 86
+    },
+    {
+      "severity": "medium",
+      "title": "AC-2: закреслення «Готово» у списку не перевіряється",
+      "file": "e2e/taskDetails.spec.ts",
+      "line": 47
+    },
+    {
+      "severity": "medium",
+      "title": "AC-6: клавіша Tab не покрита, лише ArrowRight",
+      "file": "e2e/taskDetails.spec.ts",
+      "line": 129
+    },
+    {
+      "severity": "medium",
+      "title": "Слабкий тест statusChangedMessage: before і after мають однаковий статус",
+      "file": "src/views/taskDetails/model/messages.test.ts",
+      "line": 14
+    },
+    {
+      "severity": "medium",
+      "title": "Стан помилки перекриває наявні дані при невдалому refetch",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 119
+    },
+    {
+      "severity": "low",
+      "title": "Стан форми нотатки губиться при перемиканні breakpoint/вкладки",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 126
+    },
+    {
+      "severity": "low",
+      "title": "AgentPlaceholder локально у файлі view; великий TaskDetailsView",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 29
+    },
+    {
+      "severity": "low",
+      "title": "Спільний pending блокує всі контролі; тексти помилок захардкожені в обробниках",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 44
+    },
+    {
+      "severity": "low",
+      "title": "Інвалідація всіх queries tasks після кожної мутації підзадач/нотаток",
+      "file": "src/features/subtaskChange/model/useSubtaskMutations.ts",
+      "line": 10
+    },
+    {
+      "severity": "low",
+      "title": "Порожній description — порожній абзац; немає тесту на dueAt",
+      "file": "src/widgets/taskOverview/ui/TaskOverview/index.tsx",
+      "line": 37
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-002",
+  "kind": "review",
+  "tree": "f6c2fe2799b566cf9a6f4cd7079aa3b4d0b56d58",
+  "at": "2026-11-22T09:59:04.142Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Review DEV-002: AC-1…AC-8 покриті тестами, стайл-гайд і FSD-межі дотримані, getHeat і токени відповідають прототипу; Critical/High немає.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Підсвітка рядка TaskRow для alarm, найімовірніше, не застосовується (конфлікт bg-утиліт)",
+      "file": "src/entities/task/ui/TaskRow/styles.ts",
+      "line": 14
+    },
+    {
+      "severity": "low",
+      "title": "ESLint-оверрайд consistent-type-assertions охоплює весь shared/ui, включно з власними компонентами",
+      "file": "eslint.config.mjs",
+      "line": 127
+    },
+    {
+      "severity": "low",
+      "title": "Англомовний sr-текст Close у кнопці закриття діалогу й sheet",
+      "file": "src/shared/ui/ResponsiveDialog/index.tsx",
+      "line": 27
+    },
+    {
+      "severity": "low",
+      "title": "useMediaQuery створює нову subscribe на кожен рендер",
+      "file": "src/shared/lib/hooks/useMediaQuery.ts",
+      "line": 8
+    },
+    {
+      "severity": "low",
+      "title": "HeatBadge: застарілий openAtPointerDown, якщо pointerdown без click",
+      "file": "src/entities/task/ui/HeatBadge/index.tsx",
+      "line": 14
+    },
+    {
+      "severity": "low",
+      "title": "Частина AC-5 тестів перевіряє Tailwind-класи, а не поведінку",
+      "file": "src/shared/ui/ui.test.tsx",
+      "line": 19
+    },
+    {
+      "severity": "low",
+      "title": "AgentPanel на десктопі: кнопка-заголовок інтерактивна без ефекту",
+      "file": "src/entities/agentRun/ui/AgentPanel/index.tsx",
+      "line": 29
+    }
+  ]
+}

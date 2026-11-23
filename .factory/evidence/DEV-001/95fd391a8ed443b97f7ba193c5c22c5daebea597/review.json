@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-001",
+  "kind": "review",
+  "tree": "95fd391a8ed443b97f7ba193c5c22c5daebea597",
+  "at": "2026-11-22T09:34:12.933Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "Review DEV-001 (хеш 95fd391a8e): Critical/High немає; виправлення попереднього рев'ю коректні; 2 Medium щодо alias-резолвера.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Резолвер alias @/ для boundaries залежить від cwd процесу",
+      "file": "eslint.config.mjs",
+      "line": 36
+    },
+    {
+      "severity": "medium",
+      "title": "Тести AC-6 не перевіряють alias-імпорти @/",
+      "file": "test/eslintRules.test.ts",
+      "line": 72
+    },
+    {
+      "severity": "low",
+      "title": "Redact чутливий до регістру (Authorization, X-Api-Key)",
+      "file": "src/server/logger.ts",
+      "line": 7
+    },
+    {
+      "severity": "low",
+      "title": "Коментар про глибші структури не забезпечується кодом",
+      "file": "src/server/logger.ts",
+      "line": 4
+    },
+    {
+      "severity": "low",
+      "title": "Імпорт невідомого файлу дозволений; захист лише через no-unknown-files",
+      "file": "eslint.config.mjs",
+      "line": 66
+    },
+    {
+      "severity": "low",
+      "title": "/api/health на невалідному env: 500 не в єдиному форматі",
+      "file": "src/app/api/health/route.ts",
+      "line": 6
+    },
+    {
+      "severity": "low",
+      "title": "mobile-375 без isMobile/hasTouch",
+      "file": "playwright.config.ts",
+      "line": 21
+    }
+  ]
+}

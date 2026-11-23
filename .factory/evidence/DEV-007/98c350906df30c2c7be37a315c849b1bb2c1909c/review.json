@@ -1,0 +1,23 @@
+{
+  "taskId": "DEV-007",
+  "kind": "review",
+  "tree": "98c350906df30c2c7be37a315c849b1bb2c1909c",
+  "at": "2026-11-22T16:01:10.954Z",
+  "agent": "reviewer",
+  "model": "sonnet",
+  "summary": "Повторне рев'ю DEV-007 (дерево 98c350906d). Critical/High не знайдено; виправлення після першого рев'ю підтверджено. Playwright reviewer не запускав.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "mobile-375 і tablet-768 запускають taskDetails.spec паралельно з details-desktop-1280 проти спільної SQLite",
+      "file": "playwright.config.ts",
+      "line": 37
+    },
+    {
+      "severity": "low",
+      "title": "toggleSubtask читає застарілий current для тосту «усі підзадачі готові»",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 78
+    }
+  ]
+}

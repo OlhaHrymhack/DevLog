@@ -6,13 +6,13 @@
 
 ## Процес: AI Development Factory
 Будь-яка зміна коду застосунку йде через skill `/factory <DEV-xxx>` (orchestrator) — див. `docs/vault/architecture/factory.md`.
-Етапи: Discovery → Planning → Approval → Implementation → Review → Security → Testing → QA → Final approval → PR → Docs → Retro.
+Етапи: Discovery/Planning → Approval → Implementation (код + тести) → Review → Security → QA (лише UI) → Final approval → PR → Docs → Retro. Обсяг процесу і рівень рев'ю — за tier (`fast`/`balanced`/`strong`), не за моделлю developer.
 Правила процесу, безпеки й тестів — у `.claude/rules/` (завантажуються автоматично). Ключове:
 - код змінюється лише в статусі IMPLEMENTING погодженої задачі (enforced hook-ом);
 - approval дає лише користувач текстом `APPROVE <ID>` / `APPROVE-FINAL <ID>`;
 - стан і evidence — лише через `node .factory/bin/factory.mjs`; результати не вигадуємо;
-- reviewer і security — окремі subagents на opus; merge PR — лише користувач.
-Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/decisions.md`.
+- реалізація: fast — developer haiku, balanced — головна сесія, strong — developer opus; reviewer (sonnet для fast і balanced, opus за підвищеного ризику і для strong) і security (opus) — окремі subagents; модель developer підвищує лише orchestrator (`factory escalate`); після `APPROVE` — без рутинних пауз до фінального погодження; merge PR — лише користувач.
+Контекст проєкту для агентів: `docs/vault/now.md`, `docs/vault/project.md`, `docs/vault/product.md` (скоуп MVP і тест-кейси — джерело правди про продукт), `docs/vault/specs/` (детальні специфікації задач і порядок виконання — читати перед `/factory <ID>`), `docs/vault/decisions.md`.
 
 ## Стек
 - Next.js (App Router) + TypeScript `strict`, npm
@@ -20,39 +20,39 @@
 - БД: SQLite (`better-sqlite3`) + Drizzle ORM
 - Валідація: Zod — одна схема на сутність, спільна для API, форм і tools агентів
 - UI: Tailwind CSS + shadcn/ui, серверний стан — TanStack Query
-- AI: `@anthropic-ai/sdk`, модель з `ANTHROPIC_MODEL` (default `claude-opus-5-5`)
+- AI: `openai` (Chat Completions), модель з `OPENAI_MODEL` (default `gpt-4.1-mini`)
 - Логи: `pino`
 - Тести: Vitest
 
-## Структура
+## Структура (FSD на клієнті + DDD на сервері — повні правила в `.claude/rules/code-style.md`)
 ```
 src/
-  app/            # сторінки і route handlers — тонкий шар: parse → service → response
-  components/     # UI; без fetch і бізнес-логіки напряму, тільки через hooks
-  hooks/          # TanStack Query hooks (useTasks, useAgentRun…)
-  lib/
-    db/           # drizzle schema, client, міграції
-    tasks/        # schema.ts (Zod), repository.ts, service.ts
-    ai/           # client, runAgent (agent loop), tools/, agents/<name>/
-    logger.ts
+  app/        # Next.js routing — тонкі page/layout/route.ts: parse → service → response
+  views/      # FSD-сторінки
+  widgets/    # Board, TaskPanel, DayPlanPanel, AgentTrace
+  features/   # createTask, filterTasks, decomposeTask, statusUpdate, triageInbox
+  entities/   # task, note, agentRun — ui + model (Zod-схеми, типи)
+  shared/     # ui (shadcn), lib (загальні утиліти/хелпери), config, api
+  server/     # tasks/ (domain, repository, service), db/, agents/ (core: runAgent, tools; <name>/), logger
 ```
+Компоненти й функції — стрілкові `const` (`export const TaskCard = (props: TaskCardProps) => …`), не function declaration. Кожен компонент, включно з shadcn, — папка `TaskCard/` з `index.tsx` (+ `types.ts`, `styles.ts` за потреби). Хуки називаються з `use`. Правило стосується коду застосунку, не `.factory`/`.claude`.
 
 ## Правила коду
 - Вхідні дані валідуються Zod на кожній межі: HTTP body/query, tool input агента, фінальний output агента.
-- Доступ до БД — тільки через `lib/tasks/repository.ts`. Route handlers і tools агентів не пишуть SQL самі.
+- Доступ до БД — тільки через `server/tasks/repository.ts`. Route handlers і tools агентів не пишуть SQL самі.
 - Без `any`, без `as` для обходу типів. Типи виводяться зі схем (`z.infer`), не дублюються руками.
 - Помилки API — єдиний формат `{ error: { code, message, details? } }` з правильним HTTP-статусом.
-- Імена: файли `kebab-case`, компоненти `PascalCase`, функції/змінні `camelCase`, константи `SCREAMING_SNAKE_CASE`.
+- Імена: папки компонентів `PascalCase`, slices/модулі/функції `camelCase`, константи `SCREAMING_SNAKE_CASE` (таблиця — у `code-style.md`).
 - Не додавай залежність без потреби; якщо додаєш — скажи, навіщо.
 - Без закоментованого коду і `console.log` — тільки `logger`.
 
 ## Правила AI-агентів (in-product)
-- Агент = власний loop у `lib/ai/runAgent.ts`: виклик моделі → виконання tools → повтор, поки `stop_reason === "tool_use"`.
+- Агент = власний loop у `server/agents/core/runAgent.ts`: виклик моделі → виконання tools → повтор, поки нормалізована зупинка моделі — `tool_use` (`ModelClient` провайдер-незалежний; для OpenAI `finish_reason: "tool_calls"`).
 - Обов'язково: ліміт кроків, обробка `is_error` у tool_result, обробка `refusal` / `max_tokens`.
 - Кожен крок пишеться в `agent_steps`, кожен запуск — в `agent_runs` (це наш trace для UI і дебагу).
 - Фінальний результат — через tool `submit_result` зі strict-схемою, потім Zod-валідація + перевірка фактів (напр. що `taskId` існує).
 - Агент не змінює дані без підтвердження користувача (створення підзадач, злиття задач — тільки після «Confirm» в UI).
-- `AI_MOCK=true` — детерміновані відповіді без API-ключа; кожен агент повинен мати mock.
+- Режим AI — `AI_MODE=live|demo` (без значення: `live`, якщо є `OPENAI_API_KEY`, інакше `demo`). `demo` — детерміновані відповіді без API-ключа; кожен агент повинен мати mock.
 - Ніколи не логувати API-ключ і повні промпти з даними користувача на рівні `info`.
 
 ## Команди

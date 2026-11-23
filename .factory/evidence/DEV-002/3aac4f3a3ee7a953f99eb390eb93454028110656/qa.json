@@ -1,0 +1,21 @@
+{
+  "taskId": "DEV-002",
+  "kind": "qa",
+  "tree": "3aac4f3a3ee7a953f99eb390eb93454028110656",
+  "at": "2026-11-22T10:07:33.781Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "Повторний QA DEV-002 (хеш 3aac4f3a3e): усі 4 виправлення Medium підтверджені в браузері на 375/768/1280 в обох темах; регресій (скрол, теми, діалог) немає. Блокерів немає.",
+  "findings": [
+    {
+      "severity": "low",
+      "title": "Розміри на 1280 (Button 35, іконки TaskRow 32) менші за очікувані 40/36: кореневий rem менший за 16px; регресії немає",
+      "file": "src/shared/ui/Button/styles.ts"
+    },
+    {
+      "severity": "low",
+      "title": "На 375 Select, tabs, checkbox/switch і посилання-заголовки мають ціль <44px (поза скоупом перевірки)",
+      "file": "src/views/uiKit/ui/UiKitView/index.tsx"
+    }
+  ]
+}
