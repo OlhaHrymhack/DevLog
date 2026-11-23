@@ -18,12 +18,12 @@ export const SubtaskList = ({ subtasks, pending, onToggle, onDelete, onDecompose
       </div>
       {total === 0 ? (
         <EmptyState emoji="🪜" title="Підзадач ще немає"
-          description="Агент декомпозиції запропонує план, а ви вирішите, що створити."
-          action={
+          description={onDecompose ? "Агент декомпозиції запропонує план, а ви вирішите, що створити." : undefined}
+          action={onDecompose && (
             <Button variant="ai" onClick={onDecompose}>
               <Sparkles aria-hidden="true" className="size-4" /> Розбити з AI
             </Button>
-          }
+          )}
         />
       ) : (
         <>

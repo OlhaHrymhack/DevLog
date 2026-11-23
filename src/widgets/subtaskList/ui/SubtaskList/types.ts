@@ -5,5 +5,5 @@ export type SubtaskListProps = {
   pending: boolean;
   onToggle: (subtask: Subtask) => void;
   onDelete: (subtask: Subtask) => void;
-  onDecompose: () => void;
+  onDecompose?: () => void;
 };

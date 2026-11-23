@@ -16,22 +16,23 @@ beforeEach(() => {
 
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-test("DEV-017 AC-4: 24 parallel reservations over independent connections reserve exactly 10, per agent", async () => {
+test("DEV-018 AC-2: concurrent reservations share a cap of 50 per feature, 150 total", async () => {
   const connections = await Promise.all(Array.from({ length: 12 }, () => createDb(file)));
   try {
     const repositories = connections.map((connection) => createAgentQuotaRepository(connection.db));
-    const results = await Promise.all([...repositories, ...repositories].map((quota) => quota.reserve("decompose")));
-    const reserved = results.flatMap((result) => result.reserved ? [result.used] : []);
-    expect(AGENT_RUN_QUOTA).toBe(10);
-    expect(reserved.sort((a, b) => a - b)).toEqual(Array.from({ length: 10 }, (_, index) => index + 1));
-    expect(results.filter((result) => !result.reserved)).toHaveLength(14);
-
-    const reconnected = await createDb(file);
-    connections.push(reconnected);
-    const other = createAgentQuotaRepository(reconnected.db);
-    expect(await other.reserve("status-update")).toEqual({ reserved: true, used: 1 });
-    expect(await other.getUsage("decompose")).toBe(10);
-    expect(await other.getUsage("prioritize")).toBe(0);
+    const [reader] = repositories;
+    if (!reader) throw new Error("Test database unavailable");
+    expect(AGENT_RUN_QUOTA).toBe(50);
+    for (const kind of ["prioritize", "stuck-radar", "voice-draft"] as const) {
+      expect(await reader.getUsage(kind)).toBe(0);
+      const results = await Promise.all(repositories.flatMap((quota) =>
+        Array.from({ length: 5 }, () => quota.reserve(kind))));
+      const reserved = results.flatMap((result) => result.reserved ? [result.used] : []);
+      expect(reserved.sort((a, b) => a - b)).toEqual(Array.from({ length: 50 }, (_, index) => index + 1));
+      expect(results.filter((result) => !result.reserved)).toHaveLength(10);
+    }
+    const counters = await reader.listUsage();
+    expect(counters.reduce((total, row) => total + row.used, 0)).toBe(150);
   } finally {
     connections.forEach((connection) => connection.close());
   }

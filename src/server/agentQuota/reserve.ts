@@ -1,8 +1,9 @@
 import "server-only";
+import { PublicQuotaKindSchema } from "@/shared/api/agentQuota/schema";
 import { AppError } from "@/shared/api/errors";
 import { getDb, type DbExecutor } from "../db/client";
 import { logger } from "../logger";
-import { createAgentQuotaRepository } from "./repository";
+import { AGENT_RUN_QUOTA, createAgentQuotaRepository } from "./repository";
 import type { AgentQuotaKind } from "./schema";
 
 const defaultDb = async () => (await getDb()).db;
@@ -11,7 +12,7 @@ const defaultDb = async () => (await getDb()).db;
 export const QUOTA_STORAGE_TIMEOUT_MS = 5_000;
 
 const exhausted = () => new AppError(
-  "AGENT_QUOTA_EXHAUSTED", 429, "Ліміт запусків цього агента для демо вичерпано (10 на всіх відвідувачів)",
+  "AGENT_QUOTA_EXHAUSTED", 429, `Ліміт запусків цього агента для демо вичерпано (${AGENT_RUN_QUOTA} на всіх відвідувачів)`,
 );
 const unavailable = () => new AppError(
   "AGENT_QUOTA_UNAVAILABLE", 503, "Не вдалося перевірити ліміт запусків агента. Спробуйте пізніше",
@@ -63,6 +64,9 @@ export const reserveAgentQuota = async (
   log = logger,
   { check, timeoutMs = QUOTA_STORAGE_TIMEOUT_MS }: ReserveOptions = {},
 ): Promise<DbExecutor> => {
+  if (!PublicQuotaKindSchema.safeParse(kind).success) {
+    throw new AppError("AGENT_UNAVAILABLE_IN_DEMO", 403, "Цей агент недоступний у публічному демо");
+  }
   let outcome: { db: DbExecutor; reserved: boolean };
   try {
     outcome = await withDeadline(async (assertActive) => {

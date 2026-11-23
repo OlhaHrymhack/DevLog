@@ -1,0 +1,45 @@
+{
+  "taskId": "DEV-018",
+  "kind": "tests",
+  "tree": "747fdc99d7faef384c4d734b956699f65e388aae",
+  "at": "2026-11-23T16:28:44.803Z",
+  "ok": false,
+  "failed": [
+    "test(failed)",
+    "e2e(failed)"
+  ],
+  "results": [
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 2288,
+      "output": "\n> devlog@0.1.0 typecheck\n> tsc --noEmit\n\n"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 5436,
+      "output": "\n> devlog@0.1.0 lint\n> eslint .\n\n"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 7098,
+      "output": "{\"level\":30,\"time\":1795451320722,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"907af0bb-390c-486d-a141-6e1c22eea343\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":13,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320723,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"7e1a56c5-1612-4128-9729-c6f6595e5eb9\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":13,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320723,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"112b7615-0579-49f6-b045-566465c77ce5\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":13,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320724,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"de02eb9e-7132-4a7e-9937-f0852ce5a403\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":13,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320724,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"0301345e-bb7d-46d4-8540-4ac65892a545\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":14,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320725,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"273add61-0633-428e-ad69-c11b0599a0cd\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":14,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320725,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"3e3a405d-3b67-4507-98b9-09946233a8b1\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":14,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320725,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"47e626c3-4235-40e1-b7c7-2ba76de5a50b\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":15,\"msg\":\"Request completed\"}\n{\"level\":30,\"time\":1795451320726,\"pid\":14141,\"hostname\":\"cmadmins-MacBook-Pro-3.local\",\"requestId\":\"516582da-923f-47b0-9312-608414a190f8\",\"method\":\"POST\",\"path\":\"/api/tasks/voice-draft\",\"status\":200,\"durationMs\":15,\"msg\":\"Request completed\"}\n ❯ |node| test/voiceQuota.test.ts (1 test | 1 failed) 57ms\n   × DEV-017 AC-4: голосова чернетка має окрему квоту й не викликає модель після десятої спроби 56ms\n\n Test Files  1 failed | 66 passed | 1 skipped (68)\n      Tests  1 failed | 395 passed | 3 skipped (399)\n   Start at  18:28:34\n   Duration  6.56s (import 50%, tests 19%, environment 16%, transform 14%, worker 1%)\n\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  |node| test/voiceQuota.test.ts > DEV-017 AC-4: голосова чернетка має окрему квоту й не викликає модель після десятої спроби\nAssertionError: expected [ …(12) ] to have a length of 10 but got 12\n\n- Expected\n+ Received\n\n- 10\n+ 12\n\n ❯ test/voiceQuota.test.ts:49:69\n     47|     const webmHeader = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x81, 0…\n     48|     const responses = await Promise.all(Array.from({ length: 12 }, () …\n     49|     expect(responses.filter((response) => response.status === 200)).to…\n       |                                                                     ^\n     50|     expect(responses.filter((response) => response.status === 429)).to…\n     51|     expect(transcriptions).toHaveBeenCalledTimes(10);\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+    },
+    {
+      "name": "e2e",
+      "command": "npm run test:e2e",
+      "status": "failed",
+      "exitCode": 1,
+      "durationMs": 2982,
+      "output": "\n> devlog@0.1.0 test:e2e\n> playwright test\n\n\nError: Process from config.webServer was not able to start. Exit code: 1\n::error ::Error: Process from config.webServer was not able to start. Exit code: 1\n\n\n::notice title=🎭 Playwright Run Summary::\n[WebServer] .env not found. Continuing without it.\n[WebServer] .env.local not found. Continuing without it.\n[WebServer] (node:14202) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:14221) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] (node:14222) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.\n[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)\n[WebServer] ⨯ Another next dev server is already running.\n[WebServer] \n[WebServer] - Local:        http://127.0.0.1:3002\n[WebServer] - PID:          10839\n[WebServer] - Dir:          /private/tmp/devlog-dev017-release\n[WebServer] - Log:          .next/playwright/dev/logs/next-development.log\n[WebServer] \n[WebServer] You can access the existing server at http://127.0.0.1:3002,\n[WebServer] or run kill 10839 to stop it and start a new one.\n"
+    }
+  ]
+}

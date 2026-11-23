@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-017",
+  "currentTask": "DEV-018",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -2864,6 +2864,142 @@
       },
       "reviewTree": "6e74db8627102c1d07323ace41824b66243baefb",
       "blockedFrom": "REVIEWING"
+    },
+    "DEV-018": {
+      "id": "DEV-018",
+      "title": "«Лічильник спроб агентів»",
+      "status": "READY_FOR_PR",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 0,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 0,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "sonnet": 1
+      },
+      "issues": [
+        "tests failed: test(failed), e2e(failed)"
+      ],
+      "blockers": [],
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-018 <url>",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-23T16:19:44.789Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-23T16:23:08.954Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-23T16:23:34.642Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-23T16:23:35.203Z",
+          "event": "classified",
+          "note": "сума 5 → balanced"
+        },
+        {
+          "at": "2026-11-23T16:23:35.985Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T16:23:48.077Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-23T16:28:45.034Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-018/747fdc99d7faef384c4d734b956699f65e388aae/tests.json"
+        },
+        {
+          "at": "2026-11-23T16:33:07.398Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-018/86b476e072c0d47ac3e51d67c7da2564a4050298/tests.json"
+        },
+        {
+          "at": "2026-11-23T16:33:42.558Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "86b476e072"
+        },
+        {
+          "at": "2026-11-23T16:36:58.275Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-018/86b476e072c0d47ac3e51d67c7da2564a4050298/review.json"
+        },
+        {
+          "at": "2026-11-23T16:36:58.928Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-018/86b476e072c0d47ac3e51d67c7da2564a4050298/security.json"
+        },
+        {
+          "at": "2026-11-23T16:36:59.596Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-23T16:40:00.469Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-018/86b476e072c0d47ac3e51d67c7da2564a4050298/qa.json"
+        },
+        {
+          "at": "2026-11-23T16:40:01.102Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T16:41:47.726Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
+        }
+      ],
+      "createdAt": "2026-11-23T16:19:44.759Z",
+      "updatedAt": "2026-11-23T16:41:47.727Z",
+      "lastFailure": null,
+      "reviewTree": "86b476e072c0d47ac3e51d67c7da2564a4050298",
+      "usage": {
+        "reviewer": 280778,
+        "security": 189494,
+        "qa": 106573
+      }
     }
   }
 }
