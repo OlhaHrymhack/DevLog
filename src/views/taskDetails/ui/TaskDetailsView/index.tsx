@@ -34,7 +34,6 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
   const task = useTask(id);
   const serious = useSerious();
   const health = useHealth();
-  const fullAgentAccess = health.data?.agentQuota === false;
   const [now] = useState(() => Date.now());
   const [dialog, setDialog] = useState<TaskDialog>();
   const { tab, setTab } = useDetailsTab();
@@ -109,9 +108,10 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
   const details = current && (
     <>
       <SubtaskList subtasks={current.subtasks} pending={pending}
+        taskId={id}
         onToggle={(subtask) => void toggleSubtask(subtask)}
         onDelete={(subtask) => void removeSubtask(subtask)}
-        onDecompose={fullAgentAccess ? () => { setAutorun(true); setTab("decompose"); } : undefined}
+        onDecompose={() => { setAutorun(true); setTab("decompose"); }}
       />
       <NoteList notes={current.notes} now={now} taskId={id} />
     </>
@@ -140,8 +140,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
           />
         )}
 
-        {current && !fullAgentAccess && <div className={columnStyles}>{overview}{details}</div>}
-        {current && fullAgentAccess && wide && (
+        {current && wide && (
           <div className={layoutStyles}>
             <div className={columnStyles}>{overview}{details}</div>
             <aside aria-label="AI-агенти" className={columnStyles}>
@@ -150,7 +149,7 @@ export const TaskDetailsView = ({ id }: TaskDetailsViewProps) => {
             </aside>
           </div>
         )}
-        {current && fullAgentAccess && !wide && (
+        {current && !wide && (
           <Tabs value={tab} onValueChange={(value) => setTab(parseDetailsTab(value))}>
             <TabsList className={tabsListStyles}>
               <TabsTrigger value="task"><FileText aria-hidden="true" className="max-[419px]:hidden" /> Задача</TabsTrigger>

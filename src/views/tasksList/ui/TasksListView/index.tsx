@@ -88,7 +88,7 @@ export const TasksListView = () => {
           </div>
           <aside aria-label="AI-агенти" className="space-y-5 [grid-area:aside] lg:sticky lg:top-[84px]">
             <DayPlanPanel serious={serious} demo={aiMode === "demo"} />
-            <StuckRadarPanel serious={serious} demo={aiMode === "demo"} allowDecompose={health.data?.agentQuota === false} />
+            <StuckRadarPanel serious={serious} demo={aiMode === "demo"} />
           </aside>
 
           <div className="min-w-0 space-y-5 [grid-area:tasks]">

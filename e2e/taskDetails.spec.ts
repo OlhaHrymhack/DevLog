@@ -61,7 +61,7 @@ test("DEV-007 AC-2: статус і пріоритет змінюються з �
   }
 });
 
-test("DEV-007 AC-3: підзадачі — чекбокс, прогрес, тост «усі готові», видалення, бейдж AI", async ({ page, request }, info) => {
+test("DEV-007 AC-3, DEV-019 AC-3: створення, виконання й видалення підзадач та бейдж AI", async ({ page, request }, info) => {
   const id = await seedTask(request, `Деталі: підзадачі ${info.project.name}`, ["Перша від агента", "Друга", "Третя"]);
   try {
     await page.goto(`/tasks/${id}`);
@@ -85,6 +85,19 @@ test("DEV-007 AC-3: підзадачі — чекбокс, прогрес, то�
     await expect(page.getByText("Підзадачу видалено")).toBeVisible();
     await expect(page.getByRole("checkbox", { name: "Друга" })).toHaveCount(0);
     await expect(page.getByText("2 з 2 готово")).toBeVisible();
+
+    const newSubtask = page.getByRole("textbox", { name: "Нова підзадача" });
+    const addButton = page.getByRole("button", { name: "Додати підзадачу" });
+    await expect(addButton).toBeDisabled();
+    await newSubtask.fill("Перевірити на телефоні");
+    await addButton.click();
+    await expect(page.getByText("2 з 3 готово")).toBeVisible();
+    await expect(newSubtask).toHaveValue("");
+    await page.reload();
+    const added = page.getByRole("checkbox", { name: "Перевірити на телефоні" });
+    await expect(added).toBeVisible();
+    await expect(added).not.toBeChecked();
+    await expect(page.getByText("✦ AI")).toHaveCount(1);
   } finally {
     await request.delete(`/api/tasks/${id}`);
   }

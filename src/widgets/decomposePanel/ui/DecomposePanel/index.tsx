@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AgentRunPanel, DecompositionSchema, useAgentRun, type DecompositionItem } from "@/entities/agentRun";
 import { isVague } from "@/entities/task";
-import { clarificationNote, ClarifyForm, SubtaskSuggestions, useCreateSubtasks } from "@/features/decomposeTask";
+import { clarificationNote, ClarifyForm, SubtaskSuggestions } from "@/features/decomposeTask";
 import { useAddNote } from "@/features/noteAdd";
+import { useCreateSubtasks } from "@/features/subtaskChange";
 import { plural } from "@/shared/lib/plural";
 import { Alert, AlertDescription } from "@/shared/ui/Alert";
 import { Button } from "@/shared/ui/Button";
@@ -24,12 +25,14 @@ export const DecomposePanel = ({ task, serious, demo = false, autorun = false, o
 
   const startRun = (clarification?: string) => void start({ taskId: task.id, serious, ...(clarification ? { clarification } : {}) });
 
-  // Автозапуск споживається одразу, тож «Зупинити» і зміна розкладки його не повторюють.
-  // Повторний `start` скасовує попередній запуск, тож подвійний виклик ефекту (StrictMode) безпечний.
+  // Відкладений запуск дає StrictMode скасувати перший ефект до надсилання запиту з квотою.
   useEffect(() => {
     if (!autorun) return;
-    void start({ taskId: task.id, serious });
-    onAutorunHandled?.();
+    const timeout = window.setTimeout(() => {
+      void start({ taskId: task.id, serious });
+      onAutorunHandled?.();
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [autorun, onAutorunHandled, serious, start, task.id]);
 
   const decided = run.status === "result" || run.status === "fallback" || run.status === "clarify";
@@ -48,7 +51,7 @@ export const DecomposePanel = ({ task, serious, demo = false, autorun = false, o
 
   const create = async (items: DecompositionItem[]) => {
     try {
-      await createSubtasks.mutateAsync(items);
+      await createSubtasks.mutateAsync(items.map(({ title, estimate, rationale }) => ({ title, source: "ai", estimate, rationale })));
     } catch {
       toast.error("Не вдалося створити підзадачі. Спробуйте ще раз");
       return;

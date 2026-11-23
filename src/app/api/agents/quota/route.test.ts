@@ -19,9 +19,10 @@ it("DEV-018 AC-2: reports only the public counters and reading does not reserve 
     const quota = createAgentQuotaRepository(connection.db);
     await quota.reserve("prioritize");
     await quota.reserve("decompose");
+    await quota.reserve("status-update");
     await quota.reserve("voice-draft");
 
-    const initial = { enabled: true, limit: 50, used: { prioritize: 1, "stuck-radar": 0, "voice-draft": 1 } };
+    const initial = { enabled: true, limit: 150, used: { prioritize: 1, "stuck-radar": 0, "voice-draft": 1, decompose: 1, "status-update": 1 } };
     const first = await readQuota();
     expect(first.headers.get("cache-control")).toBe("no-store");
     expect(await first.json()).toEqual(initial);

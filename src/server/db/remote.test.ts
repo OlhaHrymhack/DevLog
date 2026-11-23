@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PublicQuotaKindSchema } from "@/shared/api/agentQuota/schema";
 import { createAgentQuotaRepository, AGENT_RUN_QUOTA } from "../agentQuota/repository";
 import { createAgentRunRepository } from "../agentRuns/repository";
 import { createTaskRepository } from "../tasks/repository";
@@ -7,7 +8,7 @@ import { runDbCommand } from "./operations";
 
 /**
  * Інтеграція з окремою віддаленою libSQL (sqld / Turso). Потрібен ізольований тестовий сервер:
- * `DEVLOG_TEST_LIBSQL_URL=http://127.0.0.1:8217` (тест скидає лічильник квоти `stuck-radar`). Без змінної набір не запускається.
+ * `DEVLOG_TEST_LIBSQL_URL=http://127.0.0.1:8217` (тест скидає лічильники квоти). Без змінної набір не запускається.
  */
 const REMOTE_URL = process.env.DEVLOG_TEST_LIBSQL_URL;
 const NOW = new Date("2026-11-21T12:00:00Z");
@@ -62,17 +63,17 @@ describe.runIf(REMOTE_URL)("віддалена libSQL-база", () => {
     }
   });
 
-  it("DEV-018 AC-2: паралельні резервування з незалежних клієнтів дають рівно 50 і переживають реконект", async () => {
+  it("паралельні резервування з незалежних клієнтів ділять 150 спроб і переживають реконект", async () => {
     await runDbCommand("migrate", target, NOW);
     const admin = await createDb(target.url, { authToken: target.authToken });
-    await admin.client.execute("delete from agent_quotas where kind = 'stuck-radar'");
+    await admin.client.execute("delete from agent_quotas");
     admin.close();
 
     const clients = await Promise.all(Array.from({ length: 12 }, () => createDb(target.url, { authToken: target.authToken })));
     try {
       const repositories = clients.map((client) => createAgentQuotaRepository(client.db));
       const results = await Promise.all(repositories.flatMap((quota) =>
-        Array.from({ length: 5 }, () => quota.reserve("stuck-radar"))));
+        PublicQuotaKindSchema.options.flatMap((kind) => Array.from({ length: 3 }, () => quota.reserve(kind)))));
       expect(results.filter((result) => result.reserved)).toHaveLength(AGENT_RUN_QUOTA);
     } finally {
       clients.forEach((client) => client.close());
@@ -81,7 +82,7 @@ describe.runIf(REMOTE_URL)("віддалена libSQL-база", () => {
     const reconnected = await createDb(target.url, { authToken: target.authToken });
     try {
       const quota = createAgentQuotaRepository(reconnected.db);
-      expect(await quota.getUsage("stuck-radar")).toBe(AGENT_RUN_QUOTA);
+      expect((await quota.listUsage()).reduce((total, row) => total + row.used, 0)).toBe(AGENT_RUN_QUOTA);
       expect(await quota.reserve("stuck-radar")).toEqual({ reserved: false });
     } finally {
       reconnected.close();

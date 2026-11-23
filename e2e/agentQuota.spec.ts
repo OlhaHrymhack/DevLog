@@ -1,12 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-test("DEV-018 AC-1 AC-3 AC-4: reads current quota, handles retries, and hides other agents in the public demo", async ({ page }) => {
+test("DEV-019 AC-2: shows the shared AI limit and displays exhaustion on decomposition", async ({ page }) => {
   let shouldFail = true;
   let planUsed = 7;
   await page.route("**/api/health", (route) => route.fulfill({ json: { status: "ok", aiMode: "demo", agentQuota: true } }));
   await page.route("**/api/agents/quota", (route) => shouldFail
     ? route.fulfill({ status: 503, json: { error: { code: "TEST_ERROR", message: "Помилка" } } })
-    : route.fulfill({ json: { enabled: true, limit: 50, used: { prioritize: planUsed, "stuck-radar": 50, "voice-draft": 0 } } }));
+    : route.fulfill({ json: { enabled: true, limit: 150, used: { prioritize: planUsed, "stuck-radar": 50, "voice-draft": 0, decompose: 50, "status-update": 2 } } }));
+  const exhaustedMessage = "Спільний ліміт AI вичерпано (150 запусків на всіх відвідувачів)";
+  let decomposeRequests = 0;
+  await page.route("**/api/agents/decompose", (route) => {
+    decomposeRequests += 1;
+    return route.fulfill({ status: 429, json: { error: { code: "AGENT_QUOTA_EXHAUSTED", message: exhaustedMessage } } });
+  });
 
   await page.goto("/tasks/t7");
   const trigger = page.getByRole("button", { name: "Спроби AI" });
@@ -17,17 +23,22 @@ test("DEV-018 AC-1 AC-3 AC-4: reads current quota, handles retries, and hides ot
   shouldFail = false;
   await dialog.getByRole("button", { name: "Спробувати ще раз" }).click();
   const rows = dialog.getByRole("listitem");
-  await expect(rows).toHaveCount(3);
-  await expect(rows.filter({ hasText: "План на день" })).toContainText("Використано 7 · залишилось 43");
-  await expect(rows.filter({ hasText: "Радар застряглих" })).toContainText("Використано 50 · залишилось 0");
-  await expect(rows.filter({ hasText: "Голосовий ввід" })).toContainText("Використано 0 · залишилось 50");
-  await expect(dialog.getByText("93 із 150")).toBeVisible();
+  await expect(rows).toHaveCount(5);
+  await expect(rows.filter({ hasText: "План на день" })).toContainText("Використано 7");
+  await expect(rows.filter({ hasText: "Радар застряглих" })).toContainText("Використано 50");
+  await expect(rows.filter({ hasText: "Голосовий ввід" })).toContainText("Використано 0");
+  await expect(rows.filter({ hasText: "Декомпозиція задач" })).toContainText("Використано 50");
+  await expect(rows.filter({ hasText: "Статус-апдейти" })).toContainText("Використано 2");
+  await expect(dialog.getByText("41 із 150")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
-  await expect(page.getByRole("button", { name: "Розбити з AI" })).toHaveCount(0);
-  await expect(page.getByRole("tab", { name: "Апдейт" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Розбити з AI" })).toBeVisible();
 
-  planUsed += 1;
+  planUsed += 41;
   await trigger.click();
-  await expect(dialog.getByText("92 із 150")).toBeVisible();
+  await expect(dialog.getByText("0 із 150")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Розбити з AI" }).click();
+  await expect(page.getByRole("region", { name: "Декомпозиція" }).getByRole("alert")).toContainText(exhaustedMessage);
+  expect(decomposeRequests).toBe(1);
 });

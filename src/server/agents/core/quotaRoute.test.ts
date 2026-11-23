@@ -71,7 +71,7 @@ const usage = (kind: Parameters<ReturnType<typeof createAgentQuotaRepository>["g
   createAgentQuotaRepository(connection.db).getUsage(kind);
 
 describe("квота запусків агента в спільному обробнику", () => {
-  it.each(["prioritize", "stuck-radar"] as const)("DEV-018 AC-2: %s приймає 50 запусків, 51-й → 429 без створення клієнта моделі", async (kind) => {
+  it.each(["prioritize", "stuck-radar"] as const)("%s приймає 150 запусків, 151-й → 429 без створення клієнта моделі", async (kind) => {
     const route = createAgentRoute({ ...echoAgent, kind }, deps());
     for (let index = 0; index < AGENT_RUN_QUOTA; index += 1) {
       const response = await route(post({ input: { focus: null } }));
@@ -81,12 +81,12 @@ describe("квота запусків агента в спільному обр�
     const callsBefore = { modelCalls, clientsCreated };
     const rejected = await route(post({ input: { focus: null } }));
     expect(rejected.status).toBe(429);
-    expect(await rejected.json()).toEqual({ error: { code: "AGENT_QUOTA_EXHAUSTED", message: expect.stringContaining("50") } });
+    expect(await rejected.json()).toEqual({ error: { code: "AGENT_QUOTA_EXHAUSTED", message: expect.stringContaining("150") } });
     expect({ modelCalls, clientsCreated }).toEqual(callsBefore);
-    expect(await usage(kind)).toBe(50);
+    expect(await usage(kind)).toBe(AGENT_RUN_QUOTA);
   });
 
-  it("DEV-018 AC-2: понад 50 паралельних запитів через різні з'єднання не перевищують межу", async () => {
+  it("паралельні запити через різні з'єднання не перевищують межу", async () => {
     const instances = await Promise.all(Array.from({ length: 6 }, () => createDb(file)));
     try {
       const routes = instances.map((instance) => createAgentRoute(echoAgent, deps({ getDb: () => instance.db })));
@@ -169,41 +169,45 @@ const postTo = (kind: string, input: unknown) => new Request(`http://localhost/a
 });
 
 describe("квота: перевірка входу й межа очікування сховища", () => {
-  it("DEV-018 AC-4: інші агенти заблоковані з квотою до відкриття БД і запуску моделі", async () => {
-    const getDb = vi.fn(() => connection.db);
-    const decompose = await createAgentRoute(decomposeAgent, deps({ getDb }))(postTo("decompose", { taskId: "t7" }));
-    const status = await createAgentRoute(statusUpdateAgent, deps({ getDb }))(postTo("status-update", { taskId: "t7", tone: "team" }));
-    for (const response of [decompose, status]) {
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({ error: { code: "AGENT_UNAVAILABLE_IN_DEMO" } });
-    }
-    expect(getDb).not.toHaveBeenCalled();
-    expect(await usage("decompose")).toBe(0);
-    expect(await usage("status-update")).toBe(0);
-    expect({ clientsCreated, modelCalls }).toEqual({ clientsCreated: 0, modelCalls: 0 });
+  it("DEV-019 AC-3: статус-апдейт доступний із квотою та витрачає одну спробу", async () => {
+    const status = await createAgentRoute(statusUpdateAgent, deps())(postTo("status-update", { taskId: "t7", tone: "team" }));
+    expect(status.status).toBe(200);
+    expect((await drain(status)).at(-1)?.type).toBe("result");
+    expect(await usage("status-update")).toBe(1);
+  });
 
-    const existing = await createAgentRoute(decomposeAgent, deps({ getEnv: () => ({ ...QUOTA_ENV, agentQuota: false }) }))(
+  it("запуск декомпозиції з вимкненою квотою не витрачає спробу", async () => {
+    const response = await createAgentRoute(decomposeAgent, deps({ getEnv: () => ({ ...QUOTA_ENV, agentQuota: false }) }))(
       postTo("decompose", { taskId: "t7" }),
     );
-    expect(existing.status).toBe(200);
-    await drain(existing);
+    expect(response.status).toBe(200);
+    await drain(response);
     expect(await usage("decompose")).toBe(0);
   });
 
-  it("DEV-017 AC-5: збій перевірки taskId у сховищі → 503 fail closed, а вичерпана квота для наявної задачі → 429", async () => {
-    const agent = { ...decomposeAgent, kind: "prioritize" as const };
+  it("декомпозиція резервує спільну квоту лише для наявних задач та відхиляє 151-й запуск", async () => {
     const broken = await createDb(join(directory, "broken-check.db"));
     broken.close();
-    const failed = await createAgentRoute(agent, deps({ getDb: () => broken.db }))(postTo("prioritize", { taskId: "t7" }));
+    const failed = await createAgentRoute(decomposeAgent, deps({ getDb: () => broken.db }))(postTo("decompose", { taskId: "t7" }));
     expect(failed.status).toBe(503);
 
+    const route = createAgentRoute(decomposeAgent, deps());
     const quota = createAgentQuotaRepository(connection.db);
-    for (let index = 0; index < AGENT_RUN_QUOTA; index += 1) await quota.reserve("prioritize");
-    const missing = await createAgentRoute(agent, deps())(postTo("prioritize", { taskId: "ghost-task" }));
+    for (let index = 0; index < AGENT_RUN_QUOTA - 1; index += 1) await quota.reserve("prioritize");
+    const missing = await route(postTo("decompose", { taskId: "ghost-task" }));
     expect(missing.status).toBe(404);
-    const exhausted = await createAgentRoute(agent, deps())(postTo("prioritize", { taskId: "t7" }));
-    expect(exhausted.status).toBe(429);
     expect({ clientsCreated, modelCalls }).toEqual({ clientsCreated: 0, modelCalls: 0 });
+
+    const last = await route(postTo("decompose", { taskId: "t7" }));
+    expect(last.status).toBe(200);
+    await drain(last);
+    const callsBefore = { clientsCreated, modelCalls };
+    const exhausted = await route(postTo("decompose", { taskId: "t7" }));
+    expect(exhausted.status).toBe(429);
+    expect(await exhausted.json()).toMatchObject({ error: { code: "AGENT_QUOTA_EXHAUSTED" } });
+    expect({ clientsCreated, modelCalls }).toEqual(callsBefore);
+    expect(await usage("decompose")).toBe(1);
+    expect(await usage("prioritize")).toBe(AGENT_RUN_QUOTA - 1);
   });
 
   it("DEV-017 AC-5: завислe сховище → 503 після межі очікування; пізній запис резервування не повертається", async () => {

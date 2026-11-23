@@ -126,7 +126,7 @@ test.describe("мобільний екран", () => {
 });
 
 test("DEV-017 AC-5: панель показує повідомлення про вичерпану квоту", async ({ page }) => {
-  const message = "Ліміт запусків цього агента для демо вичерпано (50 на всіх відвідувачів)";
+  const message = "Спільний ліміт AI вичерпано (150 запусків на всіх відвідувачів)";
   await page.route(AGENT_API, (route) => route.fulfill({
     status: 429,
     json: { error: { code: "AGENT_QUOTA_EXHAUSTED", message } },

@@ -24,6 +24,10 @@
     "DEV-013": {
       "tree": "d962dc8cc989f45f81e056d02dc8af96785952bd",
       "reason": "Користувач погодив Codex для review і security після вичерпання ліміту Claude Code."
+    },
+    "DEV-019": {
+      "tree": "50fa9ed8fe2e727b956a20d6e012d8d6a3baea13",
+      "reason": "Користувач погодив продовження DEV-019 без Claude Code у поточній сесії Codex."
     }
   },
   "reviewModel": {
