@@ -1,0 +1,26 @@
+{
+  "taskId": "DEV-019",
+  "kind": "review",
+  "tree": "50fa9ed8fe2e727b956a20d6e012d8d6a3baea13",
+  "at": "2026-11-23T18:51:13.827Z",
+  "agent": "reviewer",
+  "model": "codex",
+  "summary": "Read-only review of DEV-019 tree 50fa9ed8fe2e727b956a20d6e012d8d6a3baea13. All five launch paths share the atomic reservation. The existing schema accepts all kinds, subtask writes use the separate route, and the quota UI sums usage consistently. git diff --check passed.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "The opt-in remote test resets every quota counter",
+      "file": "src/server/db/remote.test.ts",
+      "line": 69,
+      "detail": "The test requires an isolated DEVLOG_TEST_LIBSQL_URL. A misconfigured shared target would lose accumulated usage."
+    },
+    {
+      "severity": "low",
+      "title": "Browser tests do not directly verify subtask writes preserve a live quota",
+      "file": "e2e/taskDetails.spec.ts",
+      "line": 89,
+      "detail": "Manual creation and persistence, confirmed proposals, and quota paths are tested independently."
+    }
+  ],
+  "fallbackReason": "Користувач погодив продовження DEV-019 без Claude Code у поточній сесії Codex."
+}

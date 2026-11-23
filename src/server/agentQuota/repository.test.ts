@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
+import { PublicQuotaKindSchema } from "@/shared/api/agentQuota/schema";
 import { createDb, migrateDatabase } from "../db/client";
 import { seedDatabase } from "../db/seed";
 import { AGENT_RUN_QUOTA, createAgentQuotaRepository } from "./repository";
@@ -16,23 +17,19 @@ beforeEach(() => {
 
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-test("DEV-018 AC-2: concurrent reservations share a cap of 50 per feature, 150 total", async () => {
+test("DEV-019 AC-1: concurrent mixed reservations share a single cap of 150", async () => {
   const connections = await Promise.all(Array.from({ length: 12 }, () => createDb(file)));
   try {
     const repositories = connections.map((connection) => createAgentQuotaRepository(connection.db));
     const [reader] = repositories;
     if (!reader) throw new Error("Test database unavailable");
-    expect(AGENT_RUN_QUOTA).toBe(50);
-    for (const kind of ["prioritize", "stuck-radar", "voice-draft"] as const) {
-      expect(await reader.getUsage(kind)).toBe(0);
-      const results = await Promise.all(repositories.flatMap((quota) =>
-        Array.from({ length: 5 }, () => quota.reserve(kind))));
-      const reserved = results.flatMap((result) => result.reserved ? [result.used] : []);
-      expect(reserved.sort((a, b) => a - b)).toEqual(Array.from({ length: 50 }, (_, index) => index + 1));
-      expect(results.filter((result) => !result.reserved)).toHaveLength(10);
-    }
+    const kinds = PublicQuotaKindSchema.options;
+    const results = await Promise.all(repositories.flatMap((quota) =>
+      kinds.flatMap((kind) => Array.from({ length: 3 }, () => quota.reserve(kind)))));
+    expect(results.filter((result) => result.reserved)).toHaveLength(150);
     const counters = await reader.listUsage();
     expect(counters.reduce((total, row) => total + row.used, 0)).toBe(150);
+    for (const kind of kinds) expect(await reader.reserve(kind)).toEqual({ reserved: false });
   } finally {
     connections.forEach((connection) => connection.close());
   }

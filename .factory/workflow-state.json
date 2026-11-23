@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-018",
+  "currentTask": "DEV-019",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -3000,6 +3000,144 @@
         "security": 189494,
         "qa": 106573
       }
+    },
+    "DEV-019": {
+      "id": "DEV-019",
+      "title": "Спільна квота AI і підзадачі в production",
+      "status": "COMPLETED",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 0,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 0,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 0,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "docs + metrics DEV-019",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/38",
+      "history": [
+        {
+          "at": "2026-11-23T18:43:49.355Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-23T18:43:57.965Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-23T18:43:58.502Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-23T18:43:59.047Z",
+          "event": "classified",
+          "note": "сума 5 → balanced"
+        },
+        {
+          "at": "2026-11-23T18:43:59.824Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T18:47:39.886Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING"
+        },
+        {
+          "at": "2026-11-23T18:48:19.378Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-019/50fa9ed8fe2e727b956a20d6e012d8d6a3baea13/verify.json"
+        },
+        {
+          "at": "2026-11-23T18:49:13.549Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "50fa9ed8fe"
+        },
+        {
+          "at": "2026-11-23T18:51:14.101Z",
+          "event": "review",
+          "model": "codex",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-019/50fa9ed8fe2e727b956a20d6e012d8d6a3baea13/review.json"
+        },
+        {
+          "at": "2026-11-23T18:51:14.714Z",
+          "event": "security",
+          "model": "codex",
+          "findings": 3,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-019/50fa9ed8fe2e727b956a20d6e012d8d6a3baea13/security.json"
+        },
+        {
+          "at": "2026-11-23T18:51:15.279Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-23T18:53:28.943Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-019/50fa9ed8fe2e727b956a20d6e012d8d6a3baea13/tests.json"
+        },
+        {
+          "at": "2026-11-23T18:54:10.255Z",
+          "event": "qa",
+          "model": "codex",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-019/50fa9ed8fe2e727b956a20d6e012d8d6a3baea13/qa.json"
+        },
+        {
+          "at": "2026-11-23T18:54:10.831Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T18:55:41.341Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR"
+        },
+        {
+          "at": "2026-11-23T18:57:37.014Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/38"
+        },
+        {
+          "at": "2026-11-23T18:57:37.400Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
+        }
+      ],
+      "createdAt": "2026-11-23T18:43:49.355Z",
+      "updatedAt": "2026-11-23T18:57:37.401Z",
+      "lastFailure": null,
+      "reviewTree": "50fa9ed8fe2e727b956a20d6e012d8d6a3baea13"
     }
   }
 }

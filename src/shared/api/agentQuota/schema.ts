@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PublicQuotaKindSchema = z.enum(["prioritize", "stuck-radar", "voice-draft"]);
+export const PublicQuotaKindSchema = z.enum(["prioritize", "stuck-radar", "voice-draft", "decompose", "status-update"]);
 
 export const AgentQuotaSchema = z.discriminatedUnion("enabled", [
   z.object({ enabled: z.literal(false) }),
