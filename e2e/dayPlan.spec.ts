@@ -124,3 +124,17 @@ test.describe("мобільний екран", () => {
     await expect(runButton(page)).toBeVisible();
   });
 });
+
+test("DEV-017 AC-5: панель показує повідомлення про вичерпану квоту", async ({ page }) => {
+  const message = "Ліміт запусків цього агента для демо вичерпано (10 на всіх відвідувачів)";
+  await page.route(AGENT_API, (route) => route.fulfill({
+    status: 429,
+    json: { error: { code: "AGENT_QUOTA_EXHAUSTED", message } },
+  }));
+  await page.goto("/");
+  await runButton(page).click();
+
+  await expect(panel(page).getByText(message, { exact: false })).toBeVisible();
+  await expect(plan(page)).toHaveCount(0);
+  await expect(page.locator(rows).first()).toBeVisible();
+});

@@ -11,6 +11,19 @@ const invalidAudio = () => new AppError("VALIDATION_ERROR", 400, "Не вдал�
 const largeAudio = () => new AppError("VALIDATION_ERROR", 413, "Запис завеликий. Спробуйте коротший запис.");
 const noTask = () => new AppError("NO_VOICE_TASK", 422, "Не вдалося розпізнати задачу. Скажіть, що потрібно зробити, і спробуйте ще раз.");
 
+const hasAudioHeader = (buffer: Buffer, mimeType: string): boolean => {
+  switch (mimeType) {
+    case "audio/webm":
+      return buffer.length > 4 && buffer.readUInt32BE(0) === 0x1A45DFA3;
+    case "audio/mp4":
+      return buffer.length > 8 && buffer.toString("latin1", 4, 8) === "ftyp";
+    case "audio/ogg":
+      return buffer.length > 4 && buffer.toString("latin1", 0, 4) === "OggS";
+    default:
+      return false;
+  }
+};
+
 export const readVoiceAudio = async (request: Request): Promise<File> => {
   const mimeType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
   const extension = mimeType && VOICE_AUDIO_EXTENSIONS.get(mimeType);
@@ -34,8 +47,9 @@ export const readVoiceAudio = async (request: Request): Promise<File> => {
   } finally {
     reader.releaseLock();
   }
-  if (size === 0) throw invalidAudio();
-  return new File([Buffer.concat(chunks, size)], `task.${extension}`, { type: mimeType });
+  const audio = Buffer.concat(chunks, size);
+  if (!hasAudioHeader(audio, mimeType)) throw invalidAudio();
+  return new File([audio], `task.${extension}`, { type: mimeType });
 };
 
 export const demoVoiceTaskDraft = (today: string): VoiceTaskDraft => {

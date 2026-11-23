@@ -1,0 +1,53 @@
+{
+  "taskId": "DEV-017",
+  "kind": "security",
+  "tree": "b53ac3ff8ba89fd2a40087f70ca134767bad0e55",
+  "at": "2026-11-23T09:21:53.751Z",
+  "agent": "security",
+  "model": "opus",
+  "summary": "Статичний security-рев'ю DEV-017. gstack /cso і Docker не запускались, npm audit я не перезапускав, бо Bash недоступний. Доступу до /private/tmp/dev017-review/diff.patch не було (permission denied), тому код читав прямо з worktree /private/tmp/devlog-dev017. Що саме лежить у worktree — b53ac3ff8b чи інший tree — я не перевіряв. Прочитано: план DEV-017, agentQuota (reserve/repository), agentRoute, voice-draft route і voiceDraft, env, logger, db/client, db/operations, Dockerfile, compose.yaml, .dockerignore, .vercelignore і .env.example (секретів я не читав). Що підтверджено. (1) Атомарна межа: один умовний INSERT … ON CONFLICT DO UPDATE WHERE used < 10 RETURNING. Резерв стоїть після Zod-валідації і до створення ModelClient або стріму в agentRoute. У voice-draft він теж іде до transcribeVoiceTask, тобто до обох платних викликів (transcription і chat.completions). (2) Fail-closed: будь-яка помилка сховища дає 503, вичерпана межа дає 429, модель у цих випадках не викликається. Квота не повертається ні після abort, ні після помилки. (3) Повтори запитів до провайдера вимкнені (maxRetries: 0) і в OpenAIClient агентів, і у voiceDraft. Є таймаути 30 с і MODEL_TIMEOUT_MS, загальний дедлайн запуску й request.signal. AGENT_MAX_STEPS ≤ 8 і OPENAI_MAX_OUTPUT_TOKENS ≤ 2048 обмежені схемою env, у voice max_completion_tokens = 600, аудіо не більше 2 MiB. (4) Production: AGENT_QUOTA=off кидає помилку на старті, локальна (не remote) DB у Production чи Preview теж. Preview примусово працює в demo і обнуляє OPENAI_API_KEY. debug.forceInvalidOutput вимкнено при NODE_ENV=production. (5) Логер редагує apiKey, authToken, DATABASE_AUTH_TOKEN, TURSO_AUTH_TOKEN і Authorization на 4 рівнях вкладеності. reserveAgentQuota логує лише error.name. (6) db:seed для remote заблоковано, seed-remote лише засіває порожню базу. Compose слухає тільки 127.0.0.1, контейнер працює від USER node. .dockerignore і .vercelignore виключають .env*, *.pem, *.key, data, .claude, .factory і docs. Головний ризик — ізоляція Preview і Production. Код не гарантує окремих баз, вона тримається лише на налаштуваннях Vercel. Критичних і високих знахідок немає. Інформаційні зауваження позначено як low відповідно до формату Factory.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Ізоляцію баз Preview і Production код не гарантує (fallback на TURSO_*)",
+      "file": "src/shared/config/env.ts",
+      "line": 57,
+      "detail": "Якщо DATABASE_URL не задано, parseServerEnv бере TURSO_DATABASE_URL і TURSO_AUTH_TOKEN. Інтеграція Turso у Vercel часто прописує ці змінні одразу для всіх середовищ (Production, Preview, Development). Тоді деплой будь-якої гілки чи PR у Preview читатиме й писатиме в production-демобазу: CRUD спільних задач, agent_runs і таблиця agent_quotas, яка з AGENT_QUOTA=on витрачатиме production-ліміт. Перевірка схеми URL (лише remote) цю ситуацію не відрізняє. Рекомендація: у Preview вимагати явний DATABASE_URL і не допускати fallback на TURSO_*, або звіряти маркер середовища, записаний у самій БД (наприклад, рядок meta env=production|preview), з VERCEL_ENV і падати при розбіжності. Також додати до релізного чекліста перевірку scope змінних у Vercel. AC-6 і AC-7 зараховувати лише після такої перевірки."
+    },
+    {
+      "severity": "low",
+      "title": "Спільну глобальну квоту один анонімний відвідувач вичерпує 10 запитами",
+      "file": "src/server/agentQuota/repository.ts",
+      "line": 17,
+      "detail": "Ліміт задумано як захист від надмірних витрат, і з цим він справляється. Але немає автентифікації, обмеження за IP чи часового вікна, тож будь-хто кількома curl-запитами на агента назавжди виснажить демо для рев'юерів (DoS для демо, ліміт не скидається). Це наслідок дизайну. Рекомендація: чесно описати в README, підготувати план відновлення (ручне скидання рядка agent_quotas тільки з дозволу авторки) і, за можливості, ввімкнути rate limit у Vercel Firewall для /api/agents/** і /api/tasks/voice-draft."
+    },
+    {
+      "severity": "low",
+      "title": "voice-draft: один резерв на два платні виклики; у demo квота теж витрачається",
+      "file": "src/app/api/tasks/voice-draft/route.ts",
+      "line": 14,
+      "detail": "Один запуск voice-draft робить транскрипцію (до 2 MiB аудіо, gpt-4o-mini-transcribe) і chat.completions.parse (600 токенів). Витрати обмежені, але одиниця квоти не дорівнює одному виклику моделі, і це варто зафіксувати в README та в оцінці бюджету релізу. Крім того, з agentQuota=true в aiMode=demo (наприклад, Preview з AGENT_QUOTA=on або Production без ключа) резерв береться без жодного платного виклику, і демо вичерпується даремно. Рекомендація: резервувати лише коли file !== null (live), або свідомо задокументувати поточну поведінку."
+    },
+    {
+      "severity": "low",
+      "title": "Поза Vercel квота за замовчуванням вимкнена навіть у live",
+      "file": "src/shared/config/env.ts",
+      "line": 80,
+      "detail": "agentQuota = production || AGENT_QUOTA === 'on', де production означає VERCEL_ENV=production. Self-host або Docker з OPENAI_API_KEY і без AGENT_QUOTA=on відкриває live-агентів без загальної межі, лишаються тільки кроки й токени на один запуск. compose.yaml примусово ставить AI_MODE=demo і слухає лише localhost, тож ризик невеликий. Рекомендація: у README явно попередити, що для будь-якого публічного live-деплою поза Vercel потрібен AGENT_QUOTA=on."
+    },
+    {
+      "severity": "low",
+      "title": "Ліміти рев'ю: diff.patch недоступний, npm audit після voice не перезапущено",
+      "file": ".factory/task-plans/DEV-017.md",
+      "line": 21,
+      "detail": "Читання /private/tmp/dev017-review/diff.patch заблоковано дозволами, тому код я читав прямо з worktree. Що саме лежить у worktree — b53ac3ff8b чи інший tree — я не перевіряв. Bash недоступний, тож npm audit --omit=dev після інтеграції voice не перезапускав. Наявний результат «0 вразливостей» стосується стану до voice. gstack /cso не запускався, рев'ю лише статичне. Рекомендація: перед APPROVE-FINAL перезапустити npm audit --omit=dev на поточному tree і дати security-рев'ю доступ до diff.patch, щоб підтвердити покриття всіх нових файлів."
+    },
+    {
+      "severity": "low",
+      "title": "DB URL з вбудованим authToken не потрапляє під redact",
+      "file": "src/server/logger.ts",
+      "line": 8,
+      "detail": "Редакція працює за ключами (authToken, DATABASE_AUTH_TOKEN тощо). Якщо колись залогувати DATABASE_URL у формі libsql://…?authToken=…, токен потрапить у лог. Зараз URL ніде не логується (reserveAgentQuota пише лише error.name), тож це превентивна примітка: не логувати DATABASE_URL, location чи migrationKey повністю, а в README рекомендувати передавати токен окремою змінною."
+    }
+  ]
+}

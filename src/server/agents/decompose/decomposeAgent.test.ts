@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentEventSchema, DecompositionSchema, type AgentEvent, type Decomposition } from "@/entities/agentRun";
 import { readNdjson } from "@/shared/lib/readNdjson";
 import { createLogger, logger } from "../../logger";
-import { createTestDb, NOW } from "../core/__tests__/echoAgent";
+import { createTestDb, NOW, type TestDb } from "../core/__tests__/echoAgent";
 import { createAgentRoute, type AgentRouteDeps } from "../core/agentRoute";
 import { createScriptedClient } from "../core/modelClient";
 import { assessClarityTool } from "./assessClarityTool";
@@ -14,10 +14,10 @@ import { TEMPLATES } from "./templates";
 const DEMO_ENV = { aiMode: "demo", OPENAI_API_KEY: undefined, OPENAI_MODEL: "test" } as const;
 const silent = createLogger({ level: "silent", destination: { write: () => undefined } });
 
-let db: ReturnType<typeof createTestDb>;
+let db: TestDb;
 
-beforeEach(() => {
-  db = createTestDb();
+beforeEach(async () => {
+  db = await createTestDb();
   vi.spyOn(logger, "info").mockImplementation(() => undefined);
   vi.spyOn(logger, "error").mockImplementation(() => undefined);
 });
@@ -135,25 +135,27 @@ describe("агент B «Декомпозиція»", () => {
   });
 });
 
-const addGenericTask = () => {
+const addGenericTask = async () => {
   const repository = createTaskRepository(db.connection.db);
-  const task = repository.createTask({ title: "Підготувати реліз", description: "Зібрати все потрібне для релізу й узгодити дату з командою.", status: "todo", priority: "medium" }, NOW);
-  repository.addSubtasks(task.id, TEMPLATES.generic.map((entry) => ({ title: entry.title, source: "ai" as const })), NOW);
+  const task = await repository.createTask({ title: "Підготувати реліз", description: "Зібрати все потрібне для релізу й узгодити дату з командою.", status: "todo", priority: "medium" }, NOW);
+  await repository.addSubtasks(task.id, TEMPLATES.generic.map((entry) => ({ title: entry.title, source: "ai" as const })), NOW);
+  await db.refreshContext();
   return task.id;
 };
 
 describe("унікальні пункти для demo і fallback", () => {
   it("DEV-010 AC-9: «Розбити ще раз» після створення пунктів generic дає ≥3 унікальні пункти, а не FALLBACK_INVALID", async () => {
-    const taskId = addGenericTask();
+    const taskId = await addGenericTask();
     const { type, data } = finalData(await run({ taskId }));
     const existing = db.context.tasks.getTask(taskId)?.subtasks.map((subtask) => subtask.title) ?? [];
+    expect(existing).toHaveLength(TEMPLATES.generic.length);
     expect(type).toBe("result");
     expect(data.items.length).toBeGreaterThanOrEqual(3);
     expect(data.items.some((entry) => existing.some((title) => isDuplicateTitle(entry.title, title)))).toBe(false);
   });
 
   it("DEV-010 AC-6: fallback над задачею, чиї підзадачі збігаються з generic, добирає ≥3 унікальні пункти запасного пулу", async () => {
-    const taskId = addGenericTask();
+    const taskId = await addGenericTask();
     const { type, data } = finalData(await run({ taskId }, { forceInvalidOutput: true }));
     expect(type).toBe("fallback");
     expect(data.items.length).toBeGreaterThanOrEqual(3);
@@ -162,12 +164,13 @@ describe("унікальні пункти для demo і fallback", () => {
 
 describe("tool assess_clarity", () => {
   it("DEV-010 AC-2: повертає vague і причини для t8, лише читає (БД не змінюється), для чіткої t7 — vague: false", async () => {
-    const before = JSON.stringify(db.context.tasks.listTasks());
+    const stored = async () => JSON.stringify(await createTaskRepository(db.connection.db).listTasks());
+    const before = await stored();
     const vague = await assessClarityTool.execute({ id: "t8" }, ctx());
     const clear = await assessClarityTool.execute({ id: "t7" }, ctx());
     expect(vague).toMatchObject({ vague: true });
     expect(clear).toEqual({ vague: false, reasons: [] });
     await expect(assessClarityTool.execute({ id: "missing" }, ctx())).rejects.toThrow();
-    expect(JSON.stringify(db.context.tasks.listTasks())).toBe(before);
+    expect(await stored()).toBe(before);
   });
 });

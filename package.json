@@ -15,10 +15,13 @@
     "test:e2e": "playwright test",
     "smoke:ai": "node --import tsx src/server/agents/smoke/cli.ts",
     "db:generate": "drizzle-kit generate",
-    "db:seed": "node --import tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local src/server/db/seed/cli.ts",
+    "db:migrate": "node --import tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local src/server/db/cli.ts migrate",
+    "db:seed": "node --import tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local src/server/db/cli.ts seed",
+    "db:seed:remote": "node --import tsx --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local src/server/db/cli.ts seed-remote",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "@tanstack/react-query": "^5.108.2",
     "better-sqlite3": "^13.2.0",
     "class-variance-authority": "^0.7.1",

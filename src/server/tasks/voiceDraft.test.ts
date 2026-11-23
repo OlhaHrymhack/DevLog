@@ -63,7 +63,9 @@ describe("voice task draft", () => {
     const audioRequest = (body: BodyInit, type = "audio/webm;codecs=opus") =>
       new Request("http://localhost/api/tasks/voice-draft", { method: "POST", headers: { "content-type": type }, body });
 
-    await expect(readVoiceAudio(audioRequest("audio"))).resolves.toMatchObject({ name: "task.webm", size: 5, type: "audio/webm" });
+    const webmHeader = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x81, 0x00]);
+    await expect(readVoiceAudio(audioRequest(webmHeader))).resolves.toMatchObject({ name: "task.webm", size: 6, type: "audio/webm" });
+    await expect(readVoiceAudio(audioRequest("invalid WebM header"))).rejects.toMatchObject({ status: 400 });
     await expect(readVoiceAudio(audioRequest(""))).rejects.toMatchObject({ status: 400 });
     await expect(readVoiceAudio(audioRequest("audio", "text/plain"))).rejects.toMatchObject({ status: 400 });
     await expect(readVoiceAudio(audioRequest(new Uint8Array(VOICE_AUDIO_MAX_BYTES + 1)))).rejects.toMatchObject({ status: 413 });

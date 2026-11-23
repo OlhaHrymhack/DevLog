@@ -5,6 +5,6 @@ import { getTaskService } from "@/server/tasks/service";
 export const POST = withHandler(async (request, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   const input = NoteCreateInputSchema.strict().parse(await readJson(request));
-  const data = requireFound(getTaskService().addNote(id, input), "Задачу не знайдено");
+  const data = requireFound(await (await getTaskService()).addNote(id, input), "Задачу не знайдено");
   return Response.json({ data }, { status: 201 });
 });

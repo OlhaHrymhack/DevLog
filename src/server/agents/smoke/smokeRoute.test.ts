@@ -16,15 +16,17 @@ const KEY_MARKER = "dl-test-openai-key-smoke-9a41";
 const TOKEN = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90";
 const LIVE_ENV: SmokeEnv = { aiMode: "live", OPENAI_API_KEY: KEY_MARKER, OPENAI_MODEL: "m", AGENT_MAX_STEPS: 8, OPENAI_MAX_OUTPUT_TOKENS: 2048, AI_SMOKE: "1" };
 
-let connection: ReturnType<typeof createDb>;
+let connection: Awaited<ReturnType<typeof createDb>>;
 let logLines: string[];
 let createClientCalls: SmokeLimits[];
+let firstTask: { id: string; title: string };
 
 const logger = () => createLogger({ level: "debug", destination: { write: (line: string) => { logLines.push(line); } } });
 
-beforeEach(() => {
-  connection = createDb(":memory:");
-  seedDatabase(connection.db, NOW);
+beforeEach(async () => {
+  connection = await createDb(":memory:");
+  await seedDatabase(connection.db, NOW);
+  firstTask = (await connection.db.select().from(tasks).limit(1).all())[0] ?? { id: "missing", title: "missing" };
   logLines = [];
   createClientCalls = [];
 });
@@ -34,7 +36,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const firstTaskId = () => connection.db.select().from(tasks).limit(1).all()[0]?.id ?? "missing";
+const firstTaskId = () => firstTask.id;
 
 const deps = (overrides: Partial<SmokeRouteDeps> = {}): SmokeRouteDeps => ({
   getDb: () => connection.db,
@@ -59,7 +61,7 @@ const BASE_HEADERS = { "Content-Type": "application/json", [SMOKE_TOKEN_HEADER]:
 const post = ({ url = "http://localhost:3000/api/dev/agent-smoke", headers = {}, body = "{}" }: PostOptions = {}) =>
   new Request(url, { method: "POST", headers: { ...BASE_HEADERS, ...headers }, body });
 
-const firstTaskTitle = () => connection.db.select().from(tasks).limit(1).all()[0]?.title ?? "missing";
+const firstTaskTitle = () => firstTask.title;
 
 const readEvents = async (response: Response): Promise<AgentEvent[]> => {
   const events: AgentEvent[] = [];
@@ -207,7 +209,7 @@ describe("smoke-маршрут: обмежений запуск", () => {
     expect(events.slice(1, -1).every((event) => event.type === "step")).toBe(true);
     expect(events.at(-1)).toMatchObject({ type: "result", data: { taskId: firstTaskId() } });
     expect(events.filter((event) => FINAL.includes(event.type))).toHaveLength(1);
-    expect(connection.db.select().from(agentRuns).all()).toHaveLength(0);
+    expect(await connection.db.select().from(agentRuns).all()).toHaveLength(0);
   });
 });
 

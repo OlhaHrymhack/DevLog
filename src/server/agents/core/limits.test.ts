@@ -28,12 +28,12 @@ const completion = (): ChatCompletion => ({
 
 describe("AGENT_MAX_STEPS обмежує цикл", () => {
   let directory: string;
-  let connection: ReturnType<typeof createDb>;
+  let connection: Awaited<ReturnType<typeof createDb>>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     directory = mkdtempSync(join(tmpdir(), "devlog-limits-"));
-    connection = createDb(`file:${join(directory, "limits.db")}`);
-    seedDatabase(connection.db, NOW);
+    connection = await createDb(`file:${join(directory, "limits.db")}`);
+    await seedDatabase(connection.db, NOW);
   });
 
   afterEach(() => {

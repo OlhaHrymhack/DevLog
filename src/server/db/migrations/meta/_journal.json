@@ -8,6 +8,13 @@
       "when": 1795345589163,
       "tag": "0000_fearless_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1795430000000,
+      "tag": "0001_dev017_search_quota",
+      "breakpoints": true
     }
   ]
 }

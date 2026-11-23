@@ -4,7 +4,7 @@ import { z } from "zod";
 import { AppError, NotFoundError } from "@/shared/api/errors";
 import { getServerEnv, type ServerEnv } from "@/shared/config/env";
 import { createAgentRunRepository } from "../../agentRuns/repository";
-import { createDb, getDb, type DevLogDb } from "../../db/client";
+import { createDb, getDb, type DbConnection, type DbExecutor } from "../../db/client";
 import { readJson, withHandler } from "../../http/handler";
 import { logger as appLogger } from "../../logger";
 import { createOpenAIClient } from "../core/openAIClient";
@@ -27,7 +27,7 @@ export type SmokeEnv = Pick<ServerEnv, "aiMode" | "OPENAI_API_KEY" | "OPENAI_MOD
 export type SmokeLimits = { maxSteps: number; maxOutputTokens: number };
 
 export type SmokeRouteDeps = {
-  getDb?: () => DevLogDb;
+  getDb?: () => DbExecutor | Promise<DbExecutor>;
   getEnv?: () => SmokeEnv;
   /** Тести підставляють клієнт без мережі; за замовчуванням — `OpenAIClient` із лімітами smoke. */
   createClient?: (env: SmokeEnv, limits: SmokeLimits) => ModelClient;
@@ -89,7 +89,7 @@ export const createSmokeRoute = (deps: SmokeRouteDeps = {}) => {
     if (busy) throw new AppError("SMOKE_BUSY", 409, "Попередній smoke-запит ще виконується");
     busy = true;
 
-    let traceDb: ReturnType<typeof createDb> | undefined;
+    let traceDb: DbConnection | undefined;
     try {
       z.strictObject({}).parse(await readJson(request));
       const limits: SmokeLimits = {
@@ -97,9 +97,9 @@ export const createSmokeRoute = (deps: SmokeRouteDeps = {}) => {
         maxOutputTokens: Math.min(env.OPENAI_MAX_OUTPUT_TOKENS, SMOKE_MAX_OUTPUT_TOKENS),
       };
       const client = (deps.createClient ?? defaultClient)(env, limits);
-      const context = createAgentContext(deps.getDb?.() ?? getDb().db);
+      const context = await createAgentContext(deps.getDb ? await deps.getDb() : (await getDb()).db);
       (deps.logger ?? appLogger).info({ ...limits }, "AI smoke started");
-      const trace = createDb(":memory:");
+      const trace = await createDb(":memory:");
       traceDb = trace;
 
       return createNdjsonResponse((emit, signal) => runAgent(smokeAgent, {}, {

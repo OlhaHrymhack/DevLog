@@ -79,3 +79,31 @@ describe("README (DEV-013)", () => {
     });
   });
 });
+
+describe("Підготовка DevLog до здачі", () => {
+  it("DEV-017 AC-1: README описує два способи запуску й контрольні етапи Factory", () => {
+    expect(section("## Швидкий старт")).toContain("npm install\nnpm run dev");
+    expect(section("### Запустити через Docker")).toContain("docker compose up --build");
+    const factory = section("## Як ми розробляли DevLog");
+    ["factory verify", "Рев’ю й QA", "Фінальне погодження", "ретро", "прибирання", "автовиправленням"].forEach((step) => {
+      expect(factory).toContain(step);
+    });
+  });
+
+  it("DEV-017 AC-2: Compose прив'язує SQLite до локального іменованого тому", () => {
+    const compose = read("compose.yaml");
+    expect(compose).toContain("127.0.0.1:");
+    expect(compose).toContain("AI_MODE: demo");
+    expect(compose).toContain("DATABASE_URL: file:/app/data/devlog.db");
+    expect(compose.match(/devlog-data:\/app\/data/g)).toHaveLength(2);
+    expect(read("Dockerfile")).toContain("USER node");
+  });
+
+  it("DEV-017 AC-6: локальні дані, env, кеші та звіти виключені з контекстів збірки", () => {
+    [".dockerignore", ".vercelignore"].forEach((name) => {
+      expect(read(name).split("\n")).toEqual(expect.arrayContaining([
+        ".git", ".env", ".env.*", "data", ".next", "test-results", "playwright-report", ".factory",
+      ]));
+    });
+  });
+});

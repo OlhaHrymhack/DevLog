@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-017",
+  "kind": "codex",
+  "tree": "6e74db8627102c1d07323ace41824b66243baefb",
+  "at": "2026-11-23T09:38:25.621Z",
+  "agent": "codex",
+  "model": "gpt-6.2-sol",
+  "summary": "The quota-enabled task route returned 404 with zero model clients in an in-memory check. The installed libSQL parser preserved the legacy filename with special characters. Two isolated checks confirmed late quota writes or dispatch after a 503. The review used source inspection, in-memory SQLite, and a stubbed HTTP transport. No deployment or credential access was performed.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Queued quota writes can start after the 503 response",
+      "file": "src/server/agentQuota/reserve.ts",
+      "line": 73,
+      "detail": "The last deadline check runs before libSQL queues the statement. After the request gets a 503, the queue can still dispatch the reservation. An in-memory SQLite check held the client lock until after the 503, then released it and observed quota usage rise to one. A stubbed HTTP check also confirmed first dispatch of the reservation after the 503. Enforce the deadline at dispatch or cancel queued work, while preserving the existing policy for writes already sent."
+    },
+    {
+      "severity": "medium",
+      "title": "A container signature alone can consume voice quota",
+      "file": "src/server/tasks/voiceDraft.ts",
+      "line": 51,
+      "detail": "The check accepts a container signature without a valid audio stream. The route test uses a six-byte WebM prefix with no tracks or audio data and expects it to consume quota and reach transcription. Validate that the declared container has a supported audio track and audio data before reservation. Use a valid recording for the success case and assert that truncated and audio-free inputs leave quota untouched."
+    },
+    {
+      "severity": "medium",
+      "title": "The Production migration command can use a local database configuration",
+      "file": "README.md",
+      "line": 67,
+      "detail": "The CLI accepts `-e production`, but it overlays local dotenv and shell values on the downloaded environment. A local Turso URL and token can therefore pass the nonempty checks and direct both commands to another database. The snippet also forces the integration variables even when the documented manual `DATABASE_URL` pair takes precedence in the deployed app. Document a workflow that isolates local environment values, uses the app's database-variable precedence, and verifies the remote target before migration. [Vercel CLI environment merge](https://github.com/vercel/vercel/blob/main/packages/cli/src/commands/env/run.ts#L155-L214)"
+    },
+    {
+      "severity": "medium",
+      "title": "Read-only task operations still acquire a write lock",
+      "file": "src/server/tasks/repository.ts",
+      "line": 102,
+      "detail": "Task details, paginated lists, and agent snapshots still use Drizzle transactions that call libSQL without a mode. The installed driver defaults to `BEGIN IMMEDIATE`, so a snapshot holds the writer slot across four reads and competes with quota reservations and CRUD. Use a read transaction or an atomic read batch and check that quota reservations can proceed concurrently."
+    },
+    {
+      "severity": "low",
+      "title": "Missing task IDs still create a model client when quotas are disabled",
+      "file": "src/server/agents/core/agentRoute.ts",
+      "line": 58,
+      "detail": "The task lookup runs only in the quota-enabled branch. An in-memory request for an absent decomposition task with quota disabled returned HTTP 200, created one model client, and failed when the run record was inserted. Run the existence check in both modes before client creation and cover the unmetered path in the route test."
+    }
+  ]
+}
