@@ -1,0 +1,10 @@
+{
+  "taskId": "DEV-017",
+  "kind": "qa",
+  "tree": "6e74db8627102c1d07323ace41824b66243baefb",
+  "at": "2026-11-23T09:48:45.977Z",
+  "agent": "qa",
+  "model": "sonnet",
+  "summary": "Запущено дві команди, обидві зелені. (1) `npm test -- src/server/agents/core/quotaRoute.test.ts test/voiceQuota.test.ts`: 2 файли, 11 тестів пройшли. У логах видно очікувані відповіді voice-draft: 400 на невалідний ввід, 200 в межах квоти, 429 після вичерпання. (2) `npm run test:e2e -- --project=desktop-1280 --project=day-plan --grep DEV-017 --no-deps`: 2 тести пройшли. Це `health.spec.ts` «AC-7: демодані доступні відвідувачу без входу» і `dayPlan.spec.ts` «AC-5: панель показує повідомлення про вичерпану квоту». Скріншоти не створювались: проблем, які б їх потребували, немає. Код, деплой і реальні env не чіпались. Docker, remote Turso, Vercel і відбитки баз я не перевіряв, бо не запускав; ці факти взято зі слів оркестратора. Зауваження: `git rev-parse --short=10 HEAD` дав a6e6f308e1, а закріплений tree — 6e74db8627. Це може бути хеш tree, а не commit, тому я їх не порівнював. Якщо потрібна точна відповідність, `factory verify` має підтвердити tree hash. E2E виконано з `--no-deps`: у логах WebServer є «.env not found», тож тести йшли без реального ключа, в demo-режимі. Це відповідає задачі. Покриття браузером вузьке: лише AC-5 і AC-7. Решта AC (README, Docker, Vercel) перевіряється поза браузером і за планом після final approval.",
+  "findings": []
+}

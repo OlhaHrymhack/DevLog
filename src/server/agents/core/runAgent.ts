@@ -143,9 +143,9 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
   const startedAt = performance.now();
   const deadline = AbortSignal.timeout(options.deadlineMs ?? RUN_DEADLINE_MS);
   const signal = AbortSignal.any([options.signal, deadline]);
-  let run: ReturnType<AgentRunRepository["createRun"]>;
+  let run: Awaited<ReturnType<AgentRunRepository["createRun"]>>;
   try {
-    run = runs.createRun({ kind: def.kind, mode, taskId: def.taskId?.(input) ?? null });
+    run = await runs.createRun({ kind: def.kind, mode, taskId: def.taskId?.(input) ?? null });
   } catch (error) {
     log.error({ kind: def.kind, ...describeError(error) }, "Agent run could not be created");
     const outcome: AgentOutcome = { status: "error", error: AGENT_ERRORS.model };
@@ -171,11 +171,11 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
   };
 
   let modelCalls = 0;
-  const finish = (outcome: AgentOutcome): AgentOutcome => {
+  const finish = async (outcome: AgentOutcome): Promise<AgentOutcome> => {
     if (finalSent) return outcome;
     // Спершу фіксуємо запуск у БД, потім — рівно одна фінальна подія.
     try {
-      runs.finishRun(run.id, toFinishInput(outcome));
+      await runs.finishRun(run.id, toFinishInput(outcome));
     } catch (error) {
       log.error({ kind: def.kind, runId: run.id, ...describeError(error) }, "Agent run could not be finalized");
     }
@@ -188,7 +188,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
     return outcome;
   };
 
-  const fallback = (reason: string): AgentOutcome => {
+  const fallback = (reason: string): Promise<AgentOutcome> => {
     const failing = stepStates.indexOf("run");
     setStep(failing === -1 ? validationIndex : failing, "fail", reason);
     const checked = validateResult(def.resultSchema, factCheck, def.fallback(input, context), context);
@@ -240,7 +240,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
       }
       signal.throwIfAborted();
       const message = failure === undefined ? toolMessage(call.id, output, false) : toolMessage(call.id, failure, true);
-      runs.appendStep(run.id, {
+      await runs.appendStep(run.id, {
         type: "tool", label: "Виклик інструмента", state: failure === undefined ? "done" : "fail",
         detail: safeName,
         payload: { name: safeName, arguments: args.ok ? args.value : call.arguments.slice(0, MAX_RAW_ARGUMENTS_LENGTH), ...(failure === undefined ? { output } : { error: failure }) },
@@ -261,7 +261,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
       signal.throwIfAborted();
       modelCalls += 1;
       const truncated = response.stop === "refusal" || response.stop === "max_tokens";
-      runs.appendStep(run.id, {
+      await runs.appendStep(run.id, {
         type: "model", label: "Виклик моделі", state: truncated ? "fail" : "done",
         payload: {
           stop: response.stop, toolCalls: response.toolCalls.map((call) => call.name.slice(0, MAX_NAME_LENGTH)),
@@ -316,7 +316,7 @@ export const runAgent = async <Input extends z.ZodType, Result extends z.ZodType
         } else {
           setStep(validationIndex, "run");
         }
-        runs.appendStep(run.id, {
+        await runs.appendStep(run.id, {
           type: "validation", label: "Перевірка результату", state: checked.ok ? "done" : "fail",
           payload: checked.ok ? { result: checked.data } : { violations: checked.violations },
         });

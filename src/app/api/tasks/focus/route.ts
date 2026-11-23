@@ -4,5 +4,5 @@ import { getTaskService } from "@/server/tasks/service";
 
 export const PUT = withHandler(async (request) => {
   const { taskIds } = SetFocusInputSchema.parse(await readJson(request));
-  return Response.json({ data: getTaskService().setFocus(taskIds) });
+  return Response.json({ data: await (await getTaskService()).setFocus(taskIds) });
 });

@@ -9,11 +9,11 @@ const NOT_FOUND = "Підзадачу не знайдено";
 export const PATCH = withHandler(async (request, { params }: Context) => {
   const { id, subtaskId } = await params;
   const input = SetSubtaskStatusInputSchema.parse(await readJson(request));
-  return Response.json({ data: requireFound(getTaskService().updateSubtask(id, subtaskId, input), NOT_FOUND) });
+  return Response.json({ data: requireFound(await (await getTaskService()).updateSubtask(id, subtaskId, input), NOT_FOUND) });
 });
 
 export const DELETE = withHandler(async (_request, { params }: Context) => {
   const { id, subtaskId } = await params;
-  if (!getTaskService().deleteSubtask(id, subtaskId)) throw new NotFoundError(NOT_FOUND);
+  if (!await (await getTaskService()).deleteSubtask(id, subtaskId)) throw new NotFoundError(NOT_FOUND);
   return new Response(null, { status: 204 });
 });

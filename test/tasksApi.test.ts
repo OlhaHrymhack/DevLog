@@ -34,12 +34,12 @@ const taskData = z.object({ data: TaskSchema });
 const subtasksData = z.object({ data: z.array(SubtaskSchema) });
 
 describe("REST tasks", () => {
-  let connection: ReturnType<typeof createDb>;
+  let connection: Awaited<ReturnType<typeof createDb>>;
 
-  beforeEach(() => {
-    connection = createDb(":memory:");
-    seedDatabase(connection.db, NOW);
-    vi.mocked(getDb).mockReturnValue(connection);
+  beforeEach(async () => {
+    connection = await createDb(":memory:");
+    await seedDatabase(connection.db, NOW);
+    vi.mocked(getDb).mockResolvedValue(connection);
     vi.spyOn(logger, "info").mockImplementation(() => undefined);
     vi.spyOn(logger, "error").mockImplementation(() => undefined);
   });
@@ -89,7 +89,7 @@ describe("REST tasks", () => {
   });
 
   it("DEV-004 AC-3: updates a task without changing createdAt and rejects invalid updates", async () => {
-    const before = createTaskRepository(connection.db).getTask("t1");
+    const before = await createTaskRepository(connection.db).getTask("t1");
     const response = await updateTask(request("PATCH", "/t1", { status: "done" }), params({ id: "t1" }));
     expect(response.status).toBe(200);
     const { data } = taskData.parse(await response.json());
@@ -106,7 +106,8 @@ describe("REST tasks", () => {
     expect(response.status).toBe(204);
     expect(await response.text()).toBe("");
     expect((await getTask(request("GET", "/t1"), context)).status).toBe(404);
-    expect(connection.sqlite.prepare("select count(*) from subtasks where task_id = ?").pluck().get("t1")).toBe(0);
+    const { rows } = await connection.client.execute({ sql: "select count(*) as count from subtasks where task_id = ?", args: ["t1"] });
+    expect(rows[0]?.count).toBe(0);
     expect((await deleteTask(request("DELETE", "/t1"), context)).status).toBe(404);
   });
 
@@ -167,7 +168,7 @@ describe("REST tasks", () => {
   });
 
   it("DEV-004 AC-6: manages subtasks and notes and rejects a subtask of another task", async () => {
-    const before = createTaskRepository(connection.db).getTask("t1");
+    const before = await createTaskRepository(connection.db).getTask("t1");
     const context = params({ id: "t1" });
     const items = ["Перша", "Друга", "Третя"].map((title) => ({ title, source: "ai", estimate: "1 год" }));
     const response = await addSubtasks(request("POST", "/t1/subtasks", { items }), context);
@@ -175,7 +176,7 @@ describe("REST tasks", () => {
     const { data } = subtasksData.parse(await response.json());
     expect(data).toHaveLength(3);
     expect(data[0]).toMatchObject({ source: "ai", estimate: "1 год" });
-    expect(createTaskRepository(connection.db).getTask("t1")?.updatedAt).not.toBe(before?.updatedAt);
+    expect((await createTaskRepository(connection.db).getTask("t1"))?.updatedAt).not.toBe(before?.updatedAt);
     expect((await addSubtasks(request("POST", "/t1/subtasks", { items: Array.from({ length: 7 }, () => items[0]) }), context)).status).toBe(400);
     const subtaskId = data[0]?.id;
     if (!subtaskId) throw new Error("Expected a created subtask");
@@ -197,9 +198,9 @@ describe("REST tasks", () => {
     expect((await put(["missing"])).status).toBe(404);
     expect((await put(["t1", "t1"])).status).toBe(400);
     expect((await put(["t1", "t2", "t3", "t4"])).status).toBe(400);
-    expect(createTaskRepository(connection.db).getTask("t2")?.focusRank).toBe(1);
+    expect((await createTaskRepository(connection.db).getTask("t2"))?.focusRank).toBe(1);
     expect(await (await put([])).json()).toEqual({ data: [] });
-    expect(createTaskRepository(connection.db).listTasks().every((task) => task.focusRank === null)).toBe(true);
+    expect((await createTaskRepository(connection.db).listTasks()).every((task) => task.focusRank === null)).toBe(true);
   });
 
   it("DEV-004 AC-8: returns a generic 500 and logs request metadata without the query", async () => {

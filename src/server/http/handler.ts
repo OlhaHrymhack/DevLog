@@ -11,7 +11,8 @@ export const readJson = async (request: Request): Promise<unknown> => {
   }
 };
 
-export const requireFound = <T>(value: T | null, message: string): T => {
+/** `value` — уже отриманий результат: Promise тут завжди «знайдений», тому тип його забороняє (потрібен `await`). */
+export const requireFound = <T>(value: (T extends PromiseLike<unknown> ? never : T) | null, message: string): T => {
   if (value === null) throw new NotFoundError(message);
   return value;
 };

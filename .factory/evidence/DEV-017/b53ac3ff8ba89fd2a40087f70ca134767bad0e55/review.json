@@ -1,0 +1,46 @@
+{
+  "taskId": "DEV-017",
+  "kind": "review",
+  "tree": "b53ac3ff8ba89fd2a40087f70ca134767bad0e55",
+  "at": "2026-11-23T09:21:53.260Z",
+  "agent": "reviewer",
+  "model": "opus",
+  "summary": "Я переглянув дерево b53ac3ff8b: план DEV-017, БД-клієнт і serializeClient, міграцію 0001, репозиторії задач, agentRuns і квоти, agentRoute, маршрут voice-draft, env, seed/operations, Dockerfile, compose, .dockerignore/.vercelignore і next.config. Файл /private/tmp/dev017-review/diff.patch прочитати не вдалося: доступ до нього не був наданий, тому рев'ю зроблено за вихідними файлами. Тести я не запускав, бо Bash був недоступний. Перевірені частини виглядають коректно. Квоту резервує один атомарний INSERT … ON CONFLICT DO UPDATE … WHERE used < limit … RETURNING. Резервування стоїть після Zod-валідації й до створення клієнта моделі. Вичерпана квота дає 429, помилка сховища (зокрема openDb) — 503. Квоту підключено в чотирьох маршрутах через createAgentRoute і окремо у voice-draft. У Vercel Production квота обов'язкова, а Production і Preview потребують віддаленої бази. seed лише для локальної БД, а seed-remote — лише для віддаленої і лише якщо вона порожня. Жоден seed квоти не скидає. search_text заповнюється в createTask, updateTask і seed, а для старих записів є backfill. Пошук екранує wildcard-символи (LIKE … ESCAPE). Операції в транзакціях (focus, позиції підзадач, нумерація кроків, updateTask) йдуть через tx. Вкладені транзакції стають savepoint. Тест перевіряє, що foreign_keys увімкнено (=1). Знахідок рівня critical або high немає. Є два medium-ризики для публічного демо і Docker: усі транзакції на Turso відкриваються як write-транзакції, а трасування нативного модуля libsql у standalone не підтверджене доказами.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Читання на віддаленому libSQL відкриваються як write-транзакції",
+      "file": "src/server/tasks/repository.ts",
+      "line": 80,
+      "detail": "getTask (л.48), listTaskPage (л.80) і readSnapshot (л.102) обгорнуто в db.transaction. Drizzle libsql (node_modules/drizzle-orm/libsql/session.js:61) викликає this.client.transaction() без режиму, а в @libsql/client режим за замовчуванням — \"write\". Тому на Turso кожне відкриття списку або задачі блокує запис (BEGIN IMMEDIATE) і займає кілька HTTP-запитів: BEGIN, 3 запити, COMMIT. Кожна сторінка списку конкурує з CRUD, appendStep і резервуванням квоти. На публічному демо з паралельними відвідувачами це додає затримки й може давати помилки busy/locked (500). Тести з паралельними запитами покривають лише квоту, яка виконується одним запитом без транзакції. Як виправити: для читань використати db.batch([...]) (атомарно, один запит до сервера) або транзакцію в режимі \"read\" напряму через клієнт. Додати інтеграційний тест через HTTP, де паралельні читання і записи йдуть без помилок busy."
+    },
+    {
+      "severity": "medium",
+      "title": "Немає доказу, що нативний модуль libsql потрапляє в Next standalone образ",
+      "file": "Dockerfile",
+      "line": 22,
+      "detail": "Runtime-стадія копіює лише .next/standalone, static і міграції. Пакет libsql підвантажує нативний модуль динамічно: require(`@libsql/${target}`) (node_modules/libsql/index.js:26). Статичне трасування залежностей Next такий шаблонний require зазвичай не розпізнає. Якщо @libsql/linux-*-gnu не потрапить у standalone/node_modules, контейнер впаде на першому зверненні до БД, хоча збірка пройде успішно. У звіті сказано, що typecheck, lint, unit і Playwright проходили з libSQL через HTTP. Це не перевіряє локальний файловий режим в образі. AC-1/2 вимагають перевірити Docker з новим томом: health, CRUD і збереження даних після повторного створення контейнера. Як виправити: додати evidence запуску docker compose up --build з health, CRUD і повторним створенням контейнера. За потреби явно включити пакет у next.config через outputFileTracingIncludes (node_modules/@libsql/** і libsql) або serverExternalPackages."
+    },
+    {
+      "severity": "low",
+      "title": "search_text склеює title і description через пробіл",
+      "file": "src/server/tasks/searchText.ts",
+      "line": 7,
+      "detail": "toSearchText повертає `${title} ${description}`. Тому запит із пробілом може знайти задачу за текстом, що перетинає межу полів. Наприклад, title «Fix login» і description «page broken» знайдуться за «login page», хоча жодне поле не містить цього рядка. Це відхилення від попереднього пошуку окремо по полях, а план вимагає зберегти результат пошуку. Як виправити: розділяти поля символом, якого не може бути в q (наприклад \\n, якщо схема запиту його відкидає або тримить), і додати регресійний тест на межу полів."
+    },
+    {
+      "severity": "low",
+      "title": "Запит до db замість tx усередині транзакції назавжди зависне",
+      "file": "src/server/db/serializeClient.ts",
+      "line": 83,
+      "detail": "Локальний lock тримається до commit/rollback. Будь-який майбутній виклик db (не tx) у колбеці транзакції чекатиме на цей самий lock вічно, без тайм-ауту й без помилки. Зараз це задокументовано лише коментарем. Код у поточному дереві, який я переглянув, правило виконує, але регресія проявиться як «зависання» запиту, а не як помилка. Як виправити: додати тайм-аут очікування lock з явною помилкою або визначати вкладений виклик через AsyncLocalStorage і кидати помилку в dev/test. Варто додати тест на таку ситуацію."
+    },
+    {
+      "severity": "low",
+      "title": "Деплой нового коду до db:migrate ламає читання задач на віддаленій БД",
+      "file": "src/server/db/client.ts",
+      "line": 97,
+      "detail": "Для віддаленої бази міграції під час старту вимкнені, а запити вже використовують tasks.search_text і agent_quotas. Якщо Production задеплоять до запуску db:migrate на Turso, список, пошук і квота повертатимуть 500 або 503. Як виправити: у README і чеклисті релізу явно зафіксувати порядок «db:migrate → (одноразово) db:seed:remote → deploy». Також можна змусити health показувати, що схема застаріла."
+    }
+  ]
+}

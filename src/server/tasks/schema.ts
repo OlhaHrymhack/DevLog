@@ -17,6 +17,11 @@ export const tasks = sqliteTable("tasks", {
   updatedAt: text("updated_at").notNull(),
   dueAt: text("due_at"),
   focusRank: integer("focus_rank"),
+  /**
+   * `title + " " + description` у нижньому регістрі (JS `toLowerCase`, Unicode). SQLite `lower()` знає лише ASCII,
+   * а власних функцій libSQL не підтримує. Службова колонка: в API не віддається. `null` — запис ще не заповнено міграцією.
+   */
+  searchText: text("search_text"),
 }, (table) => [
   index("tasks_status_idx").on(table.status),
   check("tasks_status_check", oneOf(table.status, TASK_DB_ENUMS.taskStatus)),

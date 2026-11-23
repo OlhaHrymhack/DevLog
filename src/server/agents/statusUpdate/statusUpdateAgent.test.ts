@@ -3,7 +3,7 @@ import { AgentEventSchema, StatusUpdateSchema, type AgentEvent, type StatusUpdat
 import { readNdjson } from "@/shared/lib/readNdjson";
 import { createLogger, logger } from "../../logger";
 import { createTaskRepository } from "../../tasks/repository";
-import { createTestDb, NOW } from "../core/__tests__/echoAgent";
+import { createTestDb, NOW, type TestDb } from "../core/__tests__/echoAgent";
 import { createAgentRoute, type AgentRouteDeps } from "../core/agentRoute";
 import { createScriptedClient } from "../core/modelClient";
 import { buildUpdate } from "./buildUpdate";
@@ -15,10 +15,10 @@ import { autoTone } from "./tone";
 const DEMO_ENV = { aiMode: "demo", OPENAI_API_KEY: undefined, OPENAI_MODEL: "test" } as const;
 const silent = createLogger({ level: "silent", destination: { write: () => undefined } });
 
-let db: ReturnType<typeof createTestDb>;
+let db: TestDb;
 
-beforeEach(() => {
-  db = createTestDb();
+beforeEach(async () => {
+  db = await createTestDb();
   vi.spyOn(logger, "info").mockImplementation(() => undefined);
   vi.spyOn(logger, "error").mockImplementation(() => undefined);
 });
@@ -143,8 +143,9 @@ describe("агент C «Статус-апдейт»", () => {
     expect(finalUpdate(events).type).toBe("fallback");
 
     const repository = createTaskRepository(db.connection.db);
-    const titled = repository.createTask({ title: "Bug #42 у воркері", description: "Опис задачі для перевірки посилань.", status: "todo", priority: "medium" }, NOW);
-    repository.addNote(titled.id, { text: "Дивись PR #318 і https://example.com/a." }, NOW);
+    const titled = await repository.createTask({ title: "Bug #42 у воркері", description: "Опис задачі для перевірки посилань.", status: "todo", priority: "medium" }, NOW);
+    await repository.addNote(titled.id, { text: "Дивись PR #318 і https://example.com/a." }, NOW);
+    await db.refreshContext();
     const input = { taskId: titled.id, tone: "team" } as const;
     expect(checkStatusUpdate(buildUpdate(task(titled.id), "team", NOW), ctx(), input)).toEqual([]);
     expect(checkStatusUpdate(buildUpdate(task(titled.id), "short", NOW), ctx(), input)).toEqual([]);
@@ -156,10 +157,11 @@ describe("агент C «Статус-апдейт»", () => {
     expect(with318("@channel увага")).toHaveLength(1);
   });
 
-  it("DEV-011 AC-5: емодзі з назви не ламає manager; довга нотатка з URL не розрізає посилання", () => {
+  it("DEV-011 AC-5: емодзі з назви не ламає manager; довга нотатка з URL не розрізає посилання", async () => {
     const repository = createTaskRepository(db.connection.db);
-    const emoji = repository.createTask({ title: "🔥 Гаряча задача", description: "Опис задачі для перевірки емодзі.", status: "todo", priority: "high" }, NOW);
-    repository.addNote(emoji.id, { text: `${"слово ".repeat(120)}https://example.com/very/long/path` }, NOW);
+    const emoji = await repository.createTask({ title: "🔥 Гаряча задача", description: "Опис задачі для перевірки емодзі.", status: "todo", priority: "high" }, NOW);
+    await repository.addNote(emoji.id, { text: `${"слово ".repeat(120)}https://example.com/very/long/path` }, NOW);
+    await db.refreshContext();
     const built = buildUpdate(task(emoji.id), "manager", NOW);
     expect(checkStatusUpdate(built, ctx(), { taskId: emoji.id, tone: "manager" })).toEqual([]);
     const team = buildUpdate(task(emoji.id), "team", NOW);
@@ -167,21 +169,24 @@ describe("агент C «Статус-апдейт»", () => {
     expect(checkStatusUpdate(team, ctx(), { taskId: emoji.id, tone: "team" })).toEqual([]);
   });
 
-  it("DEV-011 AC-2: «approach» у нотатці не вигадує ризик «чекаємо на ревʼю»", () => {
+  it("DEV-011 AC-2: «approach» у нотатці не вигадує ризик «чекаємо на ревʼю»", async () => {
     const repository = createTaskRepository(db.connection.db);
-    const created = repository.createTask({ title: "Задача з approach", description: "Опис задачі для перевірки ризику.", status: "todo", priority: "medium", dueAt: "2026-11-30T00:00:00.000Z" }, NOW);
-    repository.addNote(created.id, { text: "Обрали новий approach до prototype" }, NOW);
+    const created = await repository.createTask({ title: "Задача з approach", description: "Опис задачі для перевірки ризику.", status: "todo", priority: "medium", dueAt: "2026-11-30T00:00:00.000Z" }, NOW);
+    await repository.addNote(created.id, { text: "Обрали новий approach до prototype" }, NOW);
+    await db.refreshContext();
     expect(buildUpdate(task(created.id), "manager", NOW).text).not.toContain("ревʼю");
   });
 
-  it("DEV-011 AC-8: текст нотатки з розміткою лишається текстом чернетки (екранує UI), а довгий short обрізається до 200", () => {
+  it("DEV-011 AC-8: текст нотатки з розміткою лишається текстом чернетки (екранує UI), а довгий short обрізається до 200", async () => {
     const repository = createTaskRepository(db.connection.db);
-    const created = repository.createTask({ title: "Задача з нотаткою", description: "Опис задачі для перевірки нотаток.", status: "todo", priority: "medium" }, NOW);
-    repository.addNote(created.id, { text: "<img src=x onerror=alert(1)>" }, NOW);
+    const created = await repository.createTask({ title: "Задача з нотаткою", description: "Опис задачі для перевірки нотаток.", status: "todo", priority: "medium" }, NOW);
+    await repository.addNote(created.id, { text: "<img src=x onerror=alert(1)>" }, NOW);
+    await db.refreshContext();
     const withNote = task(created.id);
     expect(buildUpdate(withNote, "team", NOW).text).toContain("Нотатка: <img src=x onerror=alert(1)>");
-    const longTitle = repository.createTask({ title: "Д".repeat(120), description: "Опис задачі для перевірки обрізання.", status: "todo", priority: "medium" }, NOW);
-    repository.addSubtasks(longTitle.id, [{ title: "К".repeat(200), source: "user" }], NOW);
+    const longTitle = await repository.createTask({ title: "Д".repeat(120), description: "Опис задачі для перевірки обрізання.", status: "todo", priority: "medium" }, NOW);
+    await repository.addSubtasks(longTitle.id, [{ title: "К".repeat(200), source: "user" }], NOW);
+    await db.refreshContext();
     expect(buildUpdate(task(longTitle.id), "short", NOW).text.length).toBeLessThanOrEqual(200);
     expect(StatusUpdateSchema.safeParse(buildUpdate(task(longTitle.id), "short", NOW)).success).toBe(true);
   });

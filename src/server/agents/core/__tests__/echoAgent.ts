@@ -34,13 +34,20 @@ export const echoAgent: AgentDefinition<typeof EchoInputSchema, typeof EchoResul
 
 export const VALID_RESULT = { taskId: "t1", summary: "t1 горить" };
 
-export const createTestDb = () => {
-  const connection = createDb(":memory:");
-  seedDatabase(connection.db, NOW);
+export type TestDb = Awaited<ReturnType<typeof createTestDb>>;
+
+/** БД у пам'яті з фікстурами. `context` — знімок; після змін у БД `refreshContext()` бере новий. */
+export const createTestDb = async () => {
+  const connection = await createDb(":memory:");
+  await seedDatabase(connection.db, NOW);
   const runs = createAgentRunRepository(connection.db);
-  const context = createAgentContext(connection.db, NOW);
+  const state = { connection, runs, context: await createAgentContext(connection.db, NOW) };
   const listRuns = () => connection.db.select().from(agentRuns).all();
-  return { connection, runs, context, listRuns };
+  const refreshContext = async () => {
+    state.context = await createAgentContext(connection.db, NOW);
+    return state.context;
+  };
+  return Object.assign(state, { listRuns, refreshContext });
 };
 
 type Responder = (request: ModelRequest, call: number) => ModelResponse | Promise<ModelResponse>;
