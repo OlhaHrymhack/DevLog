@@ -3,25 +3,22 @@ import { sql } from "drizzle-orm";
 import type { DbExecutor } from "../db/client";
 import { agentQuotas, type AgentQuotaKind } from "./schema";
 
-/** Спільна межа запусків кожного агента для всіх відвідувачів (Vercel Production). */
-export const AGENT_RUN_QUOTA = 50;
+/** Спільна межа запусків усіх AI-функцій для всіх відвідувачів. */
+export const AGENT_RUN_QUOTA = 150;
 
 export type QuotaReservation = { reserved: true; used: number } | { reserved: false };
 
 export const createAgentQuotaRepository = (db: DbExecutor) => {
-  /**
-   * Один умовний атомарний запис: перший запуск створює рядок з `used = 1`, наступні збільшують лічильник,
-   * лише поки він менший за межу. Порожній `returning` — межу вичерпано. Інстанси й з'єднання
-   * не мають спільного стану, крім цього рядка, тож межу не перевищують і паралельні запити.
-   */
+  // SQLite перевіряє суму й оновлює лічильник одним записом, зокрема для нових типів запусків.
   const reserve = async (kind: AgentQuotaKind, limit = AGENT_RUN_QUOTA, now = new Date()): Promise<QuotaReservation> => {
-    if (limit < 1) return { reserved: false };
     const updatedAt = now.toISOString();
-    const row = await db.insert(agentQuotas).values({ kind, used: 1, updatedAt })
+    const row = await db.insert(agentQuotas).select(sql`
+      SELECT ${kind}, 1, ${updatedAt}
+      WHERE (SELECT coalesce(sum(${agentQuotas.used}), 0) FROM ${agentQuotas}) < ${limit}
+    `)
       .onConflictDoUpdate({
         target: agentQuotas.kind,
         set: { used: sql`${agentQuotas.used} + 1`, updatedAt },
-        setWhere: sql`${agentQuotas.used} < ${limit}`,
       })
       .returning({ used: agentQuotas.used }).get();
     return row ? { reserved: true, used: row.used } : { reserved: false };

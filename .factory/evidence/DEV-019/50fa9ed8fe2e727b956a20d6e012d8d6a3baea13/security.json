@@ -1,0 +1,33 @@
+{
+  "taskId": "DEV-019",
+  "kind": "security",
+  "tree": "50fa9ed8fe2e727b956a20d6e012d8d6a3baea13",
+  "at": "2026-11-23T18:51:14.433Z",
+  "agent": "security",
+  "model": "codex",
+  "summary": "Reviewed DEV-019 tree 50fa9ed8fe2e727b956a20d6e012d8d6a3baea13. The quota check and increment are a single parameterized statement. Routes reserve before the provider and fail closed on storage errors. Subtask creation uses the server-validated route.",
+  "findings": [
+    {
+      "severity": "medium",
+      "title": "Older accessible production deployments can retain the legacy quota policy",
+      "file": "src/server/agentQuota/repository.ts",
+      "line": 14,
+      "detail": "If old Vercel generated URLs remain public and share the production database, those deployments may still apply their older quota logic. Check deployment protection before release."
+    },
+    {
+      "severity": "medium",
+      "title": "Remote integration test clears all counters on its configured target",
+      "file": "src/server/db/remote.test.ts",
+      "line": 69,
+      "detail": "Run only on a disposable test database. The documented opt-in target must be isolated."
+    },
+    {
+      "severity": "low",
+      "title": "Opening an autorun URL can consume a paid production attempt",
+      "file": "src/views/taskDetails/ui/TaskDetailsView/index.tsx",
+      "line": 42,
+      "detail": "Reopening a bookmark with autorun can use an attempt. The server still enforces the shared cap."
+    }
+  ],
+  "fallbackReason": "Користувач погодив продовження DEV-019 без Claude Code у поточній сесії Codex."
+}

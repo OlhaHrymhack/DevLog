@@ -12,6 +12,8 @@ const LABELS = {
   prioritize: "План на день",
   "stuck-radar": "Радар застряглих",
   "voice-draft": "Голосовий ввід",
+  decompose: "Декомпозиція задач",
+  "status-update": "Статус-апдейти",
 };
 
 export const AgentQuotaDialog = () => {
@@ -21,8 +23,8 @@ export const AgentQuotaDialog = () => {
   const rows = data?.enabled ? PublicQuotaKindSchema.options.map((kind) => ({
     kind,
     used: data.used[kind],
-    remaining: Math.max(0, data.limit - data.used[kind]),
   })) : [];
+  const used = rows.reduce((total, row) => total + row.used, 0);
 
   return (
     <>
@@ -31,7 +33,7 @@ export const AgentQuotaDialog = () => {
         Спроби AI
       </Button>
       <ResponsiveDialog open={open} onOpenChange={setOpen} title="Спроби AI"
-        description={data?.enabled ? "Ліміт спільний для всіх відвідувачів демо." : undefined}>
+        description={data?.enabled ? "Ліміт спільний для всіх AI-функцій і відвідувачів." : undefined}>
         {quota.isPending && <p role="status">Завантажуємо ліміти…</p>}
         {quota.isError && (
           <div className="space-y-3">
@@ -44,13 +46,13 @@ export const AgentQuotaDialog = () => {
           <>
             <p className={totalStyles}>
               <span>Залишилось загалом</span>
-              <strong>{rows.reduce((total, row) => total + row.remaining, 0)} із {data.limit * rows.length}</strong>
+              <strong>{Math.max(0, data.limit - used)} із {data.limit}</strong>
             </p>
             <ul aria-label="Запуски за функціями">
-              {rows.map(({ kind, used, remaining }) => (
+              {rows.map(({ kind, used }) => (
                 <li key={kind} className={rowStyles}>
                   <span>{LABELS[kind]}</span>
-                  <span className={remainingStyles}>Використано {used} · залишилось {remaining}</span>
+                  <span className={remainingStyles}>Використано {used}</span>
                 </li>
               ))}
             </ul>
