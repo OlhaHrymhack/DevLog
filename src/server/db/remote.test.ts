@@ -62,7 +62,7 @@ describe.runIf(REMOTE_URL)("віддалена libSQL-база", () => {
     }
   });
 
-  it("DEV-017 AC-4: паралельні резервування з незалежних клієнтів дають рівно 10 і переживають реконект", async () => {
+  it("DEV-018 AC-2: паралельні резервування з незалежних клієнтів дають рівно 50 і переживають реконект", async () => {
     await runDbCommand("migrate", target, NOW);
     const admin = await createDb(target.url, { authToken: target.authToken });
     await admin.client.execute("delete from agent_quotas where kind = 'stuck-radar'");
@@ -71,7 +71,8 @@ describe.runIf(REMOTE_URL)("віддалена libSQL-база", () => {
     const clients = await Promise.all(Array.from({ length: 12 }, () => createDb(target.url, { authToken: target.authToken })));
     try {
       const repositories = clients.map((client) => createAgentQuotaRepository(client.db));
-      const results = await Promise.all([...repositories, ...repositories].map((quota) => quota.reserve("stuck-radar")));
+      const results = await Promise.all(repositories.flatMap((quota) =>
+        Array.from({ length: 5 }, () => quota.reserve("stuck-radar"))));
       expect(results.filter((result) => result.reserved)).toHaveLength(AGENT_RUN_QUOTA);
     } finally {
       clients.forEach((client) => client.close());

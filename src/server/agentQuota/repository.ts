@@ -4,7 +4,7 @@ import type { DbExecutor } from "../db/client";
 import { agentQuotas, type AgentQuotaKind } from "./schema";
 
 /** Спільна межа запусків кожного агента для всіх відвідувачів (Vercel Production). */
-export const AGENT_RUN_QUOTA = 10;
+export const AGENT_RUN_QUOTA = 50;
 
 export type QuotaReservation = { reserved: true; used: number } | { reserved: false };
 
@@ -30,5 +30,7 @@ export const createAgentQuotaRepository = (db: DbExecutor) => {
   const getUsage = async (kind: AgentQuotaKind): Promise<number> =>
     (await db.select({ used: agentQuotas.used }).from(agentQuotas).where(sql`${agentQuotas.kind} = ${kind}`).get())?.used ?? 0;
 
-  return { reserve, getUsage };
+  const listUsage = () => db.select({ kind: agentQuotas.kind, used: agentQuotas.used }).from(agentQuotas).all();
+
+  return { reserve, getUsage, listUsage };
 };

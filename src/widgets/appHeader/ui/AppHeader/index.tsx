@@ -2,6 +2,7 @@ import { FlaskConical, Plus } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/features/themeToggle";
 import { Button } from "@/shared/ui/Button";
+import { AgentQuotaDialog } from "../AgentQuotaDialog";
 import { headerStyles, logoMarkStyles, logoStyles } from "./styles";
 import type { AppHeaderProps } from "./types";
 
@@ -18,6 +19,7 @@ export const AppHeader = ({ onOpenDevPanel, onNewTask }: AppHeaderProps) => (
         <FlaskConical aria-hidden="true" className="size-4" />
       </Button>
     )}
+    <AgentQuotaDialog />
     <ThemeToggle />
     <Button className="hidden md:inline-flex" disabled={!onNewTask} onClick={onNewTask}>
       <Plus aria-hidden="true" className="size-4" /> Нова задача

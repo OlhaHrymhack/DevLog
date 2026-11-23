@@ -24,7 +24,7 @@ vi.mock(import("@/server/db/client"), async (importOriginal) => ({
 
 const env = { OPENAI_API_KEY: "test", OPENAI_MODEL: "test" };
 
-it("DEV-017 AC-4: голосова чернетка має окрему квоту й не викликає модель після десятої спроби", async () => {
+it("DEV-018 AC-2: голосова чернетка має 50 запусків і не викликає модель після вичерпання квоти", async () => {
   const connection = await createDb(":memory:");
   try {
     vi.mocked(getServerEnv).mockReturnValue(parseServerEnv({ ...env, AGENT_QUOTA: "on" }));
@@ -45,11 +45,13 @@ it("DEV-017 AC-4: голосова чернетка має окрему квот
     expect(await createAgentQuotaRepository(connection.db).getUsage("voice-draft")).toBe(0);
     expect(transcriptions).not.toHaveBeenCalled();
     const webmHeader = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x81, 0x00]);
-    const responses = await Promise.all(Array.from({ length: 12 }, () => send(webmHeader)));
-    expect(responses.filter((response) => response.status === 200)).toHaveLength(10);
+    const responses = await Promise.all(Array.from({ length: 52 }, () => send(webmHeader)));
+    expect(responses.filter((response) => response.status === 200)).toHaveLength(50);
     expect(responses.filter((response) => response.status === 429)).toHaveLength(2);
-    expect(transcriptions).toHaveBeenCalledTimes(10);
-    expect(completions).toHaveBeenCalledTimes(10);
+    expect(await responses.find((response) => response.status === 429)?.json()).toMatchObject({ error: { code: "AGENT_QUOTA_EXHAUSTED" } });
+    expect(transcriptions).toHaveBeenCalledTimes(50);
+    expect(completions).toHaveBeenCalledTimes(50);
+    expect(await createAgentQuotaRepository(connection.db).getUsage("voice-draft")).toBe(50);
     expect(await createAgentQuotaRepository(connection.db).getUsage("decompose")).toBe(0);
   } finally {
     connection.close();

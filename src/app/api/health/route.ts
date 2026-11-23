@@ -4,6 +4,6 @@ import { getServerEnv } from "@/shared/config/env";
 export const dynamic = "force-dynamic";
 
 export const GET = () => {
-  const { aiMode } = getServerEnv();
-  return Response.json({ status: "ok", aiMode } satisfies Health);
+  const { aiMode, agentQuota } = getServerEnv();
+  return Response.json({ status: "ok", aiMode, agentQuota } satisfies Health);
 };

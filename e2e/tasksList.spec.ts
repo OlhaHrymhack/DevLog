@@ -139,7 +139,7 @@ test("DEV-005 AC-6 AC-8 AC-9 AC-12: heat legend, demo mode, skip link and keyboa
   await expect(dialog).toBeHidden();
   await expect(legend).toBeFocused();
 
-  await page.route("**/api/health", (route) => route.fulfill({ json: { status: "ok", aiMode: "live" } }));
+  await page.route("**/api/health", (route) => route.fulfill({ json: { status: "ok", aiMode: "live", agentQuota: false } }));
   await page.reload();
   await expect(page.locator(rows)).toHaveCount(10);
   await expect(page.getByText("Демо-режим AI.")).toHaveCount(0);
