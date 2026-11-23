@@ -1,6 +1,6 @@
 import { getHeat, TaskUpdateInputSchema, type Task, type TaskRowData, type TaskUpdateInput } from "@/entities/task";
 
-type EditableTask = Pick<Task, "title" | "description" | "status" | "priority">;
+type EditableTask = Pick<Task, "title" | "description" | "status" | "priority"> & { dueAt?: string | null };
 
 export const getTaskPatch = (before: EditableTask, after: EditableTask) => {
   const patch: TaskUpdateInput = {};
@@ -8,6 +8,7 @@ export const getTaskPatch = (before: EditableTask, after: EditableTask) => {
   if (after.description !== before.description) patch.description = after.description;
   if (after.status !== before.status) patch.status = after.status;
   if (after.priority !== before.priority) patch.priority = after.priority;
+  if ((after.dueAt ?? null) !== (before.dueAt ?? null)) patch.dueAt = after.dueAt ?? null;
   return Object.keys(patch).length > 0 ? TaskUpdateInputSchema.parse(patch) : undefined;
 };
 

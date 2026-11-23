@@ -16,7 +16,7 @@ const seedTask = async (request: APIRequestContext, title: string) => {
   return taskId.parse(await response.json()).data.id;
 };
 
-test("DEV-006 AC-1: creates a task through the API and shows it first under newest sorting", async ({ page, request }, info) => {
+test("DEV-006 AC-1 / DEV-016 AC-1: creates a task through the API and shows it first under newest sorting", async ({ page, request }, info) => {
   const title = `Перевірити створення задачі ${info.retry}`;
   await page.goto("/");
   await selectNewest(page);
@@ -24,6 +24,8 @@ test("DEV-006 AC-1: creates a task through the API and shows it first under newe
   await opener.click();
   const form = page.getByRole("dialog", { name: "Нова задача" });
   await expect(form.getByRole("textbox", { name: "Назва *" })).toBeFocused();
+  await expect(form.getByRole("button", { name: "Спробувати приклад" })).toBeEnabled();
+  await expect(form.getByText("Скажіть, що зробити", { exact: false })).toBeVisible();
   await form.getByRole("textbox", { name: "Назва *" }).fill(title);
   await form.getByRole("textbox", { name: "Опис *" }).fill(description);
   await expect(form.getByText("Опис короткий", { exact: false })).toHaveCount(0);
@@ -158,9 +160,9 @@ test("DEV-006 AC-6: Escape closes the modal, Tab stays inside, and keyboard shor
   const dialog = page.getByRole("dialog", { name: "Нова задача" });
   await expect(dialog).toHaveAttribute("aria-modal", "true");
   await expect(dialog).toHaveAttribute("aria-labelledby", /.+/);
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 16; i++) {
     await page.keyboard.press("Tab");
-    await expect(dialog.locator(":focus")).toHaveCount(1);
+    await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
@@ -176,13 +178,14 @@ test("DEV-006 AC-6: Escape closes the modal, Tab stays inside, and keyboard shor
   await expect(dialog).toBeHidden();
 });
 
-test("DEV-006 AC-7: mobile FAB opens a bottom sheet with actions visible at reduced height", async ({ page }, info) => {
+test("DEV-006 AC-7 / DEV-016 AC-1: mobile FAB opens a bottom sheet with actions visible at reduced height", async ({ page }, info) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
   const opener = page.getByRole("button", { name: "Нова задача", exact: true });
   await opener.click();
   const sheet = page.getByRole("dialog", { name: "Нова задача" });
   await expect(sheet).toHaveAttribute("data-slot", "sheet-content");
+  await expect(sheet.getByText("може зачекати", { exact: false })).toBeVisible();
   await page.screenshot({ path: info.outputPath("task-create-mobile.png"), animations: "disabled" });
   await page.setViewportSize({ width: 375, height: 440 });
   const save = sheet.getByRole("button", { name: "Створити" });
@@ -192,4 +195,61 @@ test("DEV-006 AC-7: mobile FAB opens a bottom sheet with actions visible at redu
   await cancel.click();
   await expect(sheet).toBeHidden();
   await expect(opener).toBeFocused();
+});
+
+test("DEV-016 AC-3 / DEV-016 AC-6: demo voice draft is editable, saved on confirmation and its deadline can be cleared", async ({ page, request }) => {
+  const localNoon = await page.evaluate(() => new Date(2026, 10, 23, 12).getTime());
+  await page.clock.setFixedTime(localNoon);
+  let creationAttempts = 0;
+  page.on("request", (outgoing) => {
+    if (new URL(outgoing.url()).pathname === "/api/tasks" && outgoing.method() === "POST") creationAttempts++;
+  });
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+      value: () => { throw new Error("Demo must work without microphone access"); },
+    });
+  });
+
+  await page.goto("/");
+  await selectNewest(page);
+  await page.getByRole("button", { name: "Нова задача", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Нова задача" });
+  const title = dialog.getByRole("textbox", { name: "Назва *" });
+  const dueAt = dialog.getByLabel("Дедлайн");
+  await dialog.getByRole("button", { name: "Спробувати приклад" }).click();
+  await expect(dialog.getByRole("status")).toContainText("Чернетка готова");
+  await expect(title).toHaveValue("Виправити зникнення аватара");
+  await expect(dialog.getByRole("textbox", { name: "Опис *" })).toHaveValue(/після оновлення профілю/);
+  await expect(dialog.getByRole("radio", { name: "Високий" })).toBeChecked();
+  await expect(dueAt).toHaveValue("2026-11-24T17:00");
+  expect(creationAttempts).toBe(0);
+
+  const expectedDueAt = await dueAt.evaluate((input) => {
+    if (!(input instanceof HTMLInputElement)) throw new Error("Expected deadline input");
+    return new Date(input.value).toISOString();
+  });
+  const editedTitle = "Виправити аватар після зміни профілю";
+  await title.fill(editedTitle);
+  const created = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/tasks" && response.request().method() === "POST");
+  await dialog.getByRole("button", { name: "Створити", exact: true }).click();
+
+  const response = await created;
+  expect(response.status()).toBe(201);
+  const { data } = taskId.parse(await response.json());
+  const taskUrl = `/api/tasks/${data.id}`;
+  try {
+    expect(await (await request.get(taskUrl)).json()).toMatchObject({
+      data: { title: editedTitle, priority: "high", dueAt: expectedDueAt },
+    });
+    await page.getByRole("button", { name: `Редагувати: ${editedTitle}`, exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "Редагувати задачу" });
+    await expect(editor.getByLabel("Дедлайн")).toHaveValue("2026-11-24T17:00");
+    await editor.getByLabel("Дедлайн").fill("");
+    await editor.getByRole("button", { name: "Зберегти" }).click();
+    await expect(editor).toBeHidden();
+    expect(await (await request.get(taskUrl)).json()).toMatchObject({ data: { dueAt: null } });
+  } finally {
+    await request.delete(taskUrl);
+  }
 });

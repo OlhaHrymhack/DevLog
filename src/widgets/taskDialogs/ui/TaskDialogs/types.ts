@@ -5,6 +5,7 @@ export type TaskDialog = { kind: "create" } | { kind: "edit" | "delete"; task: T
 export type TaskDialogsProps = {
   dialog: TaskDialog;
   serious: boolean;
+  voiceMode?: "demo" | "live";
   onClose: () => void;
   onCreated?: () => void;
   onDeleted?: () => void;

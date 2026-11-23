@@ -24,6 +24,11 @@ export const useTaskForm = (initialValues: TaskFormValues, onSave: (values: Task
     setErrors((prev) => prev[field] ? { ...prev, [field]: undefined } : prev);
   };
 
+  const applyDraft = (draft: Pick<TaskFormValues, "title" | "description" | "priority" | "dueAt">) => {
+    setValues((prev) => ({ ...prev, ...draft }));
+    setErrors(({ status }) => ({ status }));
+  };
+
   const showErrors = (fieldErrors: TaskFieldErrors) => {
     setErrors(fieldErrors);
     const field = TASK_FIELDS.find((name) => fieldErrors[name]);
@@ -55,5 +60,5 @@ export const useTaskForm = (initialValues: TaskFormValues, onSave: (values: Task
     }
   };
 
-  return { form, values, errors, pending, change, submit };
+  return { form, values, errors, pending, change, applyDraft, submit };
 };

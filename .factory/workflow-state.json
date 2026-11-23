@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-013",
+  "currentTask": "DEV-016",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -2484,6 +2484,140 @@
         "reason": "рішення користувачки 2026-11-22: ліміт по токенах, продовжуємо на sonnet (головна сесія); security лишається на opus",
         "at": "2026-11-22T17:37:15.077Z"
       }
+    },
+    "DEV-016": {
+      "id": "DEV-016",
+      "title": "Створення задачі голосом",
+      "status": "COMPLETED",
+      "tier": "balanced",
+      "model": "sonnet",
+      "scores": {
+        "modules": 2,
+        "architecture": 0,
+        "criticality": 1,
+        "security": 1,
+        "integrations": 1,
+        "migrations": 0,
+        "state": 1,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {},
+      "issues": [],
+      "blockers": [],
+      "nextAction": "docs + metrics DEV-016",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/31",
+      "history": [
+        {
+          "at": "2026-11-22T23:12:47.063Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-22T23:12:47.424Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T23:12:47.870Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T23:12:48.381Z",
+          "event": "classified",
+          "note": "сума 7 → balanced"
+        },
+        {
+          "at": "2026-11-22T23:12:49.020Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T23:12:50.041Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T23:14:53.535Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-016/005d46538610e950a5f14b5b2730f94470f3cbb0/tests.json"
+        },
+        {
+          "at": "2026-11-22T23:15:31.092Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "005d465386"
+        },
+        {
+          "at": "2026-11-22T23:15:31.995Z",
+          "event": "review",
+          "model": "codex",
+          "findings": 0,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-016/005d46538610e950a5f14b5b2730f94470f3cbb0/review.json"
+        },
+        {
+          "at": "2026-11-22T23:15:32.445Z",
+          "event": "security",
+          "model": "codex",
+          "findings": 2,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-016/005d46538610e950a5f14b5b2730f94470f3cbb0/security.json"
+        },
+        {
+          "at": "2026-11-22T23:15:32.902Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-22T23:17:28.632Z",
+          "event": "qa",
+          "model": "codex",
+          "findings": 0,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-016/005d46538610e950a5f14b5b2730f94470f3cbb0/qa.json"
+        },
+        {
+          "at": "2026-11-22T23:17:29.094Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-22T23:21:49.871Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-22T23:22:38.496Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/31"
+        },
+        {
+          "at": "2026-11-22T23:22:38.814Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
+        }
+      ],
+      "createdAt": "2026-11-22T23:12:47.063Z",
+      "updatedAt": "2026-11-22T23:22:38.814Z",
+      "lastFailure": null,
+      "reviewTree": "005d46538610e950a5f14b5b2730f94470f3cbb0"
     }
   }
 }
