@@ -2622,7 +2622,7 @@
     "DEV-017": {
       "id": "DEV-017",
       "title": "Підготовка DevLog до здачі: README, Docker і Vercel з лімітами агентів",
-      "status": "READY_FOR_PR",
+      "status": "COMPLETED",
       "tier": "strong",
       "model": "opus",
       "scores": {
@@ -2647,8 +2647,8 @@
         "tests failed: e2e(failed)"
       ],
       "blockers": [],
-      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-017 <url>",
-      "pr": null,
+      "nextAction": "docs + metrics DEV-017",
+      "pr": "https://github.com/OlhaHrymhack/DevLog/pull/33",
       "history": [
         {
           "at": "2026-11-22T23:06:27.112Z",
@@ -2839,10 +2839,21 @@
           "from": "AWAITING_FINAL_APPROVAL",
           "to": "READY_FOR_PR",
           "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-23T11:09:25.654Z",
+          "event": "pr",
+          "note": "https://github.com/OlhaHrymhack/DevLog/pull/33"
+        },
+        {
+          "at": "2026-11-23T11:09:26.040Z",
+          "event": "transition",
+          "from": "READY_FOR_PR",
+          "to": "COMPLETED"
         }
       ],
       "createdAt": "2026-11-22T23:06:27.105Z",
-      "updatedAt": "2026-11-23T11:08:40.425Z",
+      "updatedAt": "2026-11-23T11:09:26.040Z",
       "lastFailure": null,
       "usage": {
         "developer": 25145596,
