@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    environment:
+      AI_MODE: demo
+      DATABASE_URL: file:/app/data/devlog.db
+    ports:
+      - "127.0.0.1:${DEVLOG_PORT:-3000}:3000"
+    volumes:
+      - devlog-data:/app/data
+
+  seed:
+    profiles: [tools]
+    build:
+      context: .
+      target: build
+    user: node
+    environment:
+      AI_MODE: demo
+      DATABASE_URL: file:/app/data/devlog.db
+    command: ["npm", "run", "db:seed"]
+    volumes:
+      - devlog-data:/app/data
+
+volumes:
+  devlog-data:

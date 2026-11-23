@@ -4,7 +4,7 @@ import type { AgentEvent } from "@/entities/agentRun";
 import { createLogger } from "../../logger";
 import { createTaskRepository } from "../../tasks/repository";
 import {
-  createRecordingClient, createTestDb, echoAgent, fromScript, NOW, VALID_RESULT,
+  createRecordingClient, createTestDb, echoAgent, fromScript, NOW, VALID_RESULT, type TestDb,
 } from "./__tests__/echoAgent";
 import { scriptedSubmit, scriptedToolCall, scriptedTurn } from "./modelClient";
 import { listTasksTool, MAX_LISTED_DESCRIPTION_CHARS } from "./readTools";
@@ -14,12 +14,12 @@ import {
 import { defineTool, toToolParameters } from "./tools";
 import type { ModelClient, ModelMessage } from "./types";
 
-let db: ReturnType<typeof createTestDb>;
+let db: TestDb;
 const lines: string[] = [];
 const logger = createLogger({ level: "debug", destination: { write: (line: string) => { lines.push(line); } } });
 
-beforeEach(() => {
-  db = createTestDb();
+beforeEach(async () => {
+  db = await createTestDb();
   lines.length = 0;
 });
 
@@ -33,8 +33,8 @@ const run = async (client: ModelClient, overrides: Partial<RunAgentOptions> = {}
     client, mode: "demo", signal: new AbortController().signal, onEvent: (event) => events.push(event),
     context: db.context, runs: db.runs, logger, ...overrides,
   });
-  const [record] = db.listRuns();
-  const steps = record ? db.runs.listRunSteps(record.id) : [];
+  const [record] = await db.listRuns();
+  const steps = record ? await db.runs.listRunSteps(record.id) : [];
   return { outcome, events, record, steps };
 };
 
@@ -76,18 +76,16 @@ describe("DEV-008 AC-10: ліміти проти роздування варто
     expect(Buffer.byteLength(message?.content ?? "", "utf8")).toBeLessThan(MAX_TOOL_OUTPUT_BYTES * 2);
   });
 
-  it("DEV-008 AC-10: list_tasks скорочує довгі описи й повідомляє total/truncated", () => {
+  it("DEV-008 AC-10: list_tasks скорочує довгі описи й повідомляє total/truncated", async () => {
     const tasks = createTaskRepository(db.connection.db);
-    tasks.createTask({ title: "Довга", description: "д".repeat(5000), status: "todo", priority: "low" }, NOW);
-    const output = listTasksTool.execute({ status: null }, db.context);
-    return output.then((result) => {
-      const parsed = z.object({
-        total: z.number(), truncated: z.boolean(), tasks: z.array(z.object({ description: z.string() })),
-      }).parse(result);
-      expect(parsed.total).toBe(13);
-      expect(parsed.truncated).toBe(false);
-      expect(Math.max(...parsed.tasks.map((task) => task.description.length))).toBeLessThanOrEqual(MAX_LISTED_DESCRIPTION_CHARS);
-    });
+    await tasks.createTask({ title: "Довга", description: "д".repeat(5000), status: "todo", priority: "low" }, NOW);
+    const result = await listTasksTool.execute({ status: null }, await db.refreshContext());
+    const parsed = z.object({
+      total: z.number(), truncated: z.boolean(), tasks: z.array(z.object({ description: z.string() })),
+    }).parse(result);
+    expect(parsed.total).toBe(13);
+    expect(parsed.truncated).toBe(false);
+    expect(Math.max(...parsed.tasks.map((task) => task.description.length))).toBeLessThanOrEqual(MAX_LISTED_DESCRIPTION_CHARS);
   });
 
   it("DEV-008 AC-10: довге ім'я невідомого tool обрізається в повідомленні, трасі й логах", async () => {
@@ -148,7 +146,7 @@ describe("DEV-008 AC-6: дедлайн і стійкість до збоїв", (
   });
 
   it("DEV-008 AC-9: збій finishRun не кидає з runAgent: одна фінальна подія і запис у лозі", async () => {
-    const failingRuns: AgentRunRepository = { ...db.runs, finishRun: () => { throw new Error("SQLITE_BUSY"); } };
+    const failingRuns: AgentRunRepository = { ...db.runs, finishRun: async () => { throw new Error("SQLITE_BUSY"); } };
     const { client } = createRecordingClient(fromScript([scriptedSubmit(VALID_RESULT)]));
     const { outcome, events } = await run(client, { runs: failingRuns });
 
@@ -158,7 +156,7 @@ describe("DEV-008 AC-6: дедлайн і стійкість до збоїв", (
   });
 
   it("DEV-008 AC-9: збій createRun → фінальна подія error без винятку", async () => {
-    const failingRuns: AgentRunRepository = { ...db.runs, createRun: () => { throw new Error("SQLITE_BUSY"); } };
+    const failingRuns: AgentRunRepository = { ...db.runs, createRun: async () => { throw new Error("SQLITE_BUSY"); } };
     const { client } = createRecordingClient(fromScript([scriptedSubmit(VALID_RESULT)]));
     const { outcome, events } = await run(client, { runs: failingRuns });
 

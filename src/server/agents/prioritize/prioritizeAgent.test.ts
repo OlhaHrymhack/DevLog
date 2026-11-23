@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentEventSchema, DayPlanSchema, type AgentEvent, type DayPlan } from "@/entities/agentRun";
 import { readNdjson } from "@/shared/lib/readNdjson";
 import { createLogger, logger } from "../../logger";
-import { createTestDb, NOW } from "../core/__tests__/echoAgent";
+import { createTestDb, NOW, type TestDb } from "../core/__tests__/echoAgent";
 import { createAgentRoute, type AgentRouteDeps } from "../core/agentRoute";
 import { createScriptedClient } from "../core/modelClient";
 import { FALLBACK_REASONS } from "../core/runAgent";
@@ -16,10 +16,10 @@ import { isUrgent, scoreTask, type ScorableTask } from "./scoreTask";
 const DEMO_ENV = { aiMode: "demo", OPENAI_API_KEY: undefined, OPENAI_MODEL: "test" } as const;
 const silent = createLogger({ level: "silent", destination: { write: () => undefined } });
 
-let db: ReturnType<typeof createTestDb>;
+let db: TestDb;
 
-beforeEach(() => {
-  db = createTestDb();
+beforeEach(async () => {
+  db = await createTestDb();
   vi.spyOn(logger, "info").mockImplementation(() => undefined);
   vi.spyOn(logger, "error").mockImplementation(() => undefined);
 });

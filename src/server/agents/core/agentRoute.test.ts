@@ -6,7 +6,7 @@ import { AgentEventSchema, type AgentEvent } from "@/entities/agentRun";
 import { readNdjson } from "@/shared/lib/readNdjson";
 import { createAgentRunRepository } from "../../agentRuns/repository";
 import { agentRuns } from "../../agentRuns/schema";
-import { createDb } from "../../db/client";
+import { createDb, type DbConnection } from "../../db/client";
 import { seedDatabase } from "../../db/seed";
 import { createLogger, logger } from "../../logger";
 import { echoAgent, NOW } from "./__tests__/echoAgent";
@@ -19,12 +19,12 @@ const DEMO_ENV = { aiMode: "demo", OPENAI_API_KEY: undefined, OPENAI_MODEL: "tes
 const silent = createLogger({ level: "silent", destination: { write: () => undefined } });
 
 let directory: string;
-let connection: ReturnType<typeof createDb>;
+let connection: DbConnection;
 
-beforeEach(() => {
+beforeEach(async () => {
   directory = mkdtempSync(join(tmpdir(), "devlog-agent-route-"));
-  connection = createDb(`file:${join(directory, "agents.db")}`);
-  seedDatabase(connection.db, NOW);
+  connection = await createDb(`file:${join(directory, "agents.db")}`);
+  await seedDatabase(connection.db, NOW);
   vi.spyOn(logger, "info").mockImplementation(() => undefined);
   vi.spyOn(logger, "error").mockImplementation(() => undefined);
 });
@@ -71,9 +71,9 @@ describe("POST агента → NDJSON", () => {
     expect(events.at(-1)).toMatchObject({ type: "result", status: "result", data: { taskId: "t1" } });
     expect(events.filter((event) => FINAL.includes(event.type))).toHaveLength(1);
 
-    const [record] = listRuns();
+    const [record] = await listRuns();
     expect(record).toMatchObject({ kind: "prioritize", mode: "demo", status: "result" });
-    const steps = createAgentRunRepository(connection.db).listRunSteps(record?.id ?? "");
+    const steps = await createAgentRunRepository(connection.db).listRunSteps(record?.id ?? "");
     expect(steps.map((step) => step.type)).toEqual(["model", "tool", "model", "tool", "model", "validation"]);
   });
 
@@ -91,7 +91,7 @@ describe("POST агента → NDJSON", () => {
     const first = await reader?.read();
     const text = new TextDecoder().decode(first?.value);
     expect(AgentEventSchema.parse(JSON.parse(text.split("\n")[0] ?? "")).type).toBe("run");
-    expect(listRuns()[0]?.status).toBe("running");
+    expect((await listRuns())[0]?.status).toBe("running");
 
     gate.resolve();
     let rest = "";
@@ -107,7 +107,7 @@ describe("POST агента → NDJSON", () => {
       expect(response.headers.get("content-type")).toContain("application/json");
       expect(await response.json()).toMatchObject({ error: { code: "VALIDATION_ERROR" } });
     }
-    expect(listRuns()).toEqual([]);
+    expect(await listRuns()).toEqual([]);
   });
 
   it("DEV-008 AC-6: скасування запиту → stopped у БД і остання подія stopped", async () => {
@@ -128,7 +128,7 @@ describe("POST агента → NDJSON", () => {
 
     expect(events.at(-1)).toEqual({ type: "stopped" });
     expect(events.filter((event) => FINAL.includes(event.type))).toHaveLength(1);
-    expect(listRuns()[0]?.status).toBe("stopped");
+    expect((await listRuns())[0]?.status).toBe("stopped");
   });
 });
 
@@ -138,7 +138,7 @@ describe("POST агента: fault injection", () => {
     const response = await createAgentRoute(echoAgent, deps())(post({ input: { focus: null }, debug: { forceInvalidOutput: true } }));
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ error: { code: "VALIDATION_ERROR" } });
-    expect(listRuns()).toEqual([]);
+    expect(await listRuns()).toEqual([]);
   });
 
   it("DEV-008 AC-8: у dev debug.forceInvalidOutput → fallback після двох відхилень", async () => {
@@ -146,7 +146,7 @@ describe("POST агента: fault injection", () => {
     const response = await createAgentRoute(echoAgent, deps())(post({ input: { focus: null }, debug: { forceInvalidOutput: true } }));
     const events = await readEvents(response);
     expect(events.at(-1)).toMatchObject({ type: "fallback", reason: FALLBACK_REASONS.invalidResult });
-    const steps = createAgentRunRepository(connection.db).listRunSteps(listRuns()[0]?.id ?? "");
+    const steps = await createAgentRunRepository(connection.db).listRunSteps((await listRuns())[0]?.id ?? "");
     expect(steps.filter((step) => step.type === "validation").map((step) => step.state)).toEqual(["fail", "fail"]);
   });
 

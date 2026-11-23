@@ -2,16 +2,27 @@ import "server-only";
 import { z } from "zod";
 import { TaskStatusSchema } from "@/entities/task";
 import { NotFoundError } from "@/shared/api/errors";
-import type { DevLogDb } from "../../db/client";
-import { createTaskRepository } from "../../tasks/repository";
+import type { DbExecutor } from "../../db/client";
+import { createTaskRepository, type TaskSnapshot } from "../../tasks/repository";
 import { defineTool } from "./tools";
-import type { AgentContext } from "./types";
+import type { AgentContext, TaskReader } from "./types";
 
-/** Контекст агента: лише методи читання репозиторію задач. */
-export const createAgentContext = (db: DevLogDb, now = new Date()): AgentContext => {
-  const repository = createTaskRepository(db);
-  return { tasks: { listTasks: repository.listTasks, getTask: repository.getTask }, now };
+export const createSnapshotReader = ({ list, tasks }: TaskSnapshot): TaskReader => {
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  return {
+    listTasks: ({ status } = {}) => status ? list.filter((task) => task.status === status) : [...list],
+    getTask: (id) => byId.get(id) ?? null,
+  };
 };
+
+/**
+ * Контекст агента: лише читання. Задачі читаються одним знімком (одна транзакція) до першого виклику моделі,
+ * тож синхронні `factCheck`/`fallback`/`mockScript` і async tools працюють з тими самими даними.
+ */
+export const createAgentContext = async (db: DbExecutor, now = new Date()): Promise<AgentContext> => ({
+  tasks: createSnapshotReader(await createTaskRepository(db).readSnapshot()),
+  now,
+});
 
 /** Ліміти результату `list_tasks` проти роздування контексту моделі недовіреними даними. */
 export const MAX_LISTED_TASKS = 50;

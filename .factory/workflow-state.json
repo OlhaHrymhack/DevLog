@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "currentTask": "DEV-016",
+  "currentTask": "DEV-017",
   "tasks": {
     "DEV-001": {
       "id": "DEV-001",
@@ -2618,6 +2618,241 @@
       "updatedAt": "2026-11-22T23:22:38.814Z",
       "lastFailure": null,
       "reviewTree": "005d46538610e950a5f14b5b2730f94470f3cbb0"
+    },
+    "DEV-017": {
+      "id": "DEV-017",
+      "title": "Підготовка DevLog до здачі: README, Docker і Vercel з лімітами агентів",
+      "status": "READY_FOR_PR",
+      "tier": "strong",
+      "model": "opus",
+      "scores": {
+        "modules": 2,
+        "architecture": 2,
+        "criticality": 2,
+        "security": 2,
+        "integrations": 2,
+        "migrations": 2,
+        "state": 2,
+        "uncertainty": 1,
+        "ui": 1
+      },
+      "securityRequired": true,
+      "agent": "qa",
+      "attempts": {
+        "opus": 4
+      },
+      "issues": [
+        "tests failed: lint(failed)",
+        "codex: 1 блокувальних findings",
+        "tests failed: e2e(failed)"
+      ],
+      "blockers": [],
+      "nextAction": "коміт, push фіча-гілки, PR у stage → pr DEV-017 <url>",
+      "pr": null,
+      "history": [
+        {
+          "at": "2026-11-22T23:06:27.112Z",
+          "event": "created"
+        },
+        {
+          "at": "2026-11-22T23:06:40.722Z",
+          "event": "transition",
+          "from": "BACKLOG",
+          "to": "DISCOVERY"
+        },
+        {
+          "at": "2026-11-22T23:06:41.253Z",
+          "event": "transition",
+          "from": "DISCOVERY",
+          "to": "PLANNING"
+        },
+        {
+          "at": "2026-11-22T23:09:37.818Z",
+          "event": "classified",
+          "note": "сума 15 → strong"
+        },
+        {
+          "at": "2026-11-22T23:09:38.527Z",
+          "event": "transition",
+          "from": "PLANNING",
+          "to": "AWAITING_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T08:25:27.790Z",
+          "event": "transition",
+          "from": "AWAITING_APPROVAL",
+          "to": "IMPLEMENTING",
+          "note": "resume: погодження вже чинне"
+        },
+        {
+          "at": "2026-11-23T09:13:01.586Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-017/1881aa0f2faf1a25fea87e864310a5be8e0c6b72/tests.json"
+        },
+        {
+          "at": "2026-11-23T09:15:54.596Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-017/b53ac3ff8ba89fd2a40087f70ca134767bad0e55/tests.json"
+        },
+        {
+          "at": "2026-11-23T09:16:22.866Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "b53ac3ff8b"
+        },
+        {
+          "at": "2026-11-23T09:21:53.512Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 5,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/b53ac3ff8ba89fd2a40087f70ca134767bad0e55/review.json"
+        },
+        {
+          "at": "2026-11-23T09:21:53.995Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 6,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/b53ac3ff8ba89fd2a40087f70ca134767bad0e55/security.json"
+        },
+        {
+          "at": "2026-11-23T09:21:54.454Z",
+          "event": "codex",
+          "model": "gpt-6.2-sol",
+          "findings": 7,
+          "blocking": 1,
+          "evidence": ".factory/evidence/DEV-017/b53ac3ff8ba89fd2a40087f70ca134767bad0e55/codex.json"
+        },
+        {
+          "at": "2026-11-23T09:22:43.851Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "IMPLEMENTING",
+          "agent": "developer",
+          "note": "Другий рев’юер виявив списання квоти перед перевіркою наявності задачі"
+        },
+        {
+          "at": "2026-11-23T09:33:37.819Z",
+          "event": "verify",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/verify.json"
+        },
+        {
+          "at": "2026-11-23T09:33:38.351Z",
+          "event": "transition",
+          "from": "IMPLEMENTING",
+          "to": "REVIEWING",
+          "agent": "reviewer",
+          "reviewTree": "6e74db8627"
+        },
+        {
+          "at": "2026-11-23T09:34:49.399Z",
+          "event": "blocked",
+          "note": "3 провали на opus"
+        },
+        {
+          "at": "2026-11-23T09:34:49.625Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/tests.json"
+        },
+        {
+          "at": "2026-11-23T09:38:24.111Z",
+          "event": "unblocked",
+          "to": "REVIEWING"
+        },
+        {
+          "at": "2026-11-23T09:38:24.833Z",
+          "event": "review",
+          "model": "opus",
+          "findings": 4,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/review.json"
+        },
+        {
+          "at": "2026-11-23T09:38:25.336Z",
+          "event": "security",
+          "model": "opus",
+          "findings": 1,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/security.json"
+        },
+        {
+          "at": "2026-11-23T09:38:25.855Z",
+          "event": "codex",
+          "model": "gpt-6.2-sol",
+          "findings": 5,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/codex.json"
+        },
+        {
+          "at": "2026-11-23T09:38:42.747Z",
+          "event": "blocked",
+          "note": "4 провали на opus"
+        },
+        {
+          "at": "2026-11-23T09:38:42.964Z",
+          "event": "tests",
+          "ok": false,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/tests.json"
+        },
+        {
+          "at": "2026-11-23T09:40:47.588Z",
+          "event": "unblocked",
+          "to": "REVIEWING"
+        },
+        {
+          "at": "2026-11-23T09:42:52.984Z",
+          "event": "tests",
+          "ok": true,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/tests.json"
+        },
+        {
+          "at": "2026-11-23T09:45:07.346Z",
+          "event": "transition",
+          "from": "REVIEWING",
+          "to": "QA",
+          "agent": "qa"
+        },
+        {
+          "at": "2026-11-23T09:48:46.243Z",
+          "event": "qa",
+          "model": "sonnet",
+          "findings": 0,
+          "blocking": 0,
+          "evidence": ".factory/evidence/DEV-017/6e74db8627102c1d07323ace41824b66243baefb/qa.json"
+        },
+        {
+          "at": "2026-11-23T09:48:46.793Z",
+          "event": "transition",
+          "from": "QA",
+          "to": "AWAITING_FINAL_APPROVAL"
+        },
+        {
+          "at": "2026-11-23T11:08:40.420Z",
+          "event": "transition",
+          "from": "AWAITING_FINAL_APPROVAL",
+          "to": "READY_FOR_PR",
+          "note": "resume: погодження вже чинне"
+        }
+      ],
+      "createdAt": "2026-11-22T23:06:27.105Z",
+      "updatedAt": "2026-11-23T11:08:40.425Z",
+      "lastFailure": null,
+      "usage": {
+        "developer": 25145596,
+        "reviewer": 601289,
+        "security": 328357,
+        "codex": 1788317,
+        "qa": 29649
+      },
+      "reviewTree": "6e74db8627102c1d07323ace41824b66243baefb",
+      "blockedFrom": "REVIEWING"
     }
   }
 }

@@ -5,7 +5,10 @@ import { getServerEnv } from "@/shared/config/env";
 // (напр. `err.request.headers`). Глибші структури не логуємо — лише вибрані поля.
 // SDK `openai` передає ключ заголовком `Authorization: Bearer …` (з великої літери — pino чутливий до регістру).
 // `x-api-key` лишається як загальний захист для інших провайдерів.
-const SECRET_KEYS = ["apiKey", "OPENAI_API_KEY", "authorization", "Authorization", 'headers["x-api-key"]'];
+const SECRET_KEYS = [
+  "apiKey", "OPENAI_API_KEY", "authToken", "DATABASE_AUTH_TOKEN", "TURSO_AUTH_TOKEN",
+  "authorization", "Authorization", 'headers["x-api-key"]',
+];
 const NESTING_PREFIXES = ["", "*.", "*.*.", "*.*.*."];
 const REDACT_PATHS = NESTING_PREFIXES.flatMap((prefix) =>
   SECRET_KEYS.map((key) => `${prefix}${key}`),

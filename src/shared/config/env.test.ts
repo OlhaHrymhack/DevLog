@@ -104,3 +104,31 @@ describe(".env.example", () => {
     }
   });
 });
+
+describe("спільна квота Vercel", () => {
+  const turso = { TURSO_DATABASE_URL: "libsql://fixtures.example.test", TURSO_AUTH_TOKEN: "test-token" };
+
+  it("DEV-017 AC-3: використовує змінні інтеграції Turso як пару", () => {
+    const production = parseServerEnv({ VERCEL: "1", VERCEL_ENV: "production", ...turso });
+    expect(production).toMatchObject({ DATABASE_URL: turso.TURSO_DATABASE_URL, DATABASE_AUTH_TOKEN: turso.TURSO_AUTH_TOKEN });
+    const explicit = parseServerEnv({ ...turso, DATABASE_URL: "file:./data/custom.db" });
+    expect(explicit.DATABASE_URL).toBe("file:./data/custom.db");
+    expect(explicit.DATABASE_AUTH_TOKEN).toBeUndefined();
+  });
+
+  it("DEV-017 AC-4: Vercel Production потребує спільної бази та квоти", () => {
+    expect(parseServerEnv({ VERCEL_ENV: "production", ...turso }).agentQuota).toBe(true);
+    expect(errorMessageOf({ VERCEL_ENV: "production" })).toContain("DATABASE_URL");
+    expect(errorMessageOf({ VERCEL_ENV: "production", ...turso, AGENT_QUOTA: "off" })).toContain("AGENT_QUOTA");
+    expect(errorMessageOf({ VERCEL: "1", ...turso })).toContain("VERCEL_ENV");
+  });
+
+  it("DEV-017 AC-5: Preview працює в деморежимі навіть із випадково заданим ключем", () => {
+    const preview = parseServerEnv({
+      VERCEL_ENV: "preview", AI_MODE: "live", OPENAI_API_KEY: KEY_MARKER, AGENT_QUOTA: "on", ...turso,
+    });
+    expect(preview).toMatchObject({ aiMode: "demo", agentQuota: true });
+    expect(preview.OPENAI_API_KEY).toBeUndefined();
+    expect(errorMessageOf({ VERCEL_ENV: "preview" })).toContain("DATABASE_URL");
+  });
+});

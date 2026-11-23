@@ -35,9 +35,13 @@ export type ModelClient = {
   create: (request: ModelRequest) => Promise<ModelResponse>;
 };
 
-/** Лише читання: агенти не мають доступу до запису (зміни даних — окремий REST після «Confirm»). */
+/**
+ * Лише читання: агенти не мають доступу до запису (зміни даних — окремий REST після «Confirm»).
+ * Читає знімок, узятий на старті запуску (`createAgentContext`): модель, tools і перевірка фактів бачать ті самі дані.
+ * Порядок — як у `GET /api/tasks` за замовчуванням (пріоритет, потім новіші).
+ */
 export type TaskReader = {
-  listTasks: (query?: Partial<TaskListQuery>) => TaskListItem[];
+  listTasks: (query?: Pick<Partial<TaskListQuery>, "status">) => TaskListItem[];
   getTask: (id: string) => Task | null;
 };
 

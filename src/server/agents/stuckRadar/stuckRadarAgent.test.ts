@@ -3,7 +3,7 @@ import { AgentEventSchema, TriageSchema, type AgentEvent, type StuckRadarInput, 
 import { readNdjson } from "@/shared/lib/readNdjson";
 import { createLogger, logger } from "../../logger";
 import { createTaskRepository } from "../../tasks/repository";
-import { createTestDb, NOW } from "../core/__tests__/echoAgent";
+import { createTestDb, NOW, type TestDb } from "../core/__tests__/echoAgent";
 import { createAgentRoute, type AgentRouteDeps } from "../core/agentRoute";
 import { createScriptedClient } from "../core/modelClient";
 import { checkTriage } from "./checkTriage";
@@ -15,10 +15,10 @@ import { GHOST_TASK_ID, stuckRadarAgent } from "./stuckRadarAgent";
 const DEMO_ENV = { aiMode: "demo", OPENAI_API_KEY: undefined, OPENAI_MODEL: "test" } as const;
 const silent = createLogger({ level: "silent", destination: { write: () => undefined } });
 
-let db: ReturnType<typeof createTestDb>;
+let db: TestDb;
 
-beforeEach(() => {
-  db = createTestDb();
+beforeEach(async () => {
+  db = await createTestDb();
   vi.spyOn(logger, "info").mockImplementation(() => undefined);
   vi.spyOn(logger, "error").mockImplementation(() => undefined);
 });
@@ -118,10 +118,11 @@ describe("агент D «Радар застряглих»", () => {
     expect(events.some((event) => event.type === "step" && event.index === 3 && event.state === "fail")).toBe(true);
   });
 
-  it("DEV-012 AC-4: чернетка й fallback проходять перевірку для задачі з «#42», @here і довгою назвою", () => {
+  it("DEV-012 AC-4: чернетка й fallback проходять перевірку для задачі з «#42», @here і довгою назвою", async () => {
     const repository = createTaskRepository(db.connection.db);
-    const created = repository.createTask({ title: `@here Bug #42 ${"д".repeat(200)}`, description: "Опис задачі для перевірки радара.", status: "in-progress", priority: "medium" }, new Date(NOW.getTime() - 10 * 86_400_000));
-    repository.addNote(created.id, { text: "Чекаю ревʼю на PR #7 @channel" }, new Date(NOW.getTime() - 10 * 86_400_000));
+    const created = await repository.createTask({ title: `@here Bug #42 ${"д".repeat(200)}`, description: "Опис задачі для перевірки радара.", status: "in-progress", priority: "medium" }, new Date(NOW.getTime() - 10 * 86_400_000));
+    await repository.addNote(created.id, { text: "Чекаю ревʼю на PR #7 @channel" }, new Date(NOW.getTime() - 10 * 86_400_000));
+    await db.refreshContext();
     const full = task(created.id);
     expect(buildItem(full).draft?.length).toBeLessThanOrEqual(500);
     expect(checkTriage({ items: [buildItem(full)] }, ctx(), inputOf)).toEqual([]);

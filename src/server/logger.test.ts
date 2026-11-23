@@ -88,6 +88,19 @@ describe("logger redact", () => {
     });
   });
 
+  it("DEV-017 AC-6: токени libSQL і Turso маскуються в логах", () => {
+    const { logger, lines } = captureLogger();
+    logger.info({
+      options: { authToken: KEY_MARKER },
+      env: { DATABASE_AUTH_TOKEN: KEY_MARKER, TURSO_AUTH_TOKEN: KEY_MARKER },
+    }, "database connection");
+    expect(lines[0]).not.toContain(KEY_MARKER);
+    expect(JSON.parse(lines[0] ?? "{}")).toMatchObject({
+      options: { authToken: "[Redacted]" },
+      env: { DATABASE_AUTH_TOKEN: "[Redacted]", TURSO_AUTH_TOKEN: "[Redacted]" },
+    });
+  });
+
   it("DEV-001 AC-5: звичайні поля логуються без змін", () => {
     const { logger, lines } = captureLogger();
     logger.info({ taskId: "task-1" }, "task loaded");
